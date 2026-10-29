@@ -1139,7 +1139,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=4;
+const VERSAO=5;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1406,7 +1406,7 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
   [/anuncios?/,()=>`Anúncios dos clientes no mês: ${brl(CUS())}. Restantes dos planos ativos: ${brl(X.cr)}.`,/meu anuncio|restante|a gastar/],
   [/custo (por|do) dia/,()=>`Custo por dia do plano Gold: ${brl(S.custoDia||9)}.`],
   [/receita.*(disponivel|livre)|(disponivel|livre).*receita|dinheiro livre|saldo livre|\blivre\b|quanto (me )?sobra|\bsobra\b/,()=>both?`Receita disponível após despesas: ${brl(X.rd)} (empresa mais pessoal menos o saldo de investimento).`:ln('Disponível após as despesas',d=>d.disp)],
-  [/disponivel|apos despesas/,()=>ln('Disponível após despesas',d=>d.disp)+(both&&/geral|total/.test(t)?`. Receita disponível geral (descontando o saldo investido): ${brl(X.rd)}.`:'.'),/receita|livre|sobra/],
+  [/disponivel|apos despesas/,()=>both?`Receita disponível após despesas: ${brl(X.rd)} (empresa mais pessoal menos o saldo de investimento).`:ln('Disponível após despesas',d=>d.disp)+'.',/receita|livre|sobra/],
   [/cartao|\bfatura\b/,()=>ln('Cartão (mês)',d=>d.car)],
   [/saldo/,()=>ln('Saldo em conta',d=>d.sal),/livre/],
   [/receita/,()=>ln('Receita (saldo menos cartão)',d=>d.rec),/disponivel|livre/],
