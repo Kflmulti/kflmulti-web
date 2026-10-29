@@ -628,14 +628,14 @@ function simu(){const ni=f=>!/^Imposto \d\d\/\d{4}$/.test(String(f.nome||'').tri
  $('#v6').innerHTML=`<h2>SIMULADOR</h2><div class="lb">Plano</div><select class="in" id="sp" onchange="simuC()">${PL.map(x=>`<option value="${esc(x[0])}">${esc(x[0])}</option>`).join('')}</select>
  <div class="lb">Quantidade de planos vendidos</div><input class="in" id="sq" inputmode="numeric" value="150" oninput="simuC()">
  <div class="lb">Vezes no mês (1 = vendas únicas · 4 = clientes renovando toda semana)</div><input class="in" id="sv" inputmode="numeric" value="1" oninput="simuC()">
- <div id="sr"></div><div class="lb" style="text-align:center">Usa o imposto (${PP()}%), o custo de anúncio por dia, o seu anúncio (${brl(MD())}/dia, se ativo), os fixos cadastrados, os variáveis pelo limite definido (sem limite, não entram) e o aporte diário no fundo (${brl(FD())}/dia). Resultado do mês, não do caixa do dia.</div>${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6');scrollTo(0,0);simuC()}
+ <div id="sr"></div><div class="lb" style="text-align:center">Usa o imposto (${PP()}%), o custo de anúncio por dia, o seu anúncio (${brl(MD())}/dia, se ativo), os fixos cadastrados, os variáveis pelo limite definido (sem limite, não entram) e o aporte diário no fundo (${brl(FD())}/dia). Resultado do mês, não do caixa do dia.</div>${btn('VOLTAR','#9E9E9E','menu()')}<div style="height:90px"></div>`;tela('v6');scrollTo(0,0);simuC()}
 function simuC(){const p=$('#sp').value,q=Math.max(0,parseInt($('#sq').value)||0),v=Math.max(1,parseInt($('#sv').value)||1),m=SM,
  rec=r2(q*valor(p)*v),imp=r2(rec*IP()/100),anu=r2(q*dias(p)*cdOf(p)*v),luc=r2(rec-imp-anu),meu=S.meuAtivo?r2(30*MD()):0,fd=r2(30*FD()),
  livre=r2(luc-meu-m.fE-m.vE-m.fP-m.vP-fd),sem=r2(livre+fd),
- ln=(t,x,c)=>`<div class="card" style="margin:6px 0;padding:10px 12px;display:flex;justify-content:space-between;gap:8px"><span>${t}</span><b style="color:${c||'#c00'}">${x}</b></div>`;
- $('#sr').innerHTML=ln('Receita ('+q+' × '+brl(valor(p))+(v>1?' × '+v:'')+')',brl(rec),'#1B5E20')+ln('Imposto ('+PP()+'%)','− '+brl(imp))+ln('Anúncios dos clientes ('+dias(p)+' dias × '+brl(cdOf(p))+' por plano)','− '+brl(anu))
+ ln=(t,x,c)=>`<div class="card" style="margin:6px 0;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px"><span style="flex:1;min-width:0">${t}</span><b style="flex:none;white-space:nowrap;color:${c||'#c00'}">${x}</b></div>`;
+ $('#sr').innerHTML=ln('Receita ('+q+' × '+brl(valor(p))+(v>1?' × '+v:'')+')',brl(rec),'#1B5E20')+ln('Imposto ('+PP()+'%)','− '+brl(imp))+ln('Anúncios dos clientes ('+dias(p)+' dias × '+brl(cdOf(p))+')','− '+brl(anu))
  +`<div class="card" style="margin:6px 0;padding:10px 12px;background:#E8F5E9;display:flex;justify-content:space-between"><b>Lucro dos planos</b><b style="color:#1B5E20">${brl(luc)}</b></div>`
- +ln('Seu anúncio (30 dias × '+brl(MD())+')'+(S.meuAtivo?'':' — inativo'),'− '+brl(meu))+ln('Fixos da Empresa (sem folha)','− '+brl(r2(m.fE+m.vE)))+(m.fo>0?ln('Folha de pagamento (sai da empresa)','− '+brl(m.fo))+ln('Folha recebida (entrada pessoal)','+ '+brl(m.fo),'#1B5E20'):'')+ln('Fixos pessoais','− '+brl(m.fP))+ln('Variáveis pessoais (pelo limite)','− '+brl(m.vP))+ln('Fundo de investimento (30 dias × '+brl(FD())+')','− '+brl(fd))
+ +ln('Seu anúncio (30 dias × '+brl(MD())+')'+(S.meuAtivo?'':' — inativo'),'− '+brl(meu))+ln('Fixos da Empresa (sem folha)','− '+brl(r2(m.fE+m.vE)))+(m.fo>0?ln('Folha paga (sai da empresa)','− '+brl(m.fo))+ln('Folha recebida (pessoal)','+ '+brl(m.fo),'#1B5E20'):'')+ln('Fixos pessoais','− '+brl(m.fP))+ln('Variáveis pessoais (pelo limite)','− '+brl(m.vP))+ln('Fundo de investimento (30 dias × '+brl(FD())+')','− '+brl(fd))
  +`<div class="card" style="margin:8px 0;padding:14px 12px;background:${livre>=0?'#E8F5E9':'#FFEBEE'};display:flex;justify-content:space-between;font-size:18px"><b>LIVRE NO MÊS</b><b style="color:${livre>=0?'#1B5E20':'#C62828'}">${brl(livre)}</b></div><div class="lb" style="text-align:center">Sem separar o fundo: ${brl(sem)}</div>`}
 /* ===== previsão da semana ===== */
 function prev(){const t=hoje(),at=ativos(),cd=S.custoDia||9,ma=S.meuAtivo?MD():0,H=Object.keys(S.hist||{}).sort().slice(-14).map(k=>S.hist[k]),sv=H.reduce((a,h)=>a+(h.ven||0),0),sr=H.reduce((a,h)=>a+(h.ren||0),0),tx=sv>=5?Math.min(1,sr/sv):null;let tE=0,tR=0,tP=0,tC=0,tN=0,out='';
@@ -1179,7 +1179,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=17;
+const VERSAO=18;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
