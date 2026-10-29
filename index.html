@@ -1139,7 +1139,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=5;
+const VERSAO=6;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1162,7 +1162,7 @@ const css=document.createElement('style');css.textContent='#bV.on{background:#C6
 document.head.appendChild(css);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const MAIS=['Mais alguma coisa?','Precisa de mais alguma coisa?','Posso ajudar em mais algo?','Algo mais?','Mais alguma informação?','Quer saber mais alguma coisa?'],TCHAU=['Certo, se precisar de algo é só me chamar.','Tudo bem! Qualquer coisa, é só chamar.','Beleza, estou por aqui se precisar.','Combinado! Pode me chamar quando quiser.','Ok, até a próxima!','Tranquilo, é só falar comigo quando precisar.','Perfeito! Fico por aqui, é só chamar.'],FALE=['Pode falar.','Sou toda ouvidos.','Pois não, pode falar.','Estou ouvindo.'],auto0={v:false};
-let P=null,rec=null,st='idle',heard='',reply='',lastSay='',ans=null,btns=[],fail='',sess=false,sayId=0,fmode=false,lastF=false,off=false,TM=0;
+let Q=null,P=null,rec=null,st='idle',heard='',reply='',lastSay='',ans=null,btns=[],fail='',sess=false,sayId=0,fmode=false,lastF=false,off=false,TM=0;
 
 /* ---------- utilidades de texto ---------- */
 const html=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -1212,12 +1212,12 @@ function needCli(t,pool,cont,nada){const r=achaCli(t,pool);
 
 /* ---------- painel, fala e escuta ---------- */
 function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;P.style.cssText='position:fixed;left:10px;right:10px;bottom:150px;z-index:10;background:#fff;border:2px solid #512BD4;border-radius:16px;box-shadow:0 6px 20px #0006;padding:12px;font-size:16px;color:#222;max-height:45vh;overflow:auto';document.body.appendChild(P);
-  P.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){const f=btns[+b.dataset.i];f&&f[1]()}else if(e.target.closest('[data-x]')){stopAll();P.hidden=true}else if(e.target.closest('[data-m]'))listen()})}
+  P.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){const f=btns[+b.dataset.i];f&&f[1]()}else if(e.target.closest('[data-x]')){stopAll();P.hidden=true}else if(e.target.closest('[data-m]'))listen();else if(e.target.closest('[data-e]'))naoEra();else if(e.target.closest('[data-s]'))suporte()})}
  const tt=st=='ouvindo'?'🎤 Ouvindo…':st=='falando'?'🔊 Falando…':st=='exec'?'⏳ Executando…':off?'🎤 Microfone desligado':'🎤 Comando de voz';
- P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button></div>`}
+ P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-s>🛠 Suporte</button></div>`}
 function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
-function say(msg,after,spk){const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
+function say(msg,after,spk){if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
  if(!TTS||typeof SpeechSynthesisUtterance=='undefined'){st='idle';fin();return}
  try{TTS.cancel();const u=new SpeechSynthesisUtterance(fix(spk||msg));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;u.onend=fin;u.onerror=fin;st='falando';draw();TTS.speak(u);setTimeout(fin,Math.min(70000,4000+fix(spk||msg).length*130))}catch(e){fin()}}
 function listen(f){if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador. Use o Chrome atualizado.');return}
@@ -1550,6 +1550,23 @@ async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('A
  const msg=`Fechar o dia: ${L.length?L.length+' cliente'+(L.length>1?'s serão pausados ('+nomes(L)+')':' será pausado ('+nomes(L)+')'):'ninguém será pausado'}, ${nf.length} nota${nf.length==1?'':'s'} de ${brl(tot)} ${nf.length==1?'vai':'vão'} para a planilha e o relatório abre no WhatsApp. Confirma?`;
  ask(msg,async()=>{const m=await withAlert(()=>fdGo());return m.length?m.join(' '):'Fechamento feito. Se o WhatsApp não abrir sozinho, toque no botão verde.'})}
 
+
+/* ---------- suporte: registro do que a voz não entendeu / errou, e correção de palavras parecidas ---------- */
+const VOC='valor saldo disponivel livre gastos gastei gasto despesas despesa clientes cliente pendentes pendente vencimento vencimentos vencem renovar renovou renovados pausados pausado pausar investimento investimentos aporte aportes proventos dividendos rendimento receita lucro liquido faturamento imposto cartao fatura fixos variaveis hoje ontem semana entradas retornados novos quanto quantos quantas quais tenho paguei lancamentos anuncio anuncios notas emitir relatorio empresa pessoal total fundo reserva custo sobra'.split(' ');
+const COMUM=new Set('para como esta estao tudo mais menos meus minha minhas seus pelo pela pelos desse dessa isso esse essa onde quando porque qual quem tem foi sao dia dias mes meses ano anos hoje agora todos todas nome plano planos conta contas geral'.split(' '));
+function corrige(t){let nomes;try{nomes=new Set(C.concat(S.fixos||[]).map(x=>nz(x.cliente||x.nome||'')).join(' ').split(' '))}catch(e){nomes=new Set()}
+ return t.split(' ').map(w=>{if(w.length<4||/\d/.test(w)||COMUM.has(w)||VOC.includes(w)||nomes.has(w))return w;const lim=w.length>=5?2:1;let best=null,bd=9,tie=0;for(const v of VOC){if(Math.abs(v.length-w.length)>lim)continue;const d=lev(w,v);if(d<bd){bd=d;best=v;tie=0}else if(d==bd)tie++}return best&&bd<=lim&&!tie?best:w}).join(' ')}
+function snapV(){try{if(diario())save();const x=fpCalc(),f={};Object.keys(x).forEach(k=>{if(typeof x[k]=='number')f[k]=r2(x[k])});return{fin:f,dia:hd(),mes:S.mes,saldoE:S.saldoE,saldoP:S.saldoP,cartaoE:S.cartaoE,cartaoP:S.cartaoP,fundo:S.fundo}}catch(e){return{erro:String(e&&e.message||e)}}}
+function logV(m,ex){if(!Q)return null;const e=Object.assign({ts:Q.ts||Date.now(),v:typeof VERSAO!='undefined'?VERSAO:0,m,q:Q.q,r:Q.r,c:snapV()},ex||{});S.vlog=(S.vlog||[]).concat([e]).slice(-100);Q.log=e;try{save()}catch(x){}return e}
+function naoEra(){if(!Q||!Q.r)return;if(Q.log&&Q.log.m=='nao_era_isso'){say('Já anotei essa.');return}const e=logV('nao_era_isso');if(!e)return;
+ ans=async T=>{ans=null;btns=[];const t=nz(T[0]||'');if(/^(pular|nao|nada|deixa|sem nota)( |$)/.test(t)){say('Anotado.');return true}e.n=T[0];try{save()}catch(x){}say('Anotado: “'+T[0]+'”.');return true};
+ btns=[['Pular',()=>{ans=null;btns=[];say('Anotado.')}]];say('Anotado. Se quiser, diga o que você esperava, ou toque em Pular.',listen)}
+const MOT={nao_entendi:'NÃO ENTENDEU',nao_era_isso:'NÃO ERA ISSO',corrigido:'CORRIGIU PALAVRA'};
+function txtV(){const L=S.vlog||[];if(!L.length)return'';return 'SUPORTE DA VOZ — '+L.length+' registro(s)\n\n'+L.map((e,i)=>`#${i+1} ${new Date(e.ts).toLocaleString('pt-BR')} · v${e.v} · ${MOT[e.m]||e.m}\nPergunta: ${(e.q||[]).join(' | ')}\n${e.fix?'Entendi como: '+e.fix+'\n':''}Resposta: ${e.r||'(sem resposta)'}\n${e.n?'O que eu esperava: '+e.n+'\n':''}Dados: ${JSON.stringify(e.c)}`).join('\n\n')}
+function suporte(){let o=document.getElementById('vzs');if(o)o.remove();o=document.createElement('div');o.id='vzs';o.style.cssText='position:fixed;inset:0;z-index:30;background:#000a;display:flex;align-items:center;justify-content:center;padding:10px';
+ const tx=txtV();o.innerHTML=`<div style="background:#fff;border-radius:14px;padding:12px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;gap:8px"><b style="color:#512BD4">🛠 Suporte da voz</b><div style="font-size:14px;color:#555">${tx?'Toque em Copiar tudo e cole na conversa com o Claude.':'Nada registrado ainda. A voz anota aqui o que não entendeu ou o que você marcou como “Não era isso”.'}</div><textarea readonly style="flex:1;min-height:200px;font:12px monospace;border:1px solid #ccc;border-radius:8px;padding:6px">${html(tx)}</textarea><div><button class="vzb" data-c>📋 Copiar tudo</button><button class="vzb n" data-l>🗑 Limpar</button><button class="vzb n" data-f>Fechar</button></div></div>`;document.body.appendChild(o);
+ const ta=o.querySelector('textarea');o.addEventListener('click',async ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.f!==undefined)o.remove();else if(b.dataset.l!==undefined){if(confirm('Apagar todos os registros?')){S.vlog=[];try{save()}catch(x){}o.remove()}}else if(b.dataset.c!==undefined){let ok=false;try{await navigator.clipboard.writeText(tx);ok=true}catch(x){}if(!ok){ta.focus();ta.select();try{ok=document.execCommand('copy')}catch(x){}}b.textContent=ok?'✅ Copiado':'Selecione o texto e copie'}})}
+window.vozSuporte=suporte;
 /* ---------- roteador ---------- */
 /* ---------- sinônimos: leva variações para os comandos que o app já entende ---------- */
 function canon(t){
@@ -1566,6 +1583,7 @@ function canon(t){
  t=t.replace(/\b(quero ver|me mostra|me mostre|veja|ver)\b(?! (quant|quais|qual|quem|como|total))/g,'abrir');
  return t.replace(/\s+/g,' ').trim()}
 async function route(t){t=canon(t);
+if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();say('Abri o suporte da voz.');return true}
  if(/\b(ajuda|comandos|o que (voce )?(sabe|faz|pode)|o que posso)\b/.test(t)){say(AJUDA);return true}
  if(/mais (rapido|depressa)|acelera/.test(t)){RT=Math.min(2,r2(RT+0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais rápido.');return true}
  if(/mais (devagar|lento)|desacelera/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
@@ -1588,12 +1606,13 @@ async function route(t){t=canon(t);
  const r=achaCli(t,C);if(r.length&&r[0].s>=3)return needCli(t,C,c=>{ficha(C.indexOf(c));say('Abri a ficha. '+info(c))});
  return false}
 const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|valeu|tchau|ja deu|ja chega|ta bom|esta bom|tudo certo|ok)( (obrigad[oa]|mais|nada|valeu|e isso|por hoje|pode parar))?|(pode )?(parar|encerrar?|desligar?|desliga o microfone)|nao (preciso|quero|tem mais|obrigad[oa]))$/,SIM=/^(sim|quero|tenho|pode|claro|uhum|aham)( |$)/;
-async function handle(alts){const F=lastF;lastF=false;const T=alts.map(nz).filter(Boolean);if(!T.length){say('Não entendi. Diga ajuda para ver o que posso fazer.');return}
+async function handle(alts){const F=lastF;lastF=false;const T=alts.map(nz).filter(Boolean);if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
  if(F&&!ans&&T.some(t=>FIM.test(t)||(t.split(' ').length<=6&&/\b(nao|nada)\b/.test(t)&&!/\d/.test(t)))){sess=false;say(pick(TCHAU),()=>{st='idle';heard='';reply='';draw();P.hidden=true});return}
  if(F&&!ans&&T.every(t=>t.split(' ').length<=2&&SIM.test(t))){say(pick(FALE),()=>listen(1));return}
  if(ans){const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
- fail='';for(const t of T)if(await route(t))return;
- say(fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`)}
+ Q={r:'',q:alts.slice(0,3),ts:Date.now()};fail='';for(const t of T)if(await route(t))return;
+ for(const t of T){const c=corrige(t);if(c!==t&&await route(c)){logV('corrigido',{fix:c});return}}
+ const m=fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`;Q.r=m;logV('nao_entendi');say(m)}
 
 B.onclick=()=>{if(st=='ouvindo'){stopAll();draw();return}listen()};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAll()});
