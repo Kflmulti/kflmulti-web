@@ -1182,7 +1182,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=11;
+const VERSAO=12;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1277,7 +1277,8 @@ function listen(f){if(!SR){say('Este aparelho não tem reconhecimento de voz no 
 
 /* ---------- confirmação e opções ---------- */
 const cancelar=()=>{ans=null;btns=[];say('Cancelado.')};
-function ask(msg,fn,spk){const go=async()=>{ans=null;btns=[];st='exec';draw();let m;try{m=await fn()}catch(e){m='Deu erro: '+(e&&e.message||e)}st='idle';say(m||'Pronto.')};
+function refrescaTela(){try{const h=((document.querySelector('#'+cur+' h2')||{}).textContent||'').toUpperCase();if(/LIMITES/.test(h))lim();else if(/FINAN[ÇC]A PESSOAL/.test(h))fp();else if(/GESTÃO FINANCEIRA/.test(h))fin();else if(/^LAN[ÇC]AMENTOS$/.test(h.trim()))lanc();else if(/^VARIÁVEIS$/.test(h.trim()))vv()}catch(e){}}
+function ask(msg,fn,spk){const go=async()=>{ans=null;btns=[];st='exec';draw();let m;try{m=await fn()}catch(e){m='Deu erro: '+(e&&e.message||e)}st='idle';refrescaTela();say(m||'Pronto.')};
  btns=[['✅ Confirmar',go],['❌ Cancelar',cancelar]];
  ans=async T=>{const t=T.join(' | ');if(NO.test(t)){cancelar();return true}if(YES.test(t)){go();return true}if(T[0].split(' ').length<=2){say('Diga confirmar ou cancelar.',listen);return true}return false};
  say(msg,listen,spk)}
@@ -1376,7 +1377,7 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'pgd',rx:/pendent.*(futur|proxim|combinad|depois)|(futur|proxim|combinad).*pendent/,a:['com pagamento combinado para os próximos dias','com pagamento combinado para os próximos dias'],v:i=>i.pg,p:i=>i.pe&&i.dp&&i.dp>hj0()},
   {g:'pgd',rx:{test:t=>/pendent|pagamento|devendo|a receber/.test(t)&&!!diaEsp(t,1)&&!/vence/.test(t)},get a(){const d=dEsp(),l=d?'com pagamento marcado para '+lbD(d):'com pagamento marcado';return[l,l]},v:i=>i.pg,p:i=>{const d=dEsp();return!!(d&&i.pe&&i.dp&&d.ok(iso(i.dp)))}},
   {g:'fim',rx:{test:t=>/vence|vencimento|renov/.test(t)&&!!diaEsp(t,2)&&!/pendent|pagamento|renovad|renovaram|renovou/.test(t)},get a(){const d=dEsp(2),l=d?'que vence em '+lbD(d):'que vence';return[l,l.replace('vence','vencem')]},v:i=>i.vp,p:i=>{const d=dEsp(2);return!!(d&&i.a&&i.df&&d.ok(iso(i.df)))}},
-  {g:'fim',rx:{test:t=>/a renovar|para renovar|vence(m)? hoje|faltam|vencimento de hoje|renovar hoje|renovando/.test(t)&&!/amanha|semana|7 dias|proximos dias/.test(t)&&!diaEsp(t,2)},a:['para renovar hoje ou atrasado','para renovar hoje ou atrasados'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<=hj0()},
+  {g:'fim',rx:{test:t=>(/a renovar|para renovar|vence(m)? hoje|faltam|vencimento de hoje|renovar hoje|renovando|para renovac|renovac\w* (de |para )?hoje/.test(t))&&!/amanha|semana|7 dias|proximos dias/.test(t)&&!diaEsp(t,2)},a:['para renovar hoje ou atrasado','para renovar hoje ou atrasados'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<=hj0()},
   {g:'fim',rx:{test:t=>/atrasad|vencid/.test(t)&&!/pendent|pagamento|devendo/.test(t)},a:['com plano vencido (atrasado)','com plano vencido (atrasado)'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<hj0()},
   {g:'fim',rx:/amanha/,a:['que vence amanhã','que vencem amanhã'],v:i=>i.vp,p:i=>i.a&&Dh(i.df,addD(hj0(),1))},
   {g:'fim',rx:/semana|proximos 7 dias|7 dias|proximos dias/,a:['que vence nos próximos 7 dias','que vencem nos próximos 7 dias'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df>=hj0()&&i.df<=addD(hj0(),6)},
@@ -1398,8 +1399,14 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'fone',rx:/sem comercial/,a:['sem número comercial','sem número comercial'],p:i=>!i.com}],
  resumo(its){const A=its.filter(i=>i.a),P=A.filter(i=>i.pe),at=P.filter(i=>i.dp&&i.dp<hj0()),v=A.filter(i=>i.df&&i.df<=hj0());
   return `${its.length} clientes cadastrados: ${A.length} ativos e ${its.length-A.length} pausado${its.length-A.length==1?'':'s'}. Pendentes: ${P.length}${P.length?`, ${brl(somaV(P.map(i=>({v:i.pg}))))}`:''}${at.length?`, ${at.length} atrasado${at.length>1?'s':''}`:''}. Para renovar hoje ou atrasado: ${v.length}. Hoje: ${S.renovados.length} renovado${S.renovados.length==1?'':'s'}, ${S.retornados.length} retornado${S.retornados.length==1?'':'s'}, ${S.novos.length} novo${S.novos.length==1?'':'s'}, ${S.pausados.length} pausado${S.pausados.length==1?'':'s'}.`}};
+function dReceberHoje(t){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&i.dp&&i.dp<=h0),Ro=R.filter(i=>!P.includes(i)),sv=(a,f)=>r2(a.reduce((s,i)=>s+(f(i)||0),0)),cd=S.custoDia||9;
+ let liq=0,okl=true;try{R.forEach(i=>{liq+=calcV('R',i.vp,i.vp,i.c.plano,0).lc});P.forEach(i=>{const dk=i.n.toLowerCase(),dsc=(S.dsc||{})[dk]||0,v=i.vp-dsc,nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,i.c.cliente)),pri=nN?(nN.cu||0):(i.pg<v?r2(2*cd):0);liq+=calcV('P',i.pg,v,i.c.plano,pri).lc})}catch(e){okl=false}
+ const vR=sv(R,i=>i.vp),vP=sv(P,i=>i.pg),U=[...new Set(R.concat(P))];
+ let m=`Para receber hoje ou atrasados: renovações ${R.length}${R.length?', '+brl(vR):''}; pagamentos pendentes ${P.length}${P.length?', '+brl(vP):''}. Total ${brl(r2(vR+vP))}.${okl?` Líquido estimado, depois de imposto e anúncio: ${brl(r2(liq))}.`:''}`;
+ if(LISTA.test(t)&&U.length)m+=` Clientes: ${nomes(U.map(i=>i.n),12)}.`;return m}
 function dCli(t){CT=t;
- if(/renov/.test(t)&&!/renovad|renovaram|renovou/.test(t)&&/pendent|pagamento/.test(t)&&/\bhoje\b/.test(t)){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&Dh(i.dp,h0)),U=[...new Set(R.concat(P))],sv=(a,f)=>brl(r2(a.reduce((s,i)=>s+(f(i)||0),0)));
+ if(((/receber|previsao|prever|vou receber|liquido/.test(t)&&/\bhoje\b/.test(t)&&!/semana|7 dias|ontem|amanha|recebi/.test(t)))||(/renov/.test(t)&&!/renovad|renovaram|renovou/.test(t)&&/pendent|pagamento/.test(t)&&/\bhoje\b/.test(t)))return dReceberHoje(t);
+ if(false){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&Dh(i.dp,h0)),U=[...new Set(R.concat(P))],sv=(a,f)=>brl(r2(a.reduce((s,i)=>s+(f(i)||0),0)));
   return `Para renovar hoje ou atrasados: ${R.length}${R.length?', somando '+sv(R,i=>i.vp):''}. Com pagamento pendente para hoje: ${P.length}${P.length?', somando '+sv(P,i=>i.pg):''}. Juntos: ${U.length} cliente${U.length==1?'':'s'}${U.length?': '+nomes(U.map(i=>i.n),10):''}.`}
  if(/previsao|vou receber|a receber|prever/.test(t)){const I=itCli(),A=I.filter(i=>i.a),P=A.filter(i=>i.pe),h0=hj0(),d7=addD(h0,6),R=A.filter(i=>i.df&&i.df<=d7),H=R.filter(i=>i.df<=h0),Am=R.filter(i=>Dh(i.df,addD(h0,1)));return `Previsão: ${P.length} pendente${P.length==1?'':'s'} a receber, ${brl(somaV(P.map(i=>({v:i.pg}))))}. Renovações previstas até os próximos 7 dias: ${R.length} cliente${R.length==1?'':'s'}, ${brl(somaV(R.map(i=>({v:i.vp}))))}, sendo ${H.length} hoje ou atrasado${H.length==1?'':'s'} e ${Am.length} amanhã.`}
  const rc=achaCli(t,C),forte=rc.length&&rc[0].s>=3&&(rc.length==1||rc[0].s-rc[1].s>=2);if(forte)return info(rc[0].c)+(pend(rc[0].c)?'':'')+(rc[0].c.cel?'':'');
@@ -1432,7 +1439,7 @@ const nmCat=t=>{const nm=new Set([...(S.vars||[]).map(x=>x.d.trim()),...Object.k
 async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.test(t)?['E']:/pessoal/.test(t)?['P']:['E','P'],both=ent.length==2,out=[];
  const ln=(lb,fn,tot)=>{const v=ent.map(k=>[k,fn(k=='E'?X.E:X.P)]);return lb+': '+(both?`empresa ${brl(v[0][1])}, pessoal ${brl(v[1][1])}, total ${brl(r2(v[0][1]+v[1][1]))}`:`${SCN[ent[0]].toLowerCase()} ${brl(v[0][1])}`)};
  const fx=nmFixo(t),cat=nmCat(t);
- if(cat.length&&/gast|limite|falta|quanto (ja )?(gastei|gasto)|categoria/.test(t)){cat.forEach(n=>{const l=limOf(n),g=catGasto(n);out.push(l?`${n}: gasto ${brl(g)} de ${brl(l)} (${Math.round(g/l*100)}%), ${l>=g?'faltam '+brl(r2(l-g)):'passou '+brl(r2(g-l))}.`:`${n}: gasto ${brl(g)} no mês, sem limite definido.`)})}
+ if(cat.length&&/gast|limite|falta|quanto (ja )?(gastei|gasto)|categoria/.test(t)){cat.forEach(n=>{const l=limOf(n),g=catGasto(n);const yn=/\b(ainda|ja)\b.*\b(tenho|tem|sobra|resta|da|posso)\b|tenho limite|tem limite|posso gastar|sobrou/.test(t);out.push(l&&yn?(l>g?`Sim, ainda tem limite em ${n}: faltam ${brl(r2(l-g))} de ${brl(l)} (${Math.round(g/l*100)}% usado).`:`Não, o limite de ${n} acabou: gasto ${brl(g)} de ${brl(l)}, passou ${brl(r2(g-l))}.`):l?`${n}: gasto ${brl(g)} de ${brl(l)} (${Math.round(g/l*100)}%), ${l>=g?'faltam '+brl(r2(l-g)):'passou '+brl(r2(g-l))}.`:`${n}: gasto ${brl(g)} no mês, sem limite definido.`)})}
  else if(fx.length&&!/\bfixos\b/.test(t)){fx.forEach(f=>out.push(`${f.nome}: ${brl(f.valor)}, dia ${f.dia}, ${SCN[f.sc||'P'].toLowerCase()}${f.var?', variável':''}, ${f.incluso?'já pago':'ainda a pagar'}${f.cart?', no cartão':''}.`))}
 
  if(out.length)return out.join(' ');
@@ -1563,7 +1570,7 @@ const NAV=[
  [/notas? fiscais?|notas? a emitir|emitir notas?|emissao de notas?|\bnfs?e?\b|\bnotas\b/,'as notas a emitir',()=>nfs()],
  [/notificac|central de mensagens|mensagens para enviar|central/,'a central de notificações',()=>nt()],
  [/cinquenta vencidos|50 vencidos|entradas vencidas|50 reais vencidos/,'os R$ 50 vencidos',()=>e50v()],
- [/\bamr\b|contabilidade|contador|relatorio contabil/,'a AMR',()=>amr()],
+ [/\bamr\b|\b(a )?m r\b|\bmr\b|\bemerre\b|\ba erre\b|\bamer\b|contabilidade|contador|relatorio contabil/,'a AMR',()=>amr()],
  [/anuncios?|\bmeta\b|facebook|instagram|campanhas?|trafego/,'os anúncios Meta',()=>mtMain()],
  [/lancamentos?|gastos lancados|despesas lancadas|variaveis/,'os lançamentos',()=>lanc()],
  [/limites?|teto de gastos/,'os limites',()=>lim()],
@@ -1610,18 +1617,23 @@ async function acEmitirNotas(t){if(!/\b(emitir|emite|emita|emitam|emissao)\b/.te
 function acImposto(t){if(!/\b(alter\w*|mude|muda|mudar|troqu\w*|troca\w*|ajust\w*|defin\w*|coloc\w*|atualiz\w*|configur\w*|passe|passar)\b/.test(t)||!/\b(imposto|aliquota)\b/.test(t))return false;
  const m=w2n(t).match(/(\d+(?:\.\d+)?)\s*(?:%|por cento)?/);const v=m?+m[1]:0;if(!(v>0&&v<=100)){say('Qual porcentagem de imposto? Diga, por exemplo, alterar o imposto para oito vírgula quatro por cento.',listen);return true}
  const f=x=>String(x).replace('.',',');ask(`Alterar o imposto de ${f(IP())}% para ${f(v)}%. Confirma?`,async()=>{S.imp=v;await save();if(cur==='v5')fin();return `Imposto alterado para ${f(v)}%.`});return true}
-function acFixoPago(t){const fx=nmFixo(t);if(!fx.length||!/\b(marcar|marque|marca|dar baixa|da baixa|baixa|pagar|pague|paguei|quitar|quite|quitei)\b/.test(t)||!/\b(pago|paga|paguei|pagar|quitad[oa]|quitar|quitei|baixa)\b/.test(t)||/\b(quant[oa]s?|quais|qual)\b/.test(t))return false;
+function acFixoPago(t){const fx=nmFixo(t);
+ if(fx.length&&/\b(desmarc\w*|desfaz\w*|desfeit\w*|estorn\w*|volta\w*)\b|\bnao (esta |foi |ta )?pag[oa]\b|\bcomo (a )?pagar\b|\bcomo pendente\b/.test(t)&&!/\b(quant[oa]s?|quais|qual)\b/.test(t)){const f=fx[0];
+  if(f.var){say(`${f.nome.trim()} é um gasto variável, não tem como desmarcar pago.`);return true}
+  if(!f.incluso){say(`${f.nome.trim()} já está como não pago.`);return true}
+  ask(`Desmarcar o fixo ${f.nome.trim()}, ${brl(f.valor)}, como pago e devolver o valor. Confirma?`,async()=>{await fxTg(S.fixos.indexOf(f),false);return `Pronto, ${f.nome.trim()} voltou para a pagar.`});return true}if(!fx.length||!/\b(marcar|marque|marca|dar baixa|da baixa|baixa|pagar|pague|paguei|quitar|quite|quitei)\b/.test(t)||!/\b(pago|paga|paguei|pagar|quitad[oa]|quitar|quitei|baixa)\b/.test(t)||/\b(quant[oa]s?|quais|qual)\b/.test(t))return false;
  const f=fx[0];if(f.var){say(`${f.nome.trim()} é um gasto variável. Para lançar, diga lançar o valor em ${f.nome.trim()}.`);return true}
  if(f.incluso){say(`${f.nome.trim()} já está marcado como pago.`);return true}
  ask(`Marcar o fixo ${f.nome.trim()}, ${brl(f.valor)}, ${SCN[f.sc||'P'].toLowerCase()}${f.cart?', no cartão':''}, como pago. Confirma?`,async()=>{const i=S.fixos.indexOf(f);if((f.sc||'P')==='E'&&!f.var&&amrCf(f).on&&amrCf(f).ask){await fxTg(i,true)}else{f.incluso=true;if(f.valor>0)fxEf(f,1);amrFx(f,true);await save();if(cur==='v5')fp()}return `Pronto, ${f.nome.trim()} marcado como pago.`});return true}
-function acGasto(t){const tt=w2n(t),v=valOf(tt);if(!(v>0))return false;
+function acGasto(t){const tt=w2n(t);let v=valOf(tt);const sv0=/\b(lanca|lancar|lance|registra|registrar|registre|anota|anotar|anote|inclui|incluir|inclua|adiciona|adicionar|adicione|coloca|colocar)\b/.test(t);if(!(v>0)&&sv0&&/\b(real|conto|pila)\b/.test(tt)&&!/\d/.test(tt))v=1;if(!(v>0)&&!sv0)return false;
  if(!/\b(lanca|lancar|lance|lancamento|gastei|gasto|registra|registrar|registre|anota|anotar|anote|inclui|incluir|inclua|adiciona|adicionar|adicione|paguei|comprei|coloca|colocar)\b/.test(t))return false;
  const DROP=new Set('lanca lancar lance lancamento gastei gasto gastos registra registrar registre anota anotar anote inclui incluir inclua adiciona adicionar adicione paguei comprei coloca colocar variavel variaveis reais real centavos centavo conto contos pila pilas empresa pessoal fixo fixos lista de do da dos das em no na nos nas com um uma para pra por favor e a o os as meu minha ao aos que foi'.split(' '));
  const sc=/\bempresa\b/.test(t)?'E':/\bpessoal\b/.test(t)?'P':(S.lastSc||'P');
- const fim=nome=>{const nm=['Mercado','Cigarro','Combustível',...(S.fixos||[]).filter(f=>f.var).map(f=>f.nome)],k=nz(nome),f=nm.find(x=>nz(x)===k)||nm.find(x=>k.length>=5&&lev(nz(x),k)<=1);
+ const fim=nome=>{const nm=[...new Set(['Mercado','Cigarro','Combustível',...(S.fixos||[]).filter(f=>f.var).map(f=>f.nome.trim()),...(S.vars||[]).map(x=>String(x.d).trim()).filter(Boolean),...Object.keys(S.lim||{})])],k=nz(nome),f=nm.find(x=>nz(x)===k)||nm.filter(x=>nz(x).length>=3&&new RegExp('\\b'+nz(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(k)).sort((a,b)=>b.length-a.length)[0]||nm.find(x=>k.length>=5&&lev(nz(x),k)<=1);
   nome=f||nome.replace(/\b\w/g,c=>c.toUpperCase());const fx=(S.fixos||[]).find(x=>x.var&&nz(x.nome)===nz(nome));const esc2=fx?(fx.sc||'P'):sc;
   ask(`Lançar ${brl(v)} em ${nome}, ${SCN[esc2].toLowerCase()}${fx?', na lista de gastos fixos':''}. Confirma?`,async()=>{const w=addVarEntry(nome,v,!!fx,esc2);await save();return w||`Lançado ${brl(v)} em ${nome}, ${SCN[esc2].toLowerCase()}.`})};
  const nome=tt.split(' ').filter(w=>w&&!/^[\d.]+$/.test(w)&&!DROP.has(w)).join(' ');
+ if(!(v>0)){if(!nome)return false;btns=[['❌ Cancelar',cancelar]];ans=async T=>{for(const x of T){if(NO.test(x)){cancelar();return true}const val=valOf(w2n(nz(x)));if(val>0){ans=null;btns=[];v=val;fim(nome);return true}}return false};say(`Qual o valor do lançamento em ${nome}?`,listen);return true}
  if(!nome){btns=[['❌ Cancelar',cancelar]];ans=async T=>{const n=T[0].split(' ').filter(w=>w&&!DROP.has(w)).join(' ');if(!n)return false;ans=null;btns=[];fim(n);return true};say(`Lançar ${brl(v)} em qual gasto? Diga o nome, por exemplo mercado.`,listen);return true}
  fim(nome);return true}
 async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('Ainda há ações na fila sendo enviadas. Tente de novo em instantes.');return}const L=(window.FDL||[]).filter((r,i)=>$('#fd'+i)&&$('#fd'+i).checked).map(r=>r.c),nf=S.nf||[],tot=r2(nf.reduce((a,n)=>a+(num(n.valor)||vp(n.plano)),0));
@@ -1631,7 +1643,7 @@ async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('A
 
 /* ---------- suporte: registro do que a voz não entendeu / errou, e correção de palavras parecidas ---------- */
 const VOC='valor saldo disponivel livre gastos gastei gasto despesas despesa clientes cliente pendentes pendente vencimento vencimentos vencem renovar renovou renovados pausados pausado pausar investimento investimentos aporte aportes proventos dividendos rendimento receita lucro liquido faturamento imposto cartao fatura fixos variaveis hoje ontem semana entradas retornados novos quanto quantos quantas quais tenho paguei lancamentos anuncio anuncios notas emitir relatorio empresa pessoal total fundo reserva custo sobra'.split(' ');
-const COMUM=new Set('para como esta estao tudo mais menos meus minha minhas seus pelo pela pelos desse dessa isso esse essa onde quando porque qual quem tem foi sao dia dias mes meses ano anos hoje agora todos todas nome plano planos conta contas geral'.split(' '));
+const COMUM=new Set('pagar pagos pagas pagou pagamentos falta faltam ainda esse essa lancar lancamento lancamentos renovar renovacao renovacoes reativar pausar para como esta estao tudo mais menos meus minha minhas seus pelo pela pelos desse dessa isso esse essa onde quando porque qual quem tem foi sao dia dias mes meses ano anos hoje agora todos todas nome plano planos conta contas geral'.split(' '));
 function corrige(t){let nomes;try{nomes=new Set(C.concat(S.fixos||[]).map(x=>nz(x.cliente||x.nome||'')).join(' ').split(' '))}catch(e){nomes=new Set()}
  return t.split(' ').map(w=>{if(w.length<4||/\d/.test(w)||COMUM.has(w)||VOC.includes(w)||nomes.has(w))return w;const lim=w.length>=5?2:1;let best=null,bd=9,tie=0;for(const v of VOC){if(Math.abs(v.length-w.length)>lim)continue;const d=lev(w,v);if(d<bd){bd=d;best=v;tie=0}else if(d==bd)tie++}return best&&bd<=lim&&!tie?best:w}).join(' ')}
 function snapV(){try{if(diario())save();const x=fpCalc(),f={};Object.keys(x).forEach(k=>{if(typeof x[k]=='number')f[k]=r2(x[k])});return{fin:f,dia:hd(),mes:S.mes,saldoE:S.saldoE,saldoP:S.saldoP,cartaoE:S.cartaoE,cartaoP:S.cartaoP,fundo:S.fundo}}catch(e){return{erro:String(e&&e.message||e)}}}
@@ -1654,7 +1666,7 @@ window.vozEncerra=()=>{sess=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e)
 function canon(t){
  if(!/\b(quant[oa]s?|quais|qual|quem)\b/.test(t)){
   if(/\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*|fech\w*|bater)\b.*\b(dia|expediente|movimento)\b|\b(dia|expediente)\b.*\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*)\b|\bfechamento\b/.test(t))return 'fechar dia'}
- t=t.replace(/\bpra\b/g,'para').replace(/\bpro\b/g,'para o');
+ t=t.replace(/\bfix(a|as)\b/g,'fixos').replace(/\bpra\b/g,'para').replace(/\bpro\b/g,'para o');
  t=t.replace(/\b(acertou|acertaram|liquidou|liquidaram|efetuou o pagamento|fez o pagamento|confirm(a|ar|e) (o )?pagamento|recebi (o )?pagamento)\b/g,'pagou');
  t=t.replace(/\b(suspend(e|er|a)|desativ(a|ar|e)|inativ(a|ar|e)|interromp(e|er|a))\b/g,'pausar');
  t=t.replace(/\b(prorrog(a|ar|ue)|estend(e|er|a)|extend(e|er))\b/g,'renovar');
@@ -1665,6 +1677,7 @@ function canon(t){
  t=t.replace(/\b(quero ver|me mostra|me mostre|veja|ver)\b(?! (quant|quais|qual|quem|como|total))/g,'abrir');
  return t.replace(/\s+/g,' ').trim()}
 async function route(t){t=canon(t);
+ if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();say('Abri o suporte da voz.');return true}
  if(/\b(ajuda|comandos|o que (voce )?(sabe|faz|pode)|o que posso)\b/.test(t)){say(AJUDA);return true}
  if(/mais (rapido|depressa)|acelera/.test(t)){RT=Math.min(2,r2(RT+0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais rápido.');return true}
