@@ -1293,7 +1293,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=30;
+const VERSAO=31;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1349,7 +1349,7 @@ const nomes=(a,n=6)=>a.slice(0,n).map(c=>String(c.cliente||c).trim()).join(', ')
 const dd=d=>fm(d).slice(0,5);
 
 /* ---------- achar cliente pelo que foi falado ---------- */
-const STOP=new Set(('ativar ative final terminado terminada terminando finalizado reativar reative reativa reativacao reativo despausar retomar retoma onde fica mensagem mensagens msg cobrar cobra avisar avisa notificar notifica contatar contata envie mande de do da dos das o a os as no na nos nas num numa pra para por com em e ao aos um uma uns que se me meu minha favor cliente clientes plano baixa dar pagou pago pagamento pagar quitou quitar pausa pausar pause renova renovar renove renovacao renovou abrir abre ficha mostrar mostra ver whats whatsapp zap zapzap comercial pessoal mandar manda enviar envia chamar fala falar buscar busca procurar procura pesquisar pesquisa hoje ontem anteontem amanha depois desconto pendente pendencia reais real gold smart advanced mega plus combo dia vence vencimento inicio quero queria preciso pode poder voce agora aqui ai la situacao informacoes info dados quando como esta qual quais quanto quem tem ter fazer faz lancar lanca ele ela esse essa isso').split(' '));
+const STOP=new Set(('mesmo mesma igual atual manter mantem sempre ativar ative final terminado terminada terminando finalizado reativar reative reativa reativacao reativo despausar retomar retoma onde fica mensagem mensagens msg cobrar cobra avisar avisa notificar notifica contatar contata envie mande de do da dos das o a os as no na nos nas num numa pra para por com em e ao aos um uma uns que se me meu minha favor cliente clientes plano baixa dar pagou pago pagamento pagar quitou quitar pausa pausar pause renova renovar renove renovacao renovou abrir abre ficha mostrar mostra ver whats whatsapp zap zapzap comercial pessoal mandar manda enviar envia chamar fala falar buscar busca procurar procura pesquisar pesquisa hoje ontem anteontem amanha depois desconto pendente pendencia reais real gold smart advanced mega plus combo dia vence vencimento inicio quero queria preciso pode poder voce agora aqui ai la situacao informacoes info dados quando como esta qual quais quanto quem tem ter fazer faz lancar lanca ele ela esse essa isso').split(' '));
 const tokName=n=>{const t=nz(n);return{w:t.split(' ').filter(x=>/[a-z]/.test(x)&&x.length>1),d:(t.match(/\d+/g)||[]).join('').replace(/^0+/,'')}};
 function achaCli(t,pool){t=t.replace(/\b(desconto|dia)( de)? \d+(\.\d+)?/g,' ').replace(/\d+(\.\d+)? (reais|real)\b/g,' ');const q=digSeq(t).split(' ').filter(x=>x&&!STOP.has(x));
  const qd=q.filter(x=>/^\d{3,}$/.test(x)).map(x=>x.replace(/^0+/,'')).filter(Boolean),qw=q.filter(x=>/[a-z]/.test(x)&&x.length>2&&!isN(x)&&x!=='mil');
@@ -1373,11 +1373,14 @@ function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catc
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
 /* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
 const nzw=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
-function live(my,fala){if(!SR)return;const W=new Set(nzw(fala));let n=0;const go=()=>{if(sayId!==my||st!='falando'||!ans||n++>12)return;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=3;me.continuous=false;
- me.onresult=e=>{if(rec!==me||sayId!==my||!ans)return;const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const t=nzw(a[0]);
-  const ok=t.length>0&&t.length<=3&&(YES.test(t.join(' '))||NO.test(t.join(' ')))&&!t.some(w=>W.has(w));
+function live(my,fala){if(!SR)return;const FN=nzw(fala).join(' ');let n=0;const go=()=>{if(sayId!==my||st!='falando'||!ans||!ans.live||n++>12)return;const f=ans,W=new Set(nzw(fala)),me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=3;me.continuous=false;
+ me.onresult=async e=>{if(rec!==me||sayId!==my||ans!==f)return;const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const t=nzw(a[0]),tx=t.join(' ');
+  let ok=t.length>0&&t.length<=4&&!(t.length>=2&&(' '+FN+' ').includes(' '+tx+' '));
+  if(ok&&f.strict)ok=t.length<=3&&(YES.test(tx)||NO.test(tx))&&!t.some(w=>W.has(w));
   if(!ok){setTimeout(go,150);return}
-  sayId++;try{TTS&&TTS.cancel()}catch(x){}clearTimeout(TM);rec=null;st='idle';B.classList.remove('on');heard=a[0]||'';lastF=false;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
+  let res=false;try{res=await f(a.map(nz).filter(Boolean))}catch(x){res=false}
+  if(!res){setTimeout(go,150);return}
+  heard=a[0]||'';lastF=false;if(sayId===my){sayId++;try{TTS&&TTS.cancel()}catch(x){}clearTimeout(TM);if(st=='falando')st='idle';rec=null;B.classList.remove('on')}draw()};
  me.onerror=()=>{if(rec===me)setTimeout(go,300)};me.onend=()=>{if(rec===me&&sayId===my&&st=='falando')setTimeout(go,150)};
  try{me.start()}catch(x){}};go()}
 function say(msg,after,spk){if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
@@ -1400,12 +1403,12 @@ const cancelar=()=>{ans=null;btns=[];say('Cancelado.')};
 function refrescaTela(){try{const h=((document.querySelector('#'+cur+' h2')||{}).textContent||'').toUpperCase();if(/LIMITES/.test(h))lim();else if(/GESTÃO FINANCEIRA|FINAN[ÇC]A PESSOAL/.test(h))fin();else if(/^LAN[ÇC]AMENTOS$/.test(h.trim()))lanc();else if(/^VARIÁVEIS$/.test(h.trim()))vv()}catch(e){}}
 function ask(msg,fn,spk){const go=async()=>{ans=null;btns=[];st='exec';draw();let m;try{m=await fn()}catch(e){m='Deu erro: '+(e&&e.message||e)}st='idle';refrescaTela();say(m||'Pronto.')};
  btns=[['✅ Confirmar',go],['❌ Cancelar',cancelar]];
- ans=async T=>{const t=T.join(' | ');if(NO.test(t)){cancelar();return true}if(YES.test(t)){go();return true}if(T[0].split(' ').length<=2){say('Diga confirmar ou cancelar.',listen);return true}return false};
+ ans=async T=>{const t=T.join(' | ');if(NO.test(t)){cancelar();return true}if(YES.test(t)){go();return true}if(T[0].split(' ').length<=2){say('Diga confirmar ou cancelar.',listen);return true}return false};ans.live=1;ans.strict=1;
  say(msg,listen,spk)}
 const falaCli=c=>{const m=String(c.cliente).trim().match(/^(.*?)\s*(\d{3,})$/);return m?`${m[1]}, código ${m[2].split('').join(' ')}`:String(c.cliente).trim()};
 function ops(L,cont){const dg=c=>c.cliente.replace(/\D/g,''),mx=Math.max(...L.map(c=>dg(c).length));let K=3;while(K<mx&&new Set(L.map(c=>dg(c).slice(-K))).size<L.length)K++;const pick=c=>{ans=null;btns=[];cont(c)};
  btns=L.map((c,i)=>[(i+1)+' · '+c.cliente,()=>pick(c)]).concat([['❌ Cancelar',cancelar]]);
- ans=async T=>{for(const t of T){if(NO.test(t)){cancelar();return true}const n=ORD(t);if(n&&n<=L.length){pick(L[n-1]);return true}const r=achaCli(t,L);if(r.length&&(r.length==1||r[0].s-r[1].s>=1)){pick(r[0].c);return true}}return false};
+ ans=async T=>{for(const t of T){if(NO.test(t)){cancelar();return true}const n=ORD(t);if(n&&n<=L.length){pick(L[n-1]);return true}const r=achaCli(t,L);if(r.length&&(r.length==1||r[0].s-r[1].s>=1)){pick(r[0].c);return true}}return false};ans.live=1;
  say('Achei '+L.length+': '+L.map((c,i)=>(i+1)+', '+c.cliente).join('. ')+'. Qual deles?',listen,'Achei '+L.length+': '+L.map((c,i)=>(i+1)+', '+c.cliente.replace(/\s*\d{4,}\s*$/,'').trim()+(/\d{3}/.test(c.cliente)?' final '+c.cliente.replace(/\D/g,'').slice(-K).split('').join(' '):'')).join('. ')+'. Qual deles?')}
 async function withAlert(fn){const A=window.alert,m=[];window.alert=x=>{m.push(String(x))};try{await fn()}finally{window.alert=A}return m}
 
@@ -1721,12 +1724,12 @@ function acRenovarBusca(t){const pool=ativos().filter(c=>{const d=pd(c.fim);retu
  if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c));
  const r=achaCli(t,C);if(!r.length){fail='Não achei esse cliente. Diga o nome e os números.';return false}
  const go=()=>{ans=null;btns=[];needCli(t,C,c=>acRenovar(t,c))};btns=[['✅ Procurar em todos',go],['❌ Cancelar',cancelar]];
- ans=async T=>{const x=T.join(' | ');if(NO.test(x)){cancelar();return true}if(YES.test(x)){go();return true}return false};
+ ans=async T=>{const x=T.join(' | ');if(NO.test(x)){cancelar();return true}if(YES.test(x)){go();return true}return false};ans.live=1;ans.strict=1;
  say(`Não achei esse cliente entre os que precisam renovar hoje. Quer procurar entre todos os clientes?`,listen);return true}
 function acRenovar(t,c,rt,ex){const VB=rt?'Reativar':'Renovar',vb=rt?'reativar':'renovar';
- const nw=tokName(c.cliente).w,tp=t.split(' ').filter(w=>!nw.includes(w)).join(' '),pl=planOf(tp)||planOf(ex||''),atual=planOf(nz(c.plano));
+ const nw=tokName(c.cliente).w,tp=t.split(' ').filter(w=>!nw.includes(w)).join(' '),atual=planOf(nz(c.plano)),pl=planOf(tp)||planOf(ex||'')||(atual&&/\b(mesm[oa] plano|o mesmo|mesmo de sempre)\b/.test(t)?atual:null);
  if(!pl){const an=atual?atual.split(' - ')[0]:'';btns=[['Mesmo plano'+(an?' ('+an+')':''),()=>{ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano))}],['❌ Cancelar',cancelar]];
-  ans=async T=>{for(const x of T){if(NO.test(x)){cancelar();return true}if(planOf(x)){ans=null;btns=[];acRenovar(t,c,rt,x);return true}if(atual&&/\b(mesmo|igual|atual|esse|mantem|manter|o de sempre)\b/.test(x)){ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano));return true}}return false};
+  ans=async T=>{for(const x of T){if(NO.test(x)){cancelar();return true}if(planOf(x)){ans=null;btns=[];acRenovar(t,c,rt,x);return true}if(atual&&/\b(mesmo|igual|atual|esse|mantem|manter|o de sempre)\b/.test(x)){ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano));return true}}return false};ans.live=1;
   say(`Qual plano para ${c.cliente.trim()}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`,listen,`Qual plano para ${falaCli(c)}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`);return}
  const tt=w2n(t),dm=tt.match(/desconto(?: de)? (\d+(?:\.\d+)?)/),ds=dm?+dm[1]:0,pe=/\b(pendente|pendencia|depois|a prazo|fiado|vai pagar)\b/.test(t),ini=/anteontem/.test(t)?-2:/\bontem\b/.test(t)?-1:0;
  let dv=null;if(pe){const hj=hoje(),m=tt.match(/dia (\d{1,2})/);if(/depois de amanha/.test(t))dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+2);else if(m){dv=new Date(hj.getFullYear(),hj.getMonth(),+m[1]);if(dv<hj)dv=new Date(hj.getFullYear(),hj.getMonth()+1,+m[1])}else dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+1)}
