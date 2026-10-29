@@ -131,7 +131,7 @@ function lista(){const q=$('#q').value.toLowerCase().trim(),h=hoje();
   const inf=p?`📅 ${d?fm(d).slice(0,5):''} - ${esc(c.pg)} | ${esc(c.plano)}${late?` <b style="color:#C62828">· ${d.getTime()==h.getTime()?'vence hoje':'atrasado '+Math.round((h-d)/864e5)+'d'}</b>`:''}`:esc(c.plano);
   return `<div class="card it${late?' late':''}" onclick="ficha(${C.indexOf(c)})">${visto(n)?'<span class="vb">✔ Visto</span>':''}<div class="av">${esc((n[0]||'').toUpperCase()+dg)}</div><div><b>${esc(n)}</b><small>${inf}</small></div></div>`}).join('')||`<p style="text-align:center;color:#777">${cl&&!C.length?'Carregando clientes...':'Nenhum cliente'}</p>`}
 const btn=(t,cor,f,x='')=>`<button class="bg" style="background:${cor};${x}" onclick="${f}">${t}</button>`;
-function oper(){const v=vence().length,P=S.pausados.length,ent=S.nf.filter(n=>n.data===fm(new Date())&&num(n.valor)!==50).reduce((a,n)=>a+num(n.valor),0);
+function oper(){const v=vence().length,P=S.pausados.length,ent=r2(((S.hist||{})[hk()]||{}).cx||0);
  const st=(t,n,c)=>`<div class="card st"><span>${t}</span><strong style="color:${c}">${n}</strong></div>`;
  $('#v2').innerHTML=`<h2>GESTÃO OPERACIONAL</h2><div class="g3">${st('PENDENTES',ativos().filter(pend).length,'#E53935')}${st('FALTAM',vence().filter(c=>!S.pausados.some(p=>p.trim().toLowerCase()===c.cliente.trim().toLowerCase())).length,'#FFB300')}${st('PAUSADOS',P,'#9E9E9E')}${st('ATIVOS',ativos().length,'#1976D2')}${st('RENOVADOS',S.renovados.length,'#2E7D32')}${st('REN. (MÊS)',S.renmes.length,'#00796B')}</div>
  <div class="g3">${st('RET. (HOJE)',S.retornados.length,'#4CAF50')}${st('NOVOS',S.novos.length,'#388E3C')}${st('1ª RENOVA',S.primeira.length,'#546E7A')}</div>
@@ -1293,7 +1293,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=29;
+const VERSAO=30;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
