@@ -1293,7 +1293,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=26;
+const VERSAO=27;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1371,9 +1371,18 @@ function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;
  P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-s>🛠 Suporte</button></div>`}
 function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
+/* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
+const nzw=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
+function live(my,fala){if(!SR)return;const W=new Set(nzw(fala));let n=0;const go=()=>{if(sayId!==my||st!='falando'||!ans||n++>12)return;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=3;me.continuous=false;
+ me.onresult=e=>{if(rec!==me||sayId!==my||!ans)return;const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const t=nzw(a[0]);
+  const ok=t.length>0&&t.length<=3&&(YES.test(t.join(' '))||NO.test(t.join(' ')))&&!t.some(w=>W.has(w));
+  if(!ok){setTimeout(go,150);return}
+  sayId++;try{TTS&&TTS.cancel()}catch(x){}clearTimeout(TM);rec=null;st='idle';B.classList.remove('on');heard=a[0]||'';lastF=false;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
+ me.onerror=()=>{if(rec===me)setTimeout(go,300)};me.onend=()=>{if(rec===me&&sayId===my&&st=='falando')setTimeout(go,150)};
+ try{me.start()}catch(x){}};go()}
 function say(msg,after,spk){if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
  if(!TTS||typeof SpeechSynthesisUtterance=='undefined'){st='idle';fin();return}
- try{TTS.cancel();const u=new SpeechSynthesisUtterance(fix(spk||msg));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;u.onend=fin;u.onerror=fin;st='falando';draw();TTS.speak(u);setTimeout(fin,Math.min(70000,4000+fix(spk||msg).length*130))}catch(e){fin()}}
+ try{TTS.cancel();const u=new SpeechSynthesisUtterance(fix(spk||msg));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;u.onend=fin;u.onerror=fin;st='falando';draw();TTS.speak(u);if(ans&&SR)live(my,fix(spk||msg));setTimeout(fin,Math.min(70000,4000+fix(spk||msg).length*130))}catch(e){fin()}}
 function listen(f){if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador. Use o Chrome atualizado.');return}
  if(st=='exec')return;sayId++;try{TTS&&TTS.cancel()}catch(e){}clearTimeout(TM);try{rec&&rec.abort()}catch(e){}
  sess=true;fmode=!!f;off=false;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=4;me.continuous=false;
