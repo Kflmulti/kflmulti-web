@@ -522,7 +522,7 @@ function nfv(){const L=NFP.linhas,pr=L.filter(x=>!nfF(x)),mA=pr.filter(mesAtual)
  ${HM?`<div class="card" style="background:#EDE7F6;border-color:#7E57C2;line-height:1.5">🧪 <b>HOMOLOGAÇÃO</b> — as notas vão para o ambiente de TESTE do sistema nacional (não valem nada) e <b>nada é gravado na planilha</b>. Só o <b>✍ Nº MANUAL</b> grava.</div>`:''}${NFP.modo=='real'?`<div class="card" style="background:#FFEBEE;border-color:#C62828;line-height:1.5">🚀 <b>EMISSÃO REAL</b> — cada nota emitida é de verdade e o número vai para a coluna E.</div>`:''}${NFP.modo=='simulacao'?`<div class="card" style="background:#FFF8E1;border-color:#FFB300;line-height:1.5">🧪 <b>MODO SIMULAÇÃO</b> — nenhuma nota é emitida de verdade e nada é gravado na planilha pela simulação. Só o botão <b>✍ Nº MANUAL</b> grava (o número que você digitar, na coluna E).</div>`:''}
  <div class="g3">${st('A EMITIR (MÊS)',mA.length,'#E65100')}${st('ANTERIORES',an.length,an.length?'#C62828':'#9E9E9E')}${st(EM&&!HM?'EMITIDAS':HM?'TESTES':'SIMULADAS',sm.length,'#6A1B9A')}</div>
  ${d<=3&&mA.length+an.length?`<div class="card" style="border-left:6px solid ${d==0?'#C62828':'#FF9800'}"><b>Prazo:</b> todas as notas do mês até o <b>último dia, 22h</b> — ${d==0?'<b style="color:#C62828">é hoje!</b>':'faltam '+d+' dia(s)'}. No último dia, quem ainda não enviou dados pode sair como não identificado.</div>`:''}
- <div style="display:flex;gap:8px">${EM?'':'<button class="bg" style="background:#B45309;border-radius:14px" onclick="nfLote()">🧾 EMITIR TUDO (SIMULAÇÃO)</button>'}</div>
+ <div style="display:flex;gap:8px">${EM?`<button class="bg" style="background:${HM?'#6A1B9A':'#C62828'};border-radius:14px" onclick="nfFila()">🚀 EMITIR TODAS EM SEQUÊNCIA${HM?' (TESTE)':''}</button>`:'<button class="bg" style="background:#B45309;border-radius:14px" onclick="nfLote()">🧾 EMITIR TUDO (SIMULAÇÃO)</button>'}</div>
  <button class="bg" style="margin-top:8px;border-radius:14px;background:${NFS_PR?'#2E7D32':'#455A64'}" onclick="nfPr()">${NFS_PR?'✅ MOSTRANDO SÓ AS PRONTAS ('+nPr+') — toque para ver todas':'✅ VER SÓ AS COM DADOS COMPLETOS ('+nPr+')'}</button>
  ${sec('A emitir — mês atual',pf(mA))}${sec('⚠ Meses anteriores sem número',pf(an))}${sec(EM&&!HM?'Emitidas':HM?'Emitidas em teste':'Simuladas',sm)}${(NFP.emitidas||[]).length?`<div class="lb" style="margin-top:14px">${HM?'Últimas emitidas em teste':'Últimas emitidas pelo app'}</div>${NFP.emitidas.map(e=>`<div class="card" style="margin:6px 0;padding:8px 12px;font-size:14px"><b>NFS-e ${esc(e.numero||e.nfse)}</b> · ${esc(e.cliente)}<div style="color:#777;font-size:12px">${esc(e.data)}${e.gravada?' · gravada na planilha':''}${e.aviso?' · ⚠ '+esc(e.aviso):''}</div>${e.chave?`<button class="bt" style="height:30px;font-size:12px;padding:0 10px;margin-top:4px" onclick="nfPdfE(${NFP.emitidas.indexOf(e)})">📄 PDF</button>`:''}</div>`).join('')}`:''}
  ${L.length?'':'<p style="text-align:center;color:#777">Nenhuma nota pendente na planilha. 🎉</p>'}
@@ -546,6 +546,43 @@ const nfEmit=run(async i=>{const x=NFP.linhas[i],s=nfSit(x),HM=NFP.modo=='homolo
  if(r.confirmar&&r.confirmar.opcoes){const c=r.confirmar,o=c.opcoes;const t2=await pm((c.motivo||'O CEP '+c.antigo+' do cadastro não existe')+' A rua "'+c.rua+'" tem mais de um CEP. Qual é o certo?\n\n'+o.map((e,j)=>(j+1)+') '+e.rotulo+' — CEP '+e.cep).join('\n')+'\n\nDigite o número (ou cancele):');const n=parseInt(t2,10);if(!(n>=1&&n<=o.length))return;r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid,cepOk:o[n-1].cep}})}
  else if(r.confirmar){const c=r.confirmar;if(!confirm((c.motivo||'O CEP '+c.antigo+' do cadastro não existe.')+'\nEndereço no cadastro: "'+c.rua+'".\n\nAchei algo parecido:\n'+c.rotulo+'\nCEP '+c.cep+'\n\nUsar esse CEP na nota'+(HM?'':' e corrigir o CEP na BdNfs')+'?'))return;r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid,cepOk:c.cep}});}
  if(r.ok)alert((HM?'NOTA DE TESTE emitida (não vale)':'NOTA EMITIDA')+'\n\nNFS-e nº '+(r.em.numero||'?')+'\nCliente: '+x.cliente+'\n'+(r.em.gravada?'Número gravado na coluna E da planilha.':HM?'Nada foi gravado na planilha (teste).':'')+(r.em.aviso?'\n\n⚠ '+r.em.aviso:''));else alert(r.em&&r.em.erro?r.em.erro:'Não foi emitida.');await nfLoad();nfv()});
+
+/* ---------- fila: emite uma nota atrás da outra, sozinho ---------- */
+const NFMAX=500;let NFQ=null;
+const nfK=x=>x.linha+'|'+x.data+'|'+x.cliente,nfV=x=>{const n=parseFloat(String(x.valor).replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.'));return isNaN(n)?0:n};
+function nfFila(){if(NFQ&&NFQ.on){nfFilaDraw();tela('v6');return}const HM=NFP.modo=='homologacao',L=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')),G={pronta:[],lib:[],espera:[],bloq:[]},inc=NFP.linhas.filter(x=>!nfF(x)&&x.em&&x.em.status=='incerto');L.forEach(x=>G[nfSit(x).k].push(x));
+ const lst=(t,a,cor)=>a.length?`<div class="card" style="border-left:6px solid ${cor};margin:8px 0"><b>${t} (${a.length})</b>${a.map(x=>`<div style="font-size:14px;color:#444">• ${esc(x.cliente)} — ${esc(x.valor)}${nfV(x)>NFMAX?' <b style="color:#C62828">⚠ valor alto</b>':''} <small style="color:#888">${esc(x.data.slice(0,5))}</small></div>`).join('')}</div>`:'';
+ const Q=G.pronta.concat(G.lib),n=Q.length,tot=Q.reduce((a,x)=>a+nfV(x),0);
+ $('#v6').innerHTML=`<h2>EMITIR EM SEQUÊNCIA</h2><div class="lb" style="text-align:center">${HM?'🧪 TESTE — não vale nada.':'⚠ VALE DE VERDADE.'} Confira a lista.</div>${lst('✅ Identificadas',G.pronta,'#2E7D32')}${lst('🔓 Não identificadas (plano acabou / último dia / mês anterior)',G.lib,'#1976D2')}${lst('⏳ Ficam de fora — aguardando dados',G.espera,'#FF9800')}${lst('🚫 Ficam de fora — CPF/CNPJ inválido',G.bloq,'#C62828')}${lst('❓ Ficam de fora — resultado incerto (use CONSULTAR)',inc,'#C62828')}
+ <div class="card" style="font-size:14px;line-height:1.5">Emite uma de cada vez, sozinho. Se der erro em uma, anota e segue. CEP duvidoso fica para você. Valor acima de ${brl(NFMAX)} o app pergunta antes. Pode parar a qualquer momento.</div>
+ ${n?btn('🚀 CONFIRMAR — '+n+' nota(s) · '+brl(tot),HM?'#6A1B9A':'#C62828','nfFilaGo()'):'<p style="text-align:center;color:#777">Nada para emitir agora.</p>'}${btn('VOLTAR','#9E9E9E','nfv()')}`;tela('v6');scrollTo(0,0)}
+function nfFilaDraw(){if(cur!=='v6'||!NFQ)return;const q=NFQ,HM=q.hm,li=(a,f)=>a.map(f).join('');
+ $('#v6').innerHTML=`<h2>${q.on?'EMITINDO…':'FILA CONCLUÍDA'}</h2>${q.on?`<div class="card" style="text-align:center;font-size:17px"><b>${q.i+1} de ${q.itens.length}</b><div style="margin-top:4px">${esc(q.atual||'')}</div><div style="color:#777;font-size:13px;margin-top:6px">${q.stop?'Parando depois desta nota…':'Não feche o app até terminar.'}</div></div>`:''}
+ ${q.ok.length?`<div class="card" style="border-left:6px solid #2E7D32;margin:8px 0"><b>✅ Emitidas (${q.ok.length})</b>${li(q.ok,e=>`<div style="font-size:14px">• ${esc(e.c)} — nº ${esc(e.n)}${e.av?` <span style="color:#C62828">⚠ ${esc(e.av)}</span>`:''}</div>`)}</div>`:''}
+ ${q.err.length?`<div class="card" style="border-left:6px solid #C62828;margin:8px 0"><b>❌ Com problema (${q.err.length})</b>${li(q.err,e=>`<div style="font-size:14px">• ${esc(e.c)} — ${esc(e.m)}</div>`)}</div>`:''}
+ ${q.pul.length?`<div class="card" style="border-left:6px solid #FF9800;margin:8px 0"><b>⏭ Puladas (${q.pul.length})</b>${li(q.pul,e=>`<div style="font-size:14px">• ${esc(e.c)} — ${esc(e.m)}</div>`)}</div>`:''}
+ ${q.on?btn(q.stop?'PARANDO…':'⏹ PARAR','#B71C1C','nfFilaStop()'):btn('VOLTAR ÀS NOTAS','#9E9E9E','nfs()')}`;scrollTo(0,0)}
+function nfFilaStop(){if(NFQ){NFQ.stop=true;nfFilaDraw()}}
+const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert('Erro: '+e.message)}})(async()=>{if(NFQ&&NFQ.on)return;await nfLoad();const HM=NFP.modo=='homologacao',itens=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k)).map(x=>({linha:x.linha,data:x.data,cliente:x.cliente,valor:x.valor,k:nfK(x)}));
+ if(!itens.length){toast('Nada para emitir');return nfv()}
+ const q=NFQ={on:true,stop:false,hm:HM,itens,i:0,atual:'',ok:[],err:[],pul:[]};let wl=null;try{wl=await navigator.wakeLock.request('screen')}catch(e){}
+ let seg=0;
+ for(let i=0;i<itens.length&&!q.stop;i++){q.i=i;const it=itens[i];q.atual=it.cliente+' — '+it.valor;nfFilaDraw();
+  if(i>0){try{await nfLoad()}catch(e){q.err.push({c:it.cliente,m:'Perdi a conexão antes desta nota. A fila parou.'});break}}
+  const x=NFP.linhas.find(y=>nfK(y)==it.k);
+  if(!x||nfF(x)){q.pul.push({c:it.cliente,m:'já estava emitida'});continue}
+  if(x.em&&x.em.status=='incerto'){q.pul.push({c:it.cliente,m:'resultado incerto — use CONSULTAR'});continue}
+  const s=nfSit(x);if(!['pronta','lib'].includes(s.k)){q.pul.push({c:it.cliente,m:'mudou de situação (dados ou documento)'});continue}
+  const v=nfV(x);if(v>NFMAX||v<=0){const okv=await new Promise(r=>setTimeout(()=>r(confirm('⚠ VALOR FORA DO COMUM\n\n'+x.cliente+'\n'+x.valor+' (pagamento '+x.data+')\n\nEmitir esta nota mesmo assim?')),50));if(!okv){q.pul.push({c:x.cliente,m:'valor '+x.valor+' — você escolheu não emitir'});continue}}
+  const semid=s.k=='lib';let r;
+  try{r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid}})}
+  catch(e){q.err.push({c:x.cliente,m:'Sem resposta do servidor ('+(e&&e.message||e)+'). A fila PAROU para não duplicar — use CONSULTAR nesta nota.'});break}
+  if(r&&r.ok){seg=0;q.ok.push({c:x.cliente,n:(r.em&&r.em.numero)||'?',av:r.em&&r.em.aviso||''})}
+  else if(r&&r.confirmar){q.pul.push({c:x.cliente,m:'CEP precisa da sua escolha — emita esta pelo botão da nota'})}
+  else{seg++;q.err.push({c:x.cliente,m:(r&&r.em&&r.em.erro)||(r&&r.erro)||'não foi emitida'});if(seg>=3){q.err.push({c:'—',m:'3 erros seguidos: a fila parou para você verificar.'});break}}
+  nfFilaDraw()}
+ if(q.stop)q.pul.push({c:'—',m:'você parou a fila; as demais continuam na lista'});
+ q.on=false;try{wl&&wl.release()}catch(e){}try{await nfLoad()}catch(e){}nfBanner();nfFilaDraw();toast(q.ok.length+' nota(s) emitida(s)'+(q.err.length?' · '+q.err.length+' com problema':''))});
 const nfCons=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await nfx('consultar',{item:{linha:x.linha,data:x.data,cliente:x.cliente}});
  if(r.em&&r.em.status=='ok')toast('A nota existe: nº '+(r.em.numero||'?')+' ✔');else alert('O sistema nacional não tem essa nota.\n'+(r.em&&r.em.erro||'')+'\n\nPode emitir de novo.');await nfLoad();nfv()});
 const nfNum=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await pm('Número da NF emitida para '+x.cliente+' ('+x.data+'):');if(r===null)return;const n=r.trim();if(!/^[0-9A-Za-z./-]{1,20}$/.test(n))return alert('Número inválido.');
@@ -1139,7 +1176,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=6;
+const VERSAO=7;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1332,7 +1369,7 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'pgd',rx:/pendent.*(futur|proxim|combinad|depois)|(futur|proxim|combinad).*pendent/,a:['com pagamento combinado para os próximos dias','com pagamento combinado para os próximos dias'],v:i=>i.pg,p:i=>i.pe&&i.dp&&i.dp>hj0()},
   {g:'pgd',rx:{test:t=>/pendent|pagamento|devendo|a receber/.test(t)&&!!diaEsp(t,1)&&!/vence/.test(t)},get a(){const d=dEsp(),l=d?'com pagamento marcado para '+lbD(d):'com pagamento marcado';return[l,l]},v:i=>i.pg,p:i=>{const d=dEsp();return!!(d&&i.pe&&i.dp&&d.ok(iso(i.dp)))}},
   {g:'fim',rx:{test:t=>/vence|vencimento|renov/.test(t)&&!!diaEsp(t,2)&&!/pendent|pagamento|renovad|renovaram|renovou/.test(t)},get a(){const d=dEsp(2),l=d?'que vence em '+lbD(d):'que vence';return[l,l.replace('vence','vencem')]},v:i=>i.vp,p:i=>{const d=dEsp(2);return!!(d&&i.a&&i.df&&d.ok(iso(i.df)))}},
-  {g:'fim',rx:/a renovar|para renovar|vence(m)? hoje|faltam|vencimento de hoje|renovar hoje/,a:['para renovar hoje ou atrasado','para renovar hoje ou atrasados'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<=hj0()},
+  {g:'fim',rx:{test:t=>/a renovar|para renovar|vence(m)? hoje|faltam|vencimento de hoje|renovar hoje|renovando/.test(t)&&!/amanha|semana|7 dias|proximos dias/.test(t)&&!diaEsp(t,2)},a:['para renovar hoje ou atrasado','para renovar hoje ou atrasados'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<=hj0()},
   {g:'fim',rx:{test:t=>/atrasad|vencid/.test(t)&&!/pendent|pagamento|devendo/.test(t)},a:['com plano vencido (atrasado)','com plano vencido (atrasado)'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df<hj0()},
   {g:'fim',rx:/amanha/,a:['que vence amanhã','que vencem amanhã'],v:i=>i.vp,p:i=>i.a&&Dh(i.df,addD(hj0(),1))},
   {g:'fim',rx:/semana|proximos 7 dias|7 dias|proximos dias/,a:['que vence nos próximos 7 dias','que vencem nos próximos 7 dias'],v:i=>i.vp,p:i=>i.a&&i.df&&i.df>=hj0()&&i.df<=addD(hj0(),6)},
@@ -1354,7 +1391,10 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'fone',rx:/sem comercial/,a:['sem número comercial','sem número comercial'],p:i=>!i.com}],
  resumo(its){const A=its.filter(i=>i.a),P=A.filter(i=>i.pe),at=P.filter(i=>i.dp&&i.dp<hj0()),v=A.filter(i=>i.df&&i.df<=hj0());
   return `${its.length} clientes cadastrados: ${A.length} ativos e ${its.length-A.length} pausado${its.length-A.length==1?'':'s'}. Pendentes: ${P.length}${P.length?`, ${brl(somaV(P.map(i=>({v:i.pg}))))}`:''}${at.length?`, ${at.length} atrasado${at.length>1?'s':''}`:''}. Para renovar hoje ou atrasado: ${v.length}. Hoje: ${S.renovados.length} renovado${S.renovados.length==1?'':'s'}, ${S.retornados.length} retornado${S.retornados.length==1?'':'s'}, ${S.novos.length} novo${S.novos.length==1?'':'s'}, ${S.pausados.length} pausado${S.pausados.length==1?'':'s'}.`}};
-function dCli(t){CT=t;if(/previsao|vou receber|a receber|prever/.test(t)){const I=itCli(),A=I.filter(i=>i.a),P=A.filter(i=>i.pe),h0=hj0(),d7=addD(h0,6),R=A.filter(i=>i.df&&i.df<=d7),H=R.filter(i=>i.df<=h0),Am=R.filter(i=>Dh(i.df,addD(h0,1)));return `Previsão: ${P.length} pendente${P.length==1?'':'s'} a receber, ${brl(somaV(P.map(i=>({v:i.pg}))))}. Renovações previstas até os próximos 7 dias: ${R.length} cliente${R.length==1?'':'s'}, ${brl(somaV(R.map(i=>({v:i.vp}))))}, sendo ${H.length} hoje ou atrasado${H.length==1?'':'s'} e ${Am.length} amanhã.`}
+function dCli(t){CT=t;
+ if(/renov/.test(t)&&!/renovad|renovaram|renovou/.test(t)&&/pendent|pagamento/.test(t)&&/\bhoje\b/.test(t)){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&Dh(i.dp,h0)),U=[...new Set(R.concat(P))],sv=(a,f)=>brl(r2(a.reduce((s,i)=>s+(f(i)||0),0)));
+  return `Para renovar hoje ou atrasados: ${R.length}${R.length?', somando '+sv(R,i=>i.vp):''}. Com pagamento pendente para hoje: ${P.length}${P.length?', somando '+sv(P,i=>i.pg):''}. Juntos: ${U.length} cliente${U.length==1?'':'s'}${U.length?': '+nomes(U.map(i=>i.n),10):''}.`}
+ if(/previsao|vou receber|a receber|prever/.test(t)){const I=itCli(),A=I.filter(i=>i.a),P=A.filter(i=>i.pe),h0=hj0(),d7=addD(h0,6),R=A.filter(i=>i.df&&i.df<=d7),H=R.filter(i=>i.df<=h0),Am=R.filter(i=>Dh(i.df,addD(h0,1)));return `Previsão: ${P.length} pendente${P.length==1?'':'s'} a receber, ${brl(somaV(P.map(i=>({v:i.pg}))))}. Renovações previstas até os próximos 7 dias: ${R.length} cliente${R.length==1?'':'s'}, ${brl(somaV(R.map(i=>({v:i.vp}))))}, sendo ${H.length} hoje ou atrasado${H.length==1?'':'s'} e ${Am.length} amanhã.`}
  const rc=achaCli(t,C),forte=rc.length&&rc[0].s>=3&&(rc.length==1||rc[0].s-rc[1].s>=2);if(forte)return info(rc[0].c)+(pend(rc[0].c)?'':'')+(rc[0].c.cel?'':'');
  const pe=per(t),hist=/renovad|renovaram|retornad|voltaram|\bnovos?\b|pausad/.test(t)&&pe.ex&&!/pendent|ativos/.test(t);
  if(hist){const mm=[[/renovad|renovaram/,'ren','renovado'],[/retornad|voltaram/,'ret','retornado'],[/\bnovos?\b/,'nov','novo'],[/pausad/,'pau','pausado']].filter(x=>x[0].test(t));
@@ -1394,8 +1434,11 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
    vv=r2(V.reduce((s,x)=>s+(+x.v||0),0)),fv=r2(F.reduce((s,f)=>s+(+(f.pgV||f.valor)||0),0)),who=both?'':' ('+SCN[ent[0]].toLowerCase()+')';
   if(/lancament|lancei|variave/.test(t)&&!/gast|despesa|paguei/.test(t))return V.length?`Lançamentos ${pe.lb}${who}: ${V.length}, somando ${brl(vv)}${V.length<=5?': '+V.map(x=>x.d.trim()+' '+brl(+x.v)).join(', '):''}.`:`Nenhum lançamento ${pe.lb}${who}.`;
   const n=V.length+F.length,it=V.map(x=>x.d.trim()+' '+brl(+x.v)).concat(F.map(f=>f.nome.trim().replace(/(\d{2})\/(\d{4})/,'$1 de $2')+' (fixo) '+brl(+(f.pgV||f.valor))));
-  if(/\bquais\b|liste|lista|listar|detalh|o que|cada|me diz[ae]? as|discrimin/.test(t))return n?`Gasto ${pe.lb}${who}, ${brl(r2(vv+fv))} em ${n} ${n==1?'saída':'saídas'}: ${it.slice(0,12).join(', ')}${it.length>12?' e mais '+(it.length-12):''}.`:`Nenhum gasto ${pe.lb}${who}.`;
+  if(/\bquais\b|liste|lista|listar|detalh|o que|cada|me diz[ae]? as|discrimin|escrev|descrev|especific|conte|fale (as|cada|todas)|\b\d+ (saidas|gastos|lancamentos)\b/.test(w2n(t)))return n?`Gasto ${pe.lb}${who}, ${brl(r2(vv+fv))} em ${n} ${n==1?'saída':'saídas'}: ${it.slice(0,12).join(', ')}${it.length>12?' e mais '+(it.length-12):''}.`:`Nenhum gasto ${pe.lb}${who}.`;
   return n?`Gasto ${pe.lb}${who}: ${brl(r2(vv+fv))}, em ${n} ${n==1?'saída':'saídas'}.`:`Nenhum gasto ${pe.lb}${who}.`}
+ if(/\bproxim\w*\b.*\b(fixos?|gastos?|contas?|pagamentos?|vencimentos?)\b|\b(fixos?|gastos?)\b.*\b(proxim\w*|a vencer)\b/.test(t)&&!/cliente|plano de|renov/.test(t.replace(/plano de saude/g,''))){const dh=hoje().getDate(),L=(S.fixos||[]).filter(f=>f.nome&&!f.incluso&&!f.var&&(f.valor||0)>0&&ent.includes(f.sc||'P')),ord=L.filter(f=>f.dia>=dh).sort((a,b)=>a.dia-b.dia).concat(L.filter(f=>f.dia<dh).sort((a,b)=>a.dia-b.dia));
+  if(!ord.length)return 'Todos os fixos do mês já foram pagos.';const d1=f=>`${f.nome.trim()}, ${brl(f.valor)}, ${f.dia==dh?'vence hoje':f.dia>dh?'dia '+f.dia+' (em '+(f.dia-dh)+' dia'+(f.dia-dh==1?'':'s')+')':'venceu dia '+f.dia+', atrasado'}, ${SCN[f.sc||'P'].toLowerCase()}${f.cart?', no cartão':''}`;
+  return `Próximo fixo a vencer: ${d1(ord[0])}.${ord[1]?' Depois: '+d1(ord[1])+'.':''}${ord.length>2?' Faltam '+ord.length+' fixos a pagar, '+brl(r2(ord.reduce((s,f)=>s+f.valor,0)))+'.':''}`}
  const M=[
   [/lucro/,()=>`Lucro líquido do mês: ${brl(lucroMes())}.`],
   [/faturamento/,()=>`Faturamento do mês: ${brl(FAT())}.`],
@@ -1419,6 +1462,10 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
  const R=M.filter(m=>m[0].test(t)&&!(m[2]&&m[2].test(t)));
  if(R.length)return R.map(m=>m[1]()).map(x=>/[.!?]$/.test(x)?x:x+'.').join(' ');
  return `Receita disponível após despesas: ${brl(X.rd)} (empresa ${brl(X.E.disp)}, pessoal ${brl(X.P.disp)}). Saldo: ${brl(r2(X.E.sal+X.P.sal))}, cartão: ${brl(r2(X.E.car+X.P.car))}. Gasto do mês: ${brl(X.gT)}. Lucro líquido do mês: ${brl(lucroMes())}.`}
+
+async function dHist(t){if(diario())await save();const ks=Object.keys(S.hist||{}).sort(),hj=iso(new Date()),fe=ks.filter(k=>k<hj).slice(-7),R=fe.map(k=>S.hist[k]),dm=k=>k.slice(8)+'/'+k.slice(5,7);if(!R.length)return 'Ainda não há dias fechados no histórico.';
+ const av=f=>r2(R.reduce((s,d)=>s+f(d),0)/R.length),mx=fe.reduce((a,k)=>liqD(S.hist[k])>liqD(S.hist[a])?k:a,fe[0]),mn=fe.reduce((a,k)=>liqD(S.hist[k])<liqD(S.hist[a])?k:a,fe[0]),ul=fe[fe.length-1],u=S.hist[ul],h=S.hist[hj],q=x=>x.toLocaleString('pt-BR',{maximumFractionDigits:1});
+ return `Histórico diário, últimos ${R.length} dias fechados: líquido médio de ${brl(av(liqD))} por dia, entrada média de ${brl(av(d=>d.ent))} e ${q(av(d=>d.ren))} renovações por dia. Melhor dia ${dm(mx)}, ${brl(liqD(S.hist[mx]))}. Pior dia ${dm(mn)}, ${brl(liqD(S.hist[mn]))}. Último dia fechado, ${dm(ul)}: entrou ${brl(u.ent)} em notas, ${u.ren} renovações, ${u.nov} novos, líquido ${brl(liqD(u))}.${h?` Hoje até agora: ${brl(h.ent)} em notas, ${h.ren} renovações, líquido parcial ${brl(liqD(h))}.`:''}`}
 
 /* ===== INVESTIMENTOS ===== */
 async function dInv(t){
@@ -1478,6 +1525,7 @@ const DOMS=[
  [/o que (falta|tenho|preciso|devo)|pendencias do app|alertas|avisos|resumo geral|tudo que falta/,()=>dAlertas],
  [/\bmeta\b|campanhas?|conversas|orcamento diario/,()=>dMeta],
  [/\b(notas?|nfs?|nfse|fiscais|fiscal)\b/,()=>dNotas],
+ [/(historico|dias anteriores)/,()=>dHist,{test:t=>/invest|provento|cotac|dividend|aporte/.test(t)||!/como (esta|estao|foi|andam?)|descrev|escrev|fal[ae]|conte|resum|me diz|diga|informa|quanto|qual/.test(t)}],
  [/investiment|\bcotas?\b|\bacoes?\b|\bfiis?\b|renda fixa|provento|dividendo|carteira|patrimonio|\betf\b|\bcdb\b|saldo invest|\bfundo\b|aporte|investido/,()=>dInv],
  [/saldo|cartao|fatura|fixos?|variave|disponivel|despesas?|\bgast(o|os|ei)\b|\blivre\b|\bsobra\b|\bsaidas?\b|\bsaiu\b|\bpaguei\b|\bcompr(ei|as?)\b|imposto|faturamento|limites?|receita|custo (por|do) dia|lancamentos?|anuncios?|lucro.*\bmes\b|\bmes\b.*lucro|lucro mensal|aluguel/,()=>dFin],
  [/entrou|entrada|caixa|lucro|custos?|vendas?|vendi|baixas?|recebi|ganhei|faturei|cinquenta|\b50\b|devolvid|expirad/,()=>dVendas],
@@ -1487,7 +1535,7 @@ async function consulta(t){
  if(/relatorio|resum(o|ir)|como foi (o )?dia|balanco do dia/.test(t)&&!/geral/.test(t))return await RELAT();
  if(invNome(t))return await dInv(t);
  if(nmFixo(t).length||nmCat(t).length)return await dFin(t);
- for(const [rx,f] of DOMS)if(rx.test(t))return await f()(t);
+ for(const [rx,f,ex] of DOMS)if(rx.test(t)&&!(ex&&ex.test(t)))return await f()(t);
  return null}
 
 /* ---------- navegação ---------- */
@@ -1536,6 +1584,13 @@ function acRenovar(t,c){
  ask(`Renovar ${c.cliente.trim()} no ${pl.split(' - ')[0]} por ${brl(v)}${ds?` (desconto de ${brl(ds)})`:''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?`, pagamento pendente para ${dd(dv)}. Vai aparecer a tela do valor da dívida: toque em OK`:', pago hoje'}. Confirma?`,async()=>{
   const i=C.indexOf(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
   const m=await withAlert(()=>renovar(i));return m.length?m.join(' '):'Renovação feita.'})}
+function acImposto(t){if(!/\b(alter\w*|mude|muda|mudar|troqu\w*|troca\w*|ajust\w*|defin\w*|coloc\w*|atualiz\w*|configur\w*|passe|passar)\b/.test(t)||!/\b(imposto|aliquota)\b/.test(t))return false;
+ const m=w2n(t).match(/(\d+(?:\.\d+)?)\s*(?:%|por cento)?/);const v=m?+m[1]:0;if(!(v>0&&v<=100)){say('Qual porcentagem de imposto? Diga, por exemplo, alterar o imposto para oito vírgula quatro por cento.',listen);return true}
+ const f=x=>String(x).replace('.',',');ask(`Alterar o imposto de ${f(IP())}% para ${f(v)}%. Confirma?`,async()=>{S.imp=v;await save();if(cur==='v5')fin();return `Imposto alterado para ${f(v)}%.`});return true}
+function acFixoPago(t){const fx=nmFixo(t);if(!fx.length||!/\b(marcar|marque|marca|dar baixa|da baixa|baixa|pagar|pague|paguei|quitar|quite|quitei)\b/.test(t)||!/\b(pago|paga|paguei|pagar|quitad[oa]|quitar|quitei|baixa)\b/.test(t)||/\b(quant[oa]s?|quais|qual)\b/.test(t))return false;
+ const f=fx[0];if(f.var){say(`${f.nome.trim()} é um gasto variável. Para lançar, diga lançar o valor em ${f.nome.trim()}.`);return true}
+ if(f.incluso){say(`${f.nome.trim()} já está marcado como pago.`);return true}
+ ask(`Marcar o fixo ${f.nome.trim()}, ${brl(f.valor)}, ${SCN[f.sc||'P'].toLowerCase()}${f.cart?', no cartão':''}, como pago. Confirma?`,async()=>{const i=S.fixos.indexOf(f);if((f.sc||'P')==='E'&&!f.var&&amrCf(f).on&&amrCf(f).ask){await fxTg(i,true)}else{f.incluso=true;if(f.valor>0)fxEf(f,1);amrFx(f,true);await save();if(cur==='v5')fp()}return `Pronto, ${f.nome.trim()} marcado como pago.`});return true}
 function acGasto(t){const tt=w2n(t),v=valOf(tt);if(!(v>0))return false;
  if(!/\b(lanca|lancar|lance|lancamento|gastei|gasto|registra|registrar|registre|anota|anotar|anote|inclui|incluir|inclua|adiciona|adicionar|adicione|paguei|comprei|coloca|colocar)\b/.test(t))return false;
  const DROP=new Set('lanca lancar lance lancamento gastei gasto gastos registra registrar registre anota anotar anote inclui incluir inclua adiciona adicionar adicione paguei comprei coloca colocar variavel variaveis reais real centavos centavo conto contos pila pilas empresa pessoal fixo fixos lista de do da dos das em no na nos nas com um uma para pra por favor e a o os as meu minha ao aos que foi'.split(' '));
@@ -1590,6 +1645,7 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  if(/\b(repete|repita|fala de novo)\b/.test(t)&&lastSay){say(lastSay);return true}
  if(/\b(cancela|cancelar|esquece|silencio|cala a boca)\b/.test(t)){stopAll();say('Ok.');return true}
  if(/\b(abrir|abre|abra|mostrar|mostra|mostre|ir para|va para|vai para|tela)\b/.test(t))for(const [rx,lb,fn] of NAV)if(rx.test(t)){fn();say('Abri '+lb+'.');return true}
+ if(acImposto(t)||acFixoPago(t))return true;
  const cue=/\b(quant[oa]s?|quais|qual|quem|como|existe|tem|ha|lista|listar|me diz|diga|fala|resumo|resume|total|saldo|valor)\b/.test(t),act=/\b(baixa|pagou|quitou|quitar|pausa|pausar|pause|renova|renovar|renove|whats|whatsapp|zap|zapzap|atualiz|fechar|fecha|buscar|busca|procurar|procura|pesquisar|pesquisa|lancar|lanca|lance|registrar|registra|anotar|anota|incluir|inclui|adicionar|adiciona|abrir|abre|abra|ficha)\b/.test(t);
  if(!act||cue){let r=null;st='exec';draw();try{r=await consulta(t)}catch(e){r='Não consegui consultar: '+(e&&e.message||e)}st='idle';if(r){say(r);return true}}
  if(/fech(ar|a|e|amento).*dia|fechamento/.test(t)){await acFecha();return true}
