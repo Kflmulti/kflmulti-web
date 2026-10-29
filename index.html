@@ -1135,7 +1135,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=1;
+const VERSAO=2;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1191,7 +1191,7 @@ const nomes=(a,n=6)=>a.slice(0,n).map(c=>String(c.cliente||c).trim()).join(', ')
 const dd=d=>fm(d).slice(0,5);
 
 /* ---------- achar cliente pelo que foi falado ---------- */
-const STOP=new Set(('de do da dos das o a os as no na nos nas num numa pra para por com em e ao aos um uma uns que se me meu minha favor cliente clientes plano baixa dar pagou pago pagamento pagar quitou quitar pausa pausar pause renova renovar renove renovacao renovou abrir abre ficha mostrar mostra ver whats whatsapp zap zapzap comercial pessoal mandar manda enviar envia chamar fala falar buscar busca procurar procura pesquisar pesquisa hoje ontem anteontem amanha depois desconto pendente pendencia reais real gold smart advanced mega plus combo dia vence vencimento inicio quero queria preciso pode poder voce agora aqui ai la situacao informacoes info dados quando como esta qual quais quanto quem tem ter fazer faz lancar lanca ele ela esse essa isso').split(' '));
+const STOP=new Set(('onde fica mensagem mensagens msg cobrar cobra avisar avisa notificar notifica contatar contata envie mande de do da dos das o a os as no na nos nas num numa pra para por com em e ao aos um uma uns que se me meu minha favor cliente clientes plano baixa dar pagou pago pagamento pagar quitou quitar pausa pausar pause renova renovar renove renovacao renovou abrir abre ficha mostrar mostra ver whats whatsapp zap zapzap comercial pessoal mandar manda enviar envia chamar fala falar buscar busca procurar procura pesquisar pesquisa hoje ontem anteontem amanha depois desconto pendente pendencia reais real gold smart advanced mega plus combo dia vence vencimento inicio quero queria preciso pode poder voce agora aqui ai la situacao informacoes info dados quando como esta qual quais quanto quem tem ter fazer faz lancar lanca ele ela esse essa isso').split(' '));
 const tokName=n=>{const t=nz(n);return{w:t.split(' ').filter(x=>/[a-z]/.test(x)&&x.length>1),d:(t.match(/\d+/g)||[]).join('').replace(/^0+/,'')}};
 function achaCli(t,pool){t=t.replace(/\b(desconto|dia)( de)? \d+(\.\d+)?/g,' ').replace(/\d+(\.\d+)? (reais|real)\b/g,' ');const q=digSeq(t).split(' ').filter(x=>x&&!STOP.has(x));
  const qd=q.filter(x=>/^\d{3,}$/.test(x)).map(x=>x.replace(/^0+/,'')).filter(Boolean),qw=q.filter(x=>/[a-z]/.test(x)&&x.length>2&&!isN(x)&&x!=='mil');
@@ -1489,30 +1489,30 @@ async function consulta(t){
 /* ---------- navegação ---------- */
 const lst=m=>()=>{modo=m;$('#q').value='';tela('v1');lista()};
 const NAV=[
- [/vencem hoje|vence hoje|faltam/,'os clientes que vencem hoje',lst('HOJE')],
- [/pendentes/,'os pendentes',lst('PENDENTES')],
- [/\b(ativos|todos os clientes|lista de clientes)\b/,'a lista de clientes ativos',lst('ATIVOS')],
- [/operacional|painel/,'a gestão operacional',()=>oper()],
- [/financa pessoal|financas pessoais|minha financa/,'a finança pessoal',()=>fp()],
+ [/vencem hoje|vence hoje|faltam|para renovar|a renovar|renovar hoje|renovacoes de hoje/,'os clientes que vencem hoje',lst('HOJE')],
+ [/pendentes|pendencias|inadimplent|devedores|devendo/,'os pendentes',lst('PENDENTES')],
+ [/\b(ativos|todos os clientes|lista de clientes|clientes ativos|meus clientes|clientes)\b/,'a lista de clientes ativos',lst('ATIVOS')],
+ [/operacional|painel|operacao|dashboard|gestao operacional/,'a gestão operacional',()=>oper()],
+ [/financas? pessoa(l|is)|minhas? financas?|meu dinheiro|dinheiro pessoal|gastos pessoais/,'a finança pessoal',()=>fp()],
  [/gestao financeira|financeiro|financeira/,'a gestão financeira',()=>fin()],
- [/investimentos?/,'os investimentos',()=>inv()],
- [/vencimentos/,'os vencimentos',()=>venc()],
- [/historico/,'o histórico diário',()=>histD()],
- [/previsao/,'a previsão da semana',()=>prev()],
- [/simulador/,'o simulador',()=>simu()],
- [/retencao/,'a retenção',()=>ret()],
- [/notas fiscais|notas a emitir|emitir notas|\bnfs?\b/,'as notas a emitir',()=>nfs()],
- [/notificac/,'a central de notificações',()=>nt()],
- [/cinquenta vencidos|50 vencidos/,'os R$ 50 vencidos',()=>e50v()],
- [/\bamr\b|contabilidade/,'a AMR',()=>amr()],
- [/anuncios?|\bmeta\b/,'os anúncios Meta',()=>mtMain()],
- [/lancamentos/,'os lançamentos',()=>lanc()],
- [/limites?/,'os limites',()=>lim()],
- [/backup/,'o backup',()=>bkp()],
- [/recuperar vendas/,'a recuperação de vendas',()=>recHoje()],
+ [/investimentos?|carteira|bolsa|\bacoes\b|renda fixa/,'os investimentos',()=>inv()],
+ [/vencimentos?|calendario de vencimentos/,'os vencimentos',()=>venc()],
+ [/historico|historico diario|dias anteriores|\bdiario\b/,'o histórico diário',()=>histD()],
+ [/previsao|projecao|semana que vem|proxima semana/,'a previsão da semana',()=>prev()],
+ [/simulador|simulacao|simular/,'o simulador',()=>simu()],
+ [/retencao|fidelizacao|taxa de renovacao/,'a retenção',()=>ret()],
+ [/notas? fiscais?|notas? a emitir|emitir notas?|emissao de notas?|\bnfs?e?\b|\bnotas\b/,'as notas a emitir',()=>nfs()],
+ [/notificac|central de mensagens|mensagens para enviar|central/,'a central de notificações',()=>nt()],
+ [/cinquenta vencidos|50 vencidos|entradas vencidas|50 reais vencidos/,'os R$ 50 vencidos',()=>e50v()],
+ [/\bamr\b|contabilidade|contador|relatorio contabil/,'a AMR',()=>amr()],
+ [/anuncios?|\bmeta\b|facebook|instagram|campanhas?|trafego/,'os anúncios Meta',()=>mtMain()],
+ [/lancamentos?|gastos lancados|despesas lancadas|variaveis/,'os lançamentos',()=>lanc()],
+ [/limites?|teto de gastos/,'os limites',()=>lim()],
+ [/backup|copia de seguranca/,'o backup',()=>bkp()],
+ [/recuperar vendas|vendas perdidas|recuperar entradas/,'a recuperação de vendas',()=>recHoje()],
  [/relatorio/,'o relatório do dia',()=>relDia()],
- [/\b(menu|gestao)\b/,'o menu de gestão',()=>menu()],
- [/tela principal|inicio|\bhome\b|voltar/,'a tela principal',()=>{tela('v1');lista()}]
+ [/\b(menu|gestao|opcoes|configuracao|configuracoes|ajustes)\b/,'o menu de gestão',()=>menu()],
+ [/tela principal|tela inicial|pagina inicial|inicio|\bhome\b|voltar/,'a tela principal',()=>{tela('v1');lista()}]
 ];
 const AJUDA='Posso responder qualquer dado do app, sozinho ou combinado. Exemplos: quantas notas fiscais; notas completas prontas para emissão; quantos pendentes do plano gold; quem vence amanhã; quanto entrou ontem; lucro da semana; saldo da empresa; fixos a pagar; quanto gastei no mercado; investimento total; proventos; gasto da Meta; o que falta fazer.\nAbrir telas: pendentes, financeira, notas fiscais, lançamentos, menu.\nFazer: dar baixa no Bazar; pausar Barbeiro; renovar Cabelo plano gold; lançar 25 reais de mercado pessoal; fechar o dia; atualizar.\nPara cliente com código, diga o nome e os números.\nDiga mais rápido ou mais devagar para ajustar a voz.';
 
@@ -1547,7 +1547,21 @@ async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('A
  ask(msg,async()=>{const m=await withAlert(()=>fdGo());return m.length?m.join(' '):'Fechamento feito. O relatório foi aberto no WhatsApp.'})}
 
 /* ---------- roteador ---------- */
-async function route(t){
+/* ---------- sinônimos: leva variações para os comandos que o app já entende ---------- */
+function canon(t){
+ if(!/\b(quant[oa]s?|quais|qual|quem)\b/.test(t)){
+  if(/\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*|fech\w*|bater)\b.*\b(dia|expediente|movimento)\b|\b(dia|expediente)\b.*\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*)\b|\bfechamento\b/.test(t))return 'fechar dia'}
+ t=t.replace(/\bpra\b/g,'para').replace(/\bpro\b/g,'para o');
+ t=t.replace(/\b(acertou|acertaram|liquidou|liquidaram|efetuou o pagamento|fez o pagamento|confirm(a|ar|e) (o )?pagamento|recebi (o )?pagamento)\b/g,'pagou');
+ t=t.replace(/\b(suspend(e|er|a)|desativ(a|ar|e)|inativ(a|ar|e)|interromp(e|er|a))\b/g,'pausar');
+ t=t.replace(/\b(prorrog(a|ar|ue)|estend(e|er|a)|extend(e|er))\b/g,'renovar');
+ t=t.replace(/\b(recarrega\w*|sincroniza\w*|refresh)\b/g,'atualizar');
+ t=t.replace(/\b(acha|achar|ache|localiza\w*|encontra\w*|encontre|cade)\b/g,'buscar');
+ if(/\b(manda|mande|mandar|envia|envie|enviar|chama|chamar|cobra|cobrar|avisa|avisar|notifica|notificar|fala com|falar com|contata|contatar)\b/.test(t)&&!/relatorio|\bnotas?\b|backup|planilha|\bnf\b/.test(t)&&!/\b(whats|whatsapp|zap|zapzap)\b/.test(t))t+=' whatsapp';
+ t=t.replace(/\b(exib(e|ir|a)|acess(a|ar|e)|me leva|leva|leve|levar|entr(a|ar|e) (em|na|no|nos|nas))\b/g,'abrir');
+ t=t.replace(/\b(quero ver|me mostra|me mostre|veja|ver)\b(?! (quant|quais|qual|quem|como|total))/g,'abrir');
+ return t.replace(/\s+/g,' ').trim()}
+async function route(t){t=canon(t);
  if(/\b(ajuda|comandos|o que (voce )?(sabe|faz|pode)|o que posso)\b/.test(t)){say(AJUDA);return true}
  if(/mais (rapido|depressa)|acelera/.test(t)){RT=Math.min(2,r2(RT+0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais rápido.');return true}
  if(/mais (devagar|lento)|desacelera/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
@@ -1558,13 +1572,13 @@ async function route(t){
  if(!act||cue){let r=null;st='exec';draw();try{r=await consulta(t)}catch(e){r='Não consegui consultar: '+(e&&e.message||e)}st='idle';if(r){say(r);return true}}
  if(/fech(ar|a|e|amento).*dia|fechamento/.test(t)){await acFecha();return true}
  if(/\batualiz/.test(t)){refrescar();say('Atualizando a lista de clientes.');return true}
- let m=t.match(/\b(?:buscar|busca|procurar|procura|pesquisar|pesquisa)\s+(.+)/);if(m){const q=m[1].replace(/\bcliente\b/g,'').trim();$('#q').value=q;tela('v1');lista();say(`Mostrando clientes com ${q}.`);return true}
+ let m=t.match(/\b(?:buscar|busca|procurar|procura|pesquisar|pesquisa)\s+(.+)/);if(m){const q=m[1].replace(/\b(cliente|clientes|o|a|os|as|do|da|de)\b/g,' ').replace(/\s+/g,' ').trim();$('#q').value=q;tela('v1');lista();say(`Mostrando clientes com ${q}.`);return true}
  if(/\b(baixa|pagou|quitou|quitar)\b/.test(t))return acBaixa(t);
  if(/\b(pausa|pausar|pause)\b/.test(t))return acPausar(t);
  if(/\b(renova|renovar|renove|renovou)\b/.test(t))return needCli(t,C,c=>acRenovar(t,c),'Não achei esse cliente. Diga o nome e os números.');
  if(/\b(whats|whatsapp|zap|zapzap)\b/.test(t))return needCli(t,C,async c=>{const i=C.indexOf(c),k=/\bpessoal\b/.test(t)||!String(c.celcon||'').replace(/\D/g,'')?'cel':'celcon';const mm=await withAlert(async()=>wa(i,k));say(mm.length?mm.join(' '):`Abri o WhatsApp ${k=='cel'?'pessoal':'comercial'} de ${c.cliente.trim()}. Escolha notificar ou confirmar na tela.`)},'Não achei esse cliente. Diga o nome e os números.');
  if(acGasto(t))return true;
- const cli=/\b(cliente|ficha)\b/.test(t)||/(situacao|quando vence|vencimento|informac|dados|como esta|esta pendente|esta ativo|qual o plano)/.test(t);
+ const cli=/\b(cliente|ficha)\b/.test(t)||/(situacao|onde esta|onde fica|quando vence|vencimento|informac|dados|como esta|esta pendente|esta ativo|qual o plano)/.test(t);
  if(cli){const r=achaCli(t,C);if(r.length)return needCli(t,C,c=>{if(/\b(cliente|ficha|abrir|abre|mostrar|mostra|ver)\b/.test(t)){ficha(C.indexOf(c))}say(info(c))})}
  for(const [rx,lb,fn] of NAV)if(rx.test(t)){fn();say('Abri '+lb+'.');return true}
  const r=achaCli(t,C);if(r.length&&r[0].s>=3)return needCli(t,C,c=>{ficha(C.indexOf(c));say('Abri a ficha. '+info(c))});
