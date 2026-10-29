@@ -1139,7 +1139,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=3;
+const VERSAO=4;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1405,11 +1405,11 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
   [/restante|ainda a gastar|a gastar/,()=>`Anúncios restantes dos clientes ativos (empresa): ${brl(X.cr)}.`],
   [/anuncios?/,()=>`Anúncios dos clientes no mês: ${brl(CUS())}. Restantes dos planos ativos: ${brl(X.cr)}.`,/meu anuncio|restante|a gastar/],
   [/custo (por|do) dia/,()=>`Custo por dia do plano Gold: ${brl(S.custoDia||9)}.`],
-  [/receita.*disponivel|disponivel.*receita/,()=>ln('Receita (saldo menos cartão)',d=>d.rec)+'. '+ln('Disponível após as despesas',d=>d.disp)],
-  [/disponivel|apos despesas/,()=>ln('Disponível após despesas',d=>d.disp)+(both&&/geral|total/.test(t)?`. Receita disponível geral (descontando o saldo investido): ${brl(X.rd)}.`:'.'),/receita/],
+  [/receita.*(disponivel|livre)|(disponivel|livre).*receita|dinheiro livre|saldo livre|\blivre\b|quanto (me )?sobra|\bsobra\b/,()=>both?`Receita disponível após despesas: ${brl(X.rd)} (empresa mais pessoal menos o saldo de investimento).`:ln('Disponível após as despesas',d=>d.disp)],
+  [/disponivel|apos despesas/,()=>ln('Disponível após despesas',d=>d.disp)+(both&&/geral|total/.test(t)?`. Receita disponível geral (descontando o saldo investido): ${brl(X.rd)}.`:'.'),/receita|livre|sobra/],
   [/cartao|\bfatura\b/,()=>ln('Cartão (mês)',d=>d.car)],
-  [/saldo/,()=>ln('Saldo em conta',d=>d.sal)],
-  [/receita/,()=>ln('Receita (saldo menos cartão)',d=>d.rec),/disponivel/],
+  [/saldo/,()=>ln('Saldo em conta',d=>d.sal),/livre/],
+  [/receita/,()=>ln('Receita (saldo menos cartão)',d=>d.rec),/disponivel|livre/],
   [/fixos?.*(a pagar|faltam|falta|pendente|abertos?)|(a pagar|faltam|falta|pendente).*fixos?/,()=>{const L=(S.fixos||[]).filter(f=>!f.incluso&&ent.includes(f.sc||'P'));return ln('Fixos a pagar',d=>d.pe)+(LISTA.test(t)||L.length<=4?`. São: ${L.map(f=>f.nome+' '+brl(f.valor)).join(', ')}`:'')+'.'}],
   [/fixos?.*pago|pago.*fixos?|ja pagou|ja paguei/,()=>ln('Fixos já pagos',d=>d.pg)],
   [/fixos?/,()=>ln('Gastos fixos do mês',d=>d.tot)+`. Já pagos: ${brl(r2(ent.reduce((s,k)=>s+(k=='E'?X.E:X.P).pg,0)))}, a pagar: ${brl(r2(ent.reduce((s,k)=>s+(k=='E'?X.E:X.P).pe,0)))}.`,/a pagar|faltam|falta|pendente|abertos?|pago|ja pagou|ja paguei/],
@@ -1479,7 +1479,7 @@ const DOMS=[
  [/\bmeta\b|campanhas?|conversas|orcamento diario/,()=>dMeta],
  [/\b(notas?|nfs?|nfse|fiscais|fiscal)\b/,()=>dNotas],
  [/investiment|\bcotas?\b|\bacoes?\b|\bfiis?\b|renda fixa|provento|dividendo|carteira|patrimonio|\betf\b|\bcdb\b|saldo invest|\bfundo\b|aporte|investido/,()=>dInv],
- [/saldo|cartao|fatura|fixos?|variave|disponivel|despesas?|\bgast(o|os|ei)\b|\bsaidas?\b|\bsaiu\b|\bpaguei\b|\bcompr(ei|as?)\b|imposto|faturamento|limites?|receita|custo (por|do) dia|lancamentos?|anuncios?|lucro.*\bmes\b|\bmes\b.*lucro|lucro mensal|aluguel/,()=>dFin],
+ [/saldo|cartao|fatura|fixos?|variave|disponivel|despesas?|\bgast(o|os|ei)\b|\blivre\b|\bsobra\b|\bsaidas?\b|\bsaiu\b|\bpaguei\b|\bcompr(ei|as?)\b|imposto|faturamento|limites?|receita|custo (por|do) dia|lancamentos?|anuncios?|lucro.*\bmes\b|\bmes\b.*lucro|lucro mensal|aluguel/,()=>dFin],
  [/entrou|entrada|caixa|lucro|custos?|vendas?|vendi|baixas?|recebi|ganhei|faturei|cinquenta|\b50\b|devolvid|expirad/,()=>dVendas],
  [/clientes?|ativos?|pausad|pendent|vence|vencim|atrasad|renov|retorn|\bnovos?\b|\bplano\b|\bgold\b|\bmega\b|\bplus\b|smart|advanced|contat|chamei|falei|celular|a renovar|faltam|previsao|vou receber|a receber/,()=>dCli]];
 const invNome=t=>(S.inv||[]).some(x=>x.n.trim().length>1&&new RegExp('\\b'+nz(x.n).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(t));
