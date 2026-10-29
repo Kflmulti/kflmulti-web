@@ -80,7 +80,11 @@ const pm=(msg,def)=>new Promise(res=>{const m=String(msg),dec=/valor|R\$|\(ex: ?
  const f=v=>{o.remove();res(v)};bc.onclick=()=>f(null);bo.onclick=()=>f(i.value);i.onkeydown=e=>{if(e.key==='Enter')f(i.value);if(e.key==='Escape')f(null)};
  document.body.appendChild(o);setTimeout(()=>{i.focus();i.select()},50)});
 const mkData=el=>{const d=el.value.replace(/\D/g,'').slice(0,8);el.value=d.length>4?d.slice(0,2)+'/'+d.slice(2,4)+'/'+d.slice(4):d.length>2?d.slice(0,2)+'/'+d.slice(2):d};
+const waBtn=u=>{let d=document.getElementById('wab');if(!d){d=document.createElement('div');d.id='wab';d.style.cssText='position:fixed;left:16px;right:16px;bottom:100px;z-index:50;background:#fff;border:3px solid #25D366;border-radius:16px;padding:12px;box-shadow:0 6px 20px #0007;text-align:center';document.body.appendChild(d)}
+ d.innerHTML='<div style="margin-bottom:8px;font-weight:700">O Android pede um toque seu para abrir o WhatsApp.</div><button id="wabg" style="font:inherit;font-size:20px;font-weight:700;border:0;border-radius:12px;padding:14px 18px;color:#fff;background:#25D366;width:100%">📲 Abrir WhatsApp</button><button id="wabx" style="font:inherit;font-size:14px;border:0;background:none;color:#666;margin-top:8px">Fechar</button>';d.hidden=false;
+ document.getElementById('wabg').onclick=()=>{d.hidden=true;go(u)};document.getElementById('wabx').onclick=()=>{d.hidden=true}};
 const go=u=>{
+ if(/Android/i.test(navigator.userAgent)&&navigator.userActivation&&!navigator.userActivation.isActive){waBtn(u);return}
  try{if(/Android/i.test(navigator.userAgent)){const x=new URL(u);let ph=null;
   if(x.hostname==='wa.me')ph=x.pathname.replace(/\D/g,'');else if(x.hostname==='api.whatsapp.com'&&x.pathname==='/send')ph=x.searchParams.get('phone')||'';
   if(ph!==null){const t=x.searchParams.get('text')||'';
@@ -1135,7 +1139,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=2;
+const VERSAO=3;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1544,7 +1548,7 @@ function acGasto(t){const tt=w2n(t),v=valOf(tt);if(!(v>0))return false;
  fim(nome);return true}
 async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('Ainda há ações na fila sendo enviadas. Tente de novo em instantes.');return}const L=(window.FDL||[]).filter((r,i)=>$('#fd'+i)&&$('#fd'+i).checked).map(r=>r.c),nf=S.nf||[],tot=r2(nf.reduce((a,n)=>a+(num(n.valor)||vp(n.plano)),0));
  const msg=`Fechar o dia: ${L.length?L.length+' cliente'+(L.length>1?'s serão pausados ('+nomes(L)+')':' será pausado ('+nomes(L)+')'):'ninguém será pausado'}, ${nf.length} nota${nf.length==1?'':'s'} de ${brl(tot)} ${nf.length==1?'vai':'vão'} para a planilha e o relatório abre no WhatsApp. Confirma?`;
- ask(msg,async()=>{const m=await withAlert(()=>fdGo());return m.length?m.join(' '):'Fechamento feito. O relatório foi aberto no WhatsApp.'})}
+ ask(msg,async()=>{const m=await withAlert(()=>fdGo());return m.length?m.join(' '):'Fechamento feito. Se o WhatsApp não abrir sozinho, toque no botão verde.'})}
 
 /* ---------- roteador ---------- */
 /* ---------- sinônimos: leva variações para os comandos que o app já entende ---------- */
@@ -1576,7 +1580,7 @@ async function route(t){t=canon(t);
  if(/\b(baixa|pagou|quitou|quitar)\b/.test(t))return acBaixa(t);
  if(/\b(pausa|pausar|pause)\b/.test(t))return acPausar(t);
  if(/\b(renova|renovar|renove|renovou)\b/.test(t))return needCli(t,C,c=>acRenovar(t,c),'Não achei esse cliente. Diga o nome e os números.');
- if(/\b(whats|whatsapp|zap|zapzap)\b/.test(t))return needCli(t,C,async c=>{const i=C.indexOf(c),k=/\bpessoal\b/.test(t)||!String(c.celcon||'').replace(/\D/g,'')?'cel':'celcon';const mm=await withAlert(async()=>wa(i,k));say(mm.length?mm.join(' '):`Abri o WhatsApp ${k=='cel'?'pessoal':'comercial'} de ${c.cliente.trim()}. Escolha notificar ou confirmar na tela.`)},'Não achei esse cliente. Diga o nome e os números.');
+ if(/\b(whats|whatsapp|zap|zapzap)\b/.test(t))return needCli(t,C,async c=>{const i=C.indexOf(c),k=/\bpessoal\b/.test(t)||!String(c.celcon||'').replace(/\D/g,'')?'cel':'celcon';const mm=await withAlert(async()=>wa(i,k));say(mm.length?mm.join(' '):`WhatsApp ${k=='cel'?'pessoal':'comercial'} de ${c.cliente.trim()} preparado. Se não abrir sozinho, toque no botão verde.`)},'Não achei esse cliente. Diga o nome e os números.');
  if(acGasto(t))return true;
  const cli=/\b(cliente|ficha)\b/.test(t)||/(situacao|onde esta|onde fica|quando vence|vencimento|informac|dados|como esta|esta pendente|esta ativo|qual o plano)/.test(t);
  if(cli){const r=achaCli(t,C);if(r.length)return needCli(t,C,c=>{if(/\b(cliente|ficha|abrir|abre|mostrar|mostra|ver)\b/.test(t)){ficha(C.indexOf(c))}say(info(c))})}
