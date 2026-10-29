@@ -931,16 +931,6 @@ function mtRen(rs){const c=rs.filter(r=>r.st==='C'),R=c.filter(r=>r.rn==='R'),N=
 const mtGlobT=()=>mtRen(mtRecs()).t;
 const mtQual=(c,j,rr)=>{const g=mtGlobT();return(j.cps!=null&&j.cps<=mtLiq()&&rr.r+rr.n>=5&&g!=null&&rr.t<g*0.7)?'⚠ Custo por venda bom, mas cliente fraco: renova '+mtP(rr.t)+' contra '+mtP(g)+' da média geral.':''};
 function mtCoorte(rs,sem){const hj=mtDn(mtT());let el=0,ok=0;rs.forEach(r=>{if(r.st!=='C'||hj<mtDn(r.conc)+7*sem)return;el++;if(r.ren.some(d=>mtDn(d)>=mtDn(r.conc)+7*sem-3))ok++});return{el,ok,t:el?ok/el:null}}
-const mtDica=c=>{if(!mtAtiva(c))return '';const M=mtS(),st=mtSteps(c),u=st[st.length-1],h=mtT();if(!u)return '';const ult=[...c.orc].sort((a,b)=>a.d<b.d?-1:1),la=ult[ult.length-1];
- if(u.mg&&st.length>1){const p=st[st.length-2];
-  if(u.mg.custo==null)return{t:'Subir de '+brl(p.v)+' para '+brl(u.v)+' não trouxe vendas a mais: sem retorno por enquanto.',c:'r'};
-  if(u.mg.custo>M.max)return{t:'Subir de '+brl(p.v)+' para '+brl(u.v)+' trouxe vendas a '+mtM(u.mg.custo)+' cada: acima do limite de '+mtM(M.max)+'.',c:'r'};
-  return{t:'Subir de '+brl(p.v)+' para '+brl(u.v)+' trouxe vendas a '+mtM(u.mg.custo)+' cada: dentro do limite. Pode subir até 20% (para '+brl(u.v*1.2)+') depois de 3–4 dias.',c:'g'}}
- if(u.c>=2||u.dias>=14){if(u.cps==null)return{t:'Ainda sem venda concluída nesta faixa de orçamento.',c:'y'};
-  if(u.cps>mtLiq())return{t:'Custo por venda '+mtM(u.cps)+' acima do líquido por venda ('+mtM(mtLiq())+'): perde dinheiro a cada venda.',c:'r'};
-  if(u.cps>M.max)return{t:'Custo por venda '+mtM(u.cps)+' acima do limite ('+mtM(M.max)+'). Não aumente o orçamento.',c:'y'};
-  return{t:'Custo por venda '+mtM(u.cps)+' dentro do limite. Dá para subir até 20% (para '+brl(u.v*1.2)+') e aguardar 3–4 dias.',c:'g'}}
- return{t:'Poucos dados nesta faixa de orçamento ainda.',c:'y'}};
 const mtDados=async(force)=>{if(!force&&mtD&&Date.now()-mtTs<6e5)return;try{mtD=await nfx('mt_dados');mtErr=''}catch(e){if(e.message==='login')throw e;mtErr=e.message;mtD=mtD||{clientes:[]}}mtTs=Date.now();mtRC=null};
 const mtLast=c=>{const o=[...c.orc].sort((a,b)=>a.d<b.d?-1:1);return o.length>1?o[o.length-1]:null};
 function mtAviso(){const M=mtS(),h=mtDn(mtT());let m=0;M.cmp.forEach(c=>{if(c.fim&&c.fim<=mtT())return;const l=mtLast(c);if(l&&h-mtDn(l.d)<3)m=Math.max(m,3-(h-mtDn(l.d)))});return m}
@@ -976,7 +966,7 @@ const mtC=run(async(id,todas)=>{await mtDados();const M=mtS(),c=M.cmp.find(x=>x.
  <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#777"><td>Período</td><td>Orç./dia</td><td>Gasto</td><td>Ent.</td><td>Conc.</td><td>R$/venda</td><td>Marginal</td></tr>
  ${st.map(s=>`<tr style="border-top:1px solid #eee"><td>${mtDM(s.de)}${s.ate>=s.de?'→'+mtDM(s.ate):' →'}</td><td>${brl(s.v)}</td><td>${mtM(s.s)}</td><td>${s.n}</td><td>${s.c}</td><td style="color:${mtCor(s.cps)};font-weight:700">${mtM(s.cps)}</td><td style="color:${s.mg?mtCor(s.mg.custo==null?9999:s.mg.custo):'#777'};font-weight:700">${s.mg?(s.mg.custo==null?'sem venda a +':mtM(s.mg.custo)):'—'}</td></tr>`).join('')}</table>
  <div style="font-size:11px;color:#777">Marginal = (gasto semanal novo − anterior) ÷ (vendas semanais novas − anteriores). Precisa de 5+ dias em cada degrau.</div>
- ${btn('ALTERAR ORÇAMENTO','#E65100',`mtOrc('${c.id}')`)}
+ ${btn('📊 COMPARAR ORÇAMENTOS','#1565C0',`mtOcmp('${c.id}')`)}${btn('ALTERAR ORÇAMENTO','#E65100',`mtOrc('${c.id}')`)}
  <div class="lb">Por semana ${todas?'(todas)':'(últimas 12)'}</div>
  <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#777"><td>Sem.</td><td>Orç.</td><td>Gasto</td><td>Conv.</td><td>Ent.</td><td>Conc.</td><td>R$/venda</td></tr>
  ${ws.map(w=>`<tr style="border-top:1px solid #eee"><td>${mtDM(w.w)}</td><td>${Math.round(w.orc)}</td><td>${mtM(w.s)}</td><td>${w.cv?Math.round(w.cv):'—'}</td><td>${w.n}</td><td>${w.c}${w.a?'<small style="color:#999">+'+w.a+'</small>':''}</td><td style="color:${mtCor(w.cps)};font-weight:700">${mtM(w.cps)}</td></tr>`).join('')}</table>
@@ -988,9 +978,74 @@ const mtC=run(async(id,todas)=>{await mtDados();const M=mtS(),c=M.cmp.find(x=>x.
 const mtPausa=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);let pz=0;if(!c)return;if(mtAtiva(c)){if(!confirm('Pausar "'+c.nome+'" hoje? O gasto estimado para de contar a partir de hoje.'))return;c.fim=mtT();pz=1}else{if(!confirm('Reativar "'+c.nome+'"?'))return;c.fim='';const p=await pm('Orçamento diário ao reativar (R$):',String(c.orc[c.orc.length-1].v));if(p===null||!(num(p)>0))return;c.orc.push({d:mtT(),v:num(p)})}mtRC=null;await save();if(pz){alert('Campanha pausada. Informe agora o total gasto e as conversas até ontem para fechar os números.');return mtTot(id)}mtC(id)});
 const mtOrc=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const at=mtOrcOn(c,mtT())||c.orc[c.orc.length-1].v,r=await pm('Novo orçamento diário (R$) — hoje está em '+brl(at)+':',String(at));if(r===null)return;const v=num(r);if(!(v>0))return alert('Valor inválido.');if(v===at)return;
  const l=mtLast(c)||c.orc[0],dias=mtDn(mtT())-mtDn(l.d),pct=(v-at)/at*100;
- let av='';if(pct>20)av+='• O aumento é de '+Math.round(pct)+'% (recomendado: no máximo 20%).\n';if(dias<3&&c.orc.length>1)av+='• O último ajuste foi há '+dias+' dia(s) (recomendado: esperar 3–4 dias).\n';
+ let av='';if(v>at){if(v-at!==10)av+='• O combinado é aumentar R$ 10 por vez (este aumento é de '+brl(v-at)+').\n';if(dias<30&&c.orc.length>1)av+='• O último ajuste foi há '+dias+' dia(s). A regra é esperar 30 dias entre aumentos.\n';try{const s2=mtSteps(c);if(s2.length>1){const P=mtOcPar(s2),V=mtVer(mtDX(c,s2[P[0]]),mtDX(c,s2[P[1]]));if(V.k!=='g'&&V.k!=='n')av+='• O veredito do degrau atual não é 🟢 ('+V.t+').\n'}}catch(e){}}
  if(av&&!confirm('Atenção:\n'+av+'\nAlterar mesmo assim para '+brl(v)+'?'))return;
- c.orc=c.orc.filter(o=>o.d!==mtT());c.orc.push({d:mtT(),v});mtRC=null;await save();toast('Orçamento registrado ✔');mtC(id)});
+ c.orc=c.orc.filter(o=>o.d!==mtT());c.orc.push({d:mtT(),v});mtRC=null;await save();toast('Orçamento registrado ✔');if(confirm('Quer informar agora o total gasto e as conversas até ontem? Isso fecha o degrau anterior com precisão para a comparação.'))return mtTot(id);mtC(id)});
+/* ===== v23: comparar orçamentos (vendas novas) ===== */
+function mtDX(c,s){const T=mtT(),M=mtS(),end=mtFim(c),de=s.de,ate=s.ate>=de?s.ate:de,pts=mtPts(c),cm=mtIso(mtDn(T)-7);
+ const dado=d=>{const q=mtPt(c,d);if(q)return q;const m=M.mg[c.id+'|'+d];if(m&&m.g!==''&&m.g!=null&&isFinite(+m.g))return{g:+m.g,cv:m.c?+m.c:0};return null};
+ let dias=0,cov=0,sg=0,sc=0,lastD='',mat=0;
+ for(let n=mtDn(de);n<=mtDn(ate);n++){const d=mtIso(n);if(d>end||d<c.ini)continue;dias++;if(d<=cm)mat++;const q=dado(d);if(q){cov++;sg+=q.g;sc+=q.cv;lastD=d}}
+ const ag=cov?sg/cov:null,av=cov?sc/cov:null,G=ag==null?null:ag*dias,CV=av==null?null:av*dias,RS=s.rs||[],Rm=RS.filter(r=>r.ent<=cm),
+  cM=Rm.filter(r=>r.st==='C').length,dM=Rm.filter(r=>r.st==='D').length,cA=RS.filter(r=>r.st==='C').length,aR=RS.filter(r=>r.st==='A'&&!r.venc&&r.ent>cm).length,
+  tx=(cM+dM)?cM/(cM+dM):null,Gm=ag==null?null:ag*mat,proj=cA+(tx==null?0:aR*tx),n=RS.length;
+ let mix=false;for(let i=0;i<pts.length;i++){const pv=i?pts[i-1].d:mtIso(mtDn(c.ini)-1);if(mtDn(pv)<=mtDn(de)-2&&pts[i].d>=de){mix=true;break}}
+ return{v:s.v,de,ate,dias,cov,lastD,mat,ag,av,G,CV,n,nd:dias?n/dias:null,cpe:(G!=null&&n)?G/n:null,cpc:(ag!=null&&av>0)?ag/av:null,ec:(CV>0)?n/CV:null,
+  cM,dM,aR,aT:RS.filter(r=>r.st==='A'&&!r.venc).length,cd:mat?cM/mat:null,des:(cM+dM)?dM/(cM+dM):null,cvf:(Gm!=null&&cM)?Gm/cM:null,cvp:(G!=null&&proj>0)?G/proj:null,
+  lu:(mat&&Gm!=null)?r2(Rm.reduce((t,r)=>t+(r.lq||0),0)-Gm)/mat:null,mix,rr:mtRen(RS)}}
+const mtOcPar=st=>{if(st.length<2)return null;const ib=st.length-1;let ia=-1;for(let i=ib-1;i>=0;i--)if(st[i].dias>=14){ia=i;break}return[ia<0?ib-1:ia,ib]};
+const mtSg=x=>x==null||!isFinite(x)?'—':(x>=0?'+':'')+Math.round(x*100)+'%';
+function mtVer(A,B){const hj=mtT(),nxI=mtIso(Math.max(mtDn(hj),mtDn(B.de)+30)),nx=mtDM(nxI),falta=Math.max(0,30-B.dias);
+ if(B.v<=A.v)return{k:'n',t:'REDUÇÃO DE ORÇAMENTO',s:'O veredito vale para aumentos. Os números abaixo servem só para conferir.'};
+ if(!B.cov)return{k:'n',t:'SEM TOTAL LANÇADO NO DEGRAU ATUAL',s:'Lance o total gasto e as conversas (Dados da Meta) para comparar. Sem isso o gasto do degrau novo seria só estimativa.'};
+ if(!A.cov)return{k:'n',t:'DEGRAU ANTERIOR SEM TOTAL',s:'O degrau anterior não tem total lançado; não dá para comparar o gasto.'};
+ if(B.dias<21)return{k:'w',t:'AGUARDANDO DADOS',s:B.dias+' de 30 dias. Números parciais abaixo, ainda sem veredito. Próximo aumento só a partir de '+nx+'.'};
+ if(!(A.nd>0)||!(A.ag>0)||A.cpe==null||B.cpe==null)return{k:'n',t:'DADOS INSUFICIENTES',s:'Faltam entradas ou gasto em um dos degraus.'};
+ const dG=B.ag/A.ag-1,dE=B.nd/A.nd-1,dC=B.cpe/A.cpe-1,ob=B.v/A.v-1,info='Entradas/dia '+mtSg(dE)+', gasto/dia '+mtSg(dG)+', custo por entrada '+mtSg(dC)+'.',aviso=dG<ob*0.5?'O Meta gastou só '+mtSg(dG)+' com orçamento '+mtSg(ob)+': a comparação é pouco confiável.':'';
+ if(dE<=0||dC>0.25)return{k:'r',t:'PIOROU',s:info+' Voltar para '+brl(A.v)+' (orçamento anterior).',aviso,dG,dE,dC};
+ if(dE>=0.7*dG&&dC<=0.10)return{k:'g',t:'VALEU A PENA',s:info+' Pode aumentar mais R$ 10 (para '+brl(B.v+10)+') a partir de '+nx+(falta?' — faltam '+falta+' dia(s) no degrau':'')+'.',aviso,dG,dE,dC,nx,falta};
+ return{k:'y',t:'IGUAL / NEUTRO',s:info+' Manter '+brl(B.v)+' por mais 30 dias'+(falta?' (até '+nx+')':'')+'.',aviso,dG,dE,dC}}
+const mtDica=c=>{if(!mtAtiva(c))return '';let st;try{st=mtSteps(c)}catch(e){return ''}if(!st.length)return '';const u=st[st.length-1];
+ if(st.length<2)return{t:'Primeiro degrau ('+brl(u.v)+'): aguarde até '+mtDMY(mtIso(mtDn(u.de)+30))+' (30 dias) para comparar e fazer o próximo aumento de R$ 10.',c:'y'};
+ const P=mtOcPar(st),V=mtVer(mtDX(c,st[P[0]]),mtDX(c,st[P[1]]));
+ return{t:(V.k==='g'?'🟢 ':V.k==='r'?'🔴 ':V.k==='y'?'🟡 ':'')+V.t+': '+V.s,c:V.k==='g'?'g':V.k==='r'?'r':'y'}};
+const mtOcmp=run(async(id,a,b)=>{await mtDados();const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const st=mtSteps(c);
+ if(st.length<2){$('#v6').innerHTML=`<h2>📊 COMPARAR ORÇAMENTOS</h2><div class="card" style="margin:10px 0">Esta campanha ainda tem um só degrau de orçamento. Depois do primeiro aumento (a partir de ${mtDMY(mtIso(mtDn(st[0]?st[0].de:c.ini)+30))}) a comparação aparece aqui.</div>${btn('VOLTAR','#9E9E9E',`mtC('${id}')`)}`;tela('v6');return}
+ const P=mtOcPar(st);let ia=a==null||a===''?P[0]:+a,ib=b==null||b===''?P[1]:+b;if(!st[ia])ia=P[0];if(!st[ib])ib=P[1];
+ const SA=st[ia],SB=st[ib],A=mtDX(c,SA),B=mtDX(c,SB),V=mtVer(A,B),f1=n=>n==null||!isFinite(n)?'—':n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}),
+ M0=n=>n==null||!isFinite(n)?'—':'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),Pc=n=>n==null||!isFinite(n)?'—':Math.round(n*100)+'%',
+ dp=(x,y)=>x==null||y==null||!(x>0)?null:y/x-1,dt=d=>d==null?'':d<=0.10?' 🟢':d<=0.25?' 🟡':' 🔴',
+ R=(l,x,y,fm,cost,pts)=>{let d='';if(pts){d=x==null||y==null?'—':((y-x)*100>=0?'+':'')+Math.round((y-x)*100)+' pts'}else{const q=dp(x,y);d=q==null?'—':mtSg(q)+(cost?dt(q):'')}return `<tr style="border-top:1px solid #eee"><td style="padding:6px 2px">${l}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${fm(x)}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${fm(y)}</td><td style="text-align:right;font-weight:700;white-space:nowrap">${d}</td></tr>`},
+ cor=V.k==='g'?['#E8F5E9','#1B5E20','🟢']:V.k==='r'?['#FDECEA','#B71C1C','🔴']:V.k==='y'?['#FFF8E1','#8D6E00','🟡']:V.k==='w'?['#E3F2FD','#0D47A1','⏳']:['#F5F5F5','#555','ℹ️'],
+ opt=i=>`<option value="${i}">${mtM(st[i].v)} · ${mtDM(st[i].de)}→${mtDM(st[i].ate)}</option>`,sel=(nm,v)=>`<select class="in" style="font-size:14px;padding:8px 4px" id="${nm}" onchange="mtOcmp('${id}',$('#oca').value,$('#ocb').value)">${st.map((s,i)=>opt(i).replace('value="'+i+'"','value="'+i+'"'+(i===v?' selected':''))).join('')}</select>`,
+ al=[];if(V.aviso)al.push(V.aviso);const lim=mtS().max;if(B.cvp!=null&&B.v>A.v){if(B.cvp>mtLiq())al.push('⚠ Custo por venda projetado '+M0(B.cvp)+' acima do líquido por venda ('+M0(mtLiq())+'): perde dinheiro a cada venda.');else if(B.cvp>lim)al.push('⚠ Custo por venda projetado '+M0(B.cvp)+' acima do limite de '+M0(lim)+'.')}
+ [[A,'anterior'],[B,'atual']].forEach(([X,n])=>{if(X.cov&&X.lastD&&X.lastD<X.ate&&X.dias>X.cov)al.push('Degrau '+n+': gasto e conversas calculados pela média dos totais lançados até '+mtDM(X.lastD)+' (estendida aos demais dias).');if(X.mix)al.push('Degrau '+n+': um total cobre a virada de orçamento, então a média mistura os dois valores. Para ficar exata, lance o total de '+mtDM(mtIso(mtDn(X.de)-1))+'.')});
+ const rr=B.rr,ra=A.rr,rc=(X,Y)=>`<tr style="border-top:1px solid #eee"><td style="padding:6px 2px">${X[0]}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${X[1]}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${X[2]}</td><td style="text-align:right;font-weight:700;white-space:nowrap">${X[3]||''}</td></tr>`;
+ const cpr=(X,Z)=>Z.r?Z.G/Z.r:null;
+ const rows=[['Concluíram (primeiro plano)',ra.c,rr.c,''],['Renovaram',ra.r,rr.r,''],['Não renovaram',ra.n,rr.n,''],['Ainda no plano (sem tempo de renovar)',ra.w,rr.w,''],
+  ['Taxa de renovação',mtP(ra.t),mtP(rr.t),ra.t!=null&&rr.t!=null?((rr.t-ra.t)*100>=0?'+':'')+Math.round((rr.t-ra.t)*100)+' pts':'—'],
+  ['Renovações por cliente (média)',ra.media==null?'—':f1(ra.media),rr.media==null?'—':f1(rr.media),ra.media!=null&&rr.media!=null?mtSg(rr.media/ra.media-1):'—'],
+  ['Renovaram 1× · 2–3× · 4×+',ra.b1+' · '+ra.b2+' · '+ra.b4,rr.b1+' · '+rr.b2+' · '+rr.b4,''],
+  ['Custo por cliente que renovou',ra.r&&A.G!=null?M0(A.G/ra.r):'—',rr.r&&B.G!=null?M0(B.G/rr.r):'—','']];
+ const atn=(ra.r+ra.n>=5&&rr.r+rr.n>=5&&ra.t!=null&&rr.t!=null&&rr.t<ra.t-0.10)?`<div style="color:#B71C1C;font-size:13px;margin:6px 0">⚠ Atenção: o degrau atual trouxe clientes que renovam menos (${mtP(rr.t)} contra ${mtP(ra.t)}). Isso não muda o veredito, mas vale acompanhar.</div>`:'';
+ $('#v6').innerHTML=`<h2>📊 COMPARAR ORÇAMENTOS</h2><div class="lb" style="text-align:center">${esc(c.nome)} · vendas novas</div>
+ <div style="display:flex;gap:8px"><div style="flex:1"><div class="lb">Antes</div>${sel('oca',ia)}</div><div style="flex:1"><div class="lb">Depois</div>${sel('ocb',ib)}</div></div>
+ <div class="card" style="margin:10px 0;background:${cor[0]};border-color:transparent"><div style="font-size:22px;font-weight:700;color:${cor[1]}">${cor[2]} ${V.t}</div><div style="font-size:14px;line-height:1.5;margin-top:4px">${esc(V.s)}</div></div>
+ ${al.map(x=>`<div style="color:#8D6E00;font-size:13px;margin:4px 2px">${esc(x)}</div>`).join('')}
+ <table style="width:100%;font-size:13px;border-collapse:collapse;margin-top:8px"><tr style="color:#777"><td></td><td style="text-align:right;white-space:nowrap;padding-left:6px"><b>${brl(A.v)}/dia</b></td><td style="text-align:right;white-space:nowrap;padding-left:6px"><b>${brl(B.v)}/dia</b></td><td style="text-align:right;white-space:nowrap;padding-left:6px">Diferença</td></tr>
+ <tr style="color:#999;font-size:11px"><td>Período</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${mtDM(A.de)}→${mtDM(A.ate)}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${mtDM(B.de)}→${mtDM(B.ate)}</td><td></td></tr>
+ ${R('Dias no degrau',A.dias,B.dias,x=>x==null?'—':x,0,0).replace(/<td style="text-align:right;font-weight:700;white-space:nowrap">[^<]*<\/td>/,'<td></td>')}
+ ${R('Gasto/dia',A.ag,B.ag,M0)}${R('Conversas/dia',A.av,B.av,f1)}${R('Custo por conversa',A.cpc,B.cpc,M0,1)}
+ ${R('Entradas/dia'+(B.aT?' <small style="color:#999">(+'+B.aT+' em andamento)</small>':''),A.nd,B.nd,x=>x==null?'—':x.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))}${R('Custo por entrada',A.cpe,B.cpe,M0,1)}
+ ${R('Entrada ÷ conversa',A.ec,B.ec,x=>x==null?'—':(Math.round(x*1000)/10).toLocaleString('pt-BR')+'%',0,1)}
+ <tr><td colspan="4" style="padding-top:8px;color:#777;font-size:12px">Só dias já fechados (entradas com mais de 7 dias):</td></tr>
+ ${R('Concluídas/dia',A.cd,B.cd,x=>x==null?'—':x.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))}${R('Desistência',A.des,B.des,Pc,0,1)}${R('Custo por venda',A.cvf,B.cvf,M0,1)}
+ ${R('Custo por venda projetado <small style="color:#999">(cenário otimista)</small>',A.cvp,B.cvp,M0,1)}${R('Lucro estimado/dia <small style="color:#999">(vendas novas)</small>',A.lu,B.lu,M0)}</table>
+ <div style="font-size:11px;color:#777;margin-top:4px">Tudo por dia. 🟢 custo subiu até 10% · 🟡 de 10% a 25% · 🔴 mais de 25%. “Projetado” conta as entradas ainda em andamento pela taxa de conclusão do degrau, em vez de tratá-las como se não fossem concluir. Lucro: vendas novas, sem renovações.</div>
+ <div class="lb" style="margin-top:16px">🔁 Renovadores que vieram dessas vendas novas <small>(à parte do veredito)</small></div>
+ <table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="color:#777"><td></td><td style="text-align:right;white-space:nowrap;padding-left:6px">${mtM(A.v)}</td><td style="text-align:right;white-space:nowrap;padding-left:6px">${mtM(B.v)}</td><td></td></tr>${rows.map(x=>rc(x)).join('')}</table>${atn}
+ <div style="font-size:11px;color:#777;margin-top:4px">Os clientes de cada degrau são os que entraram naquele período. O degrau mais novo ainda está renovando: compare de novo depois de algumas semanas.</div>
+ ${btn('VOLTAR','#9E9E9E',`mtC('${id}')`)}`;tela('v6');scrollTo(0,0)});
 /* ---- campanha: cadastro/edição ---- */
 const mtCForm=run(async id=>{const M=mtS(),c=id?M.cmp.find(x=>x.id===id):null,lb=t=>`<div class="lb">${t}</div>`;
  $('#v6').innerHTML=`<h2>${c?'EDITAR':'NOVA'} CAMPANHA</h2>${lb('Nome')}<input class="in" id="mcn" value="${esc(c?c.nome:'')}">
@@ -1231,7 +1286,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=22;
+const VERSAO=23;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
