@@ -1134,6 +1134,21 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
+<script id="ver">
+const VERSAO=1;
+(()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
+ const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
+ const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
+ const bn=mk('verbn','position:fixed;top:8px;left:10px;right:10px;z-index:30;background:#2E7D32;color:#fff;border-radius:12px;padding:12px 14px;font-size:16px;font-weight:700;text-align:center;box-shadow:0 4px 14px #0005');bn.hidden=true;
+ let tmA=0,novo=0;
+ const msg=(t,cor,fn,ms)=>{clearTimeout(tmA);bn.style.background=cor;bn.textContent=t;bn.hidden=false;bn.onclick=()=>{bn.hidden=true;fn&&fn()};if(ms)tmA=setTimeout(()=>{bn.hidden=true},ms)};
+ const atualizar=async()=>{try{const r=await navigator.serviceWorker.getRegistrations();for(const x of r)await x.unregister()}catch(e){}try{for(const k of await caches.keys())await caches.delete(k)}catch(e){}location.reload()};
+ const check=async()=>{try{const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=(await r.text()).match(/const VERSAO=(\d+)/);if(m&&+m[1]>VERSAO){novo=+m[1];if(isV1())msg('🔄 Nova versão '+novo+' disponível — toque para atualizar','#512BD4',atualizar,0)}}catch(e){}};
+ let shown=0;setInterval(()=>{lb.hidden=!isV1();if(isV1()&&!shown){shown=1;let ant=null;try{ant=localStorage.getItem(K)}catch(e){}if(String(ant)!==String(VERSAO)){msg('✅ Atualizado para a versão '+VERSAO,'#2E7D32',null,8000);try{localStorage.setItem(K,String(VERSAO))}catch(e){}}}
+  if(novo&&isV1()&&bn.hidden)msg('🔄 Nova versão '+novo+' disponível — toque para atualizar','#512BD4',atualizar,0)},1000);
+ setTimeout(check,4000);setInterval(check,600000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+})();
+</script>
 <script id="vz">
 /* ===== CONTROLE POR VOZ (🎤 ao lado do G) ===== */
 (()=>{
