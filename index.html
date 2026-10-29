@@ -1180,7 +1180,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=20;
+const VERSAO=21;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1572,7 +1572,7 @@ const NAV=[
  [/simulador|simulacao|simular/,'o simulador',()=>simu()],
  [/retencao|fidelizacao|taxa de renovacao/,'a retenção',()=>ret()],
  [/notas? fiscais?|notas? a emitir|emitir notas?|emissao de notas?|\bnfs?e?\b|\bnotas\b/,'as notas a emitir',()=>nfs()],
- [/notificac|central de mensagens|mensagens para enviar|central/,'a central de notificações',()=>nt()],
+ [/notificac|lembretes?|central de mensagens|mensagens para enviar|central/,'a central de notificações',()=>nt()],
  [/cinquenta vencidos|50 vencidos|entradas vencidas|50 reais vencidos/,'os R$ 50 vencidos',()=>e50v()],
  [/\bamr\b|\b(a )?m r\b|\bmr\b|\bemerre\b|\ba erre\b|\bamer\b|contabilidade|contador|relatorio contabil/,'a AMR',()=>amr()],
  [/anuncios?|\bmeta\b|facebook|instagram|campanhas?|trafego/,'os anúncios Meta',()=>mtMain()],
