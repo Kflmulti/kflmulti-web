@@ -571,7 +571,7 @@ function nfFilaResumo(fim){const q=NFQ;if(!q||!window.vozFala)return;if(fim!==1&
  window.vozFala(m)}
 const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert('Erro: '+e.message)}})(async()=>{if(NFQ&&NFQ.on)return;await nfLoad();const HM=NFP.modo=='homologacao',itens=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k)).map(x=>({linha:x.linha,data:x.data,cliente:x.cliente,valor:x.valor,k:nfK(x)}));
  if(!itens.length){toast('Nada para emitir');return nfv()}
- const q=NFQ={on:true,stop:false,hm:HM,itens,i:0,atual:'',ok:[],err:[],pul:[],mudo:false};if(cur!=='v6')tela('v6');window.vozCala&&window.vozCala();nfFal('Começando a emissão de '+itens.length+' nota'+(itens.length==1?'':'s')+(HM?', em teste':'')+'.');let wl=null;try{wl=await navigator.wakeLock.request('screen')}catch(e){}
+ const q=NFQ={on:true,stop:false,hm:HM,itens,i:0,atual:'',ok:[],err:[],pul:[],mudo:false,voz:!!window.__nfVoz};window.__nfVoz=0;if(cur!=='v6')tela('v6');window.vozCala&&window.vozCala();nfFal('Começando a emissão de '+itens.length+' nota'+(itens.length==1?'':'s')+(HM?', em teste':'')+'.');let wl=null;try{wl=await navigator.wakeLock.request('screen')}catch(e){}
  let seg=0;
  for(let i=0;i<itens.length&&!q.stop;i++){q.i=i;const it=itens[i];q.atual=it.cliente+' — '+it.valor;nfFilaDraw();
   if(i>0){try{await nfLoad()}catch(e){q.err.push({c:it.cliente,m:'Perdi a conexão antes desta nota. A fila parou.'});break}}
@@ -588,7 +588,7 @@ const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert(
   else{seg++;q.err.push({c:x.cliente,m:(r&&r.em&&r.em.erro)||(r&&r.erro)||'não foi emitida'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}, com problema: ${q.err[q.err.length-1].m}.`);if(seg>=3){q.err.push({c:'—',m:'3 erros seguidos: a fila parou para você verificar.'});break}}
   nfFilaDraw()}
  if(q.stop)q.pul.push({c:'—',m:'você parou a fila; as demais continuam na lista'});
- q.on=false;try{wl&&wl.release()}catch(e){}try{await nfLoad()}catch(e){}nfBanner();nfFilaDraw();nfFilaResumo(1);toast(q.ok.length+' nota(s) emitida(s)'+(q.err.length?' · '+q.err.length+' com problema':''))});
+ q.on=false;try{wl&&wl.release()}catch(e){}try{await nfLoad()}catch(e){}nfBanner();nfFilaDraw();nfFilaResumo(1);if(q.voz&&window.vozPergunta)window.vozPergunta();toast(q.ok.length+' nota(s) emitida(s)'+(q.err.length?' · '+q.err.length+' com problema':''))});
 const nfCons=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await nfx('consultar',{item:{linha:x.linha,data:x.data,cliente:x.cliente}});
  if(r.em&&r.em.status=='ok')toast('A nota existe: nº '+(r.em.numero||'?')+' ✔');else alert('O sistema nacional não tem essa nota.\n'+(r.em&&r.em.erro||'')+'\n\nPode emitir de novo.');await nfLoad();nfv()});
 const nfNum=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await pm('Número da NF emitida para '+x.cliente+' ('+x.data+'):');if(r===null)return;const n=r.trim();if(!/^[0-9A-Za-z./-]{1,20}$/.test(n))return alert('Número inválido.');
@@ -1182,7 +1182,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=8;
+const VERSAO=9;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1594,7 +1594,7 @@ async function acEmitirNotas(t){if(!/\b(emitir|emite|emita|emitam|emissao)\b/.te
  st='exec';draw();let L;try{await nfLoad();L=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k))}catch(e){st='idle';say('Não consegui carregar as notas agora.');return true}st='idle';
  if(!L.length){say('Não há notas disponíveis para emitir agora.');return true}
  const p=L.filter(x=>nfSit(x).k=='pronta').length,l=L.length-p,tot=r2(L.reduce((a,x)=>a+nfV(x),0)),alto=L.filter(x=>nfV(x)>NFMAX).length;
- ask(`Emitir ${L.length} notas disponíveis, ${p} completa${p==1?'':'s'}${l?' e '+l+' liberada'+(l==1?'':'s')+' sem identificação':''}, total ${brl(tot)}${alto?'. '+alto+' com valor alto, vou perguntar antes':''}. Vale de verdade. Confirma?`,async()=>{window.vozEncerra();nfFilaGo();return 'Começando a emitir. Vou falando o andamento.'});return true}
+ ask(`Emitir ${L.length} notas disponíveis, ${p} completa${p==1?'':'s'}${l?' e '+l+' liberada'+(l==1?'':'s')+' sem identificação':''}, total ${brl(tot)}${alto?'. '+alto+' com valor alto, vou perguntar antes':''}. Vale de verdade. Confirma?`,async()=>{window.vozEncerra();window.__nfVoz=1;nfFilaGo();return 'Começando a emitir. Vou falando o andamento.'});return true}
 function acImposto(t){if(!/\b(alter\w*|mude|muda|mudar|troqu\w*|troca\w*|ajust\w*|defin\w*|coloc\w*|atualiz\w*|configur\w*|passe|passar)\b/.test(t)||!/\b(imposto|aliquota)\b/.test(t))return false;
  const m=w2n(t).match(/(\d+(?:\.\d+)?)\s*(?:%|por cento)?/);const v=m?+m[1]:0;if(!(v>0&&v<=100)){say('Qual porcentagem de imposto? Diga, por exemplo, alterar o imposto para oito vírgula quatro por cento.',listen);return true}
  const f=x=>String(x).replace('.',',');ask(`Alterar o imposto de ${f(IP())}% para ${f(v)}%. Confirma?`,async()=>{S.imp=v;await save();if(cur==='v5')fin();return `Imposto alterado para ${f(v)}%.`});return true}
@@ -1635,6 +1635,7 @@ function suporte(){let o=document.getElementById('vzs');if(o)o.remove();o=docume
 window.vozSuporte=suporte;
 window.vozFala=m=>{try{if(!TTS||typeof SpeechSynthesisUtterance=='undefined')return;const u=new SpeechSynthesisUtterance(fix(m));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;TTS.speak(u)}catch(e){}};
 window.vozCala=()=>{try{TTS&&TTS.cancel()}catch(e){}};
+window.vozPergunta=()=>{if(!SR)return;let n=0;const iv=setInterval(()=>{n++;let fala=false;try{fala=TTS&&(TTS.speaking||TTS.pending)}catch(e){}if(!fala||n>150){clearInterval(iv);if(st=='idle'||st=='falando'||true)say(pick(MAIS),()=>listen(1))}},400)};
 window.vozEncerra=()=>{sess=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}B.classList.remove('on')};
 /* ---------- roteador ---------- */
 /* ---------- sinônimos: leva variações para os comandos que o app já entende ---------- */
