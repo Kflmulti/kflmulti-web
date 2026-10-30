@@ -1320,7 +1320,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=35;
+const VERSAO=36;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1397,6 +1397,7 @@ function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;
  const tt=st=='ouvindo'?'🎤 Ouvindo…':st=='falando'?'🔊 Falando…':st=='exec'?'⏳ Executando…':off?'🎤 Microfone desligado':'🎤 Comando de voz';
  P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-s>🛠 Suporte</button></div>`}
 function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
+let AC=null;const bip=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=988;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.16);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.18)}catch(e){}try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}};
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
 /* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
 const nzw=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
@@ -1429,7 +1430,7 @@ function listen(f){if(!SR){say('Este aparelho não tem reconhecimento de voz no 
  me.onerror=e=>{if(rec!==me)return;clearTimeout(TM);B.classList.remove('on');const c=e.error;if(fmode&&(c=='no-speech'||c=='aborted')){desl();return}if(auto0.v&&(c=='not-allowed'||c=='service-not-allowed')){auto0.v=false;sess=false;st='idle';P.hidden=true;return}
   const m=c=='not-allowed'||c=='service-not-allowed'?'Permita o uso do microfone para este app (ícone de cadeado na barra do navegador).':c=='no-speech'?'Não ouvi nada. Toque no microfone e fale de novo.':c=='network'?'Sem internet para reconhecer a voz.':c=='aborted'?null:'Erro no reconhecimento de voz ('+c+').';st='idle';sess=false;if(m)say(m);else draw()};
  me.onend=()=>{if(rec!==me)return;B.classList.remove('on');if(st=='ouvindo'){if(fmode)desl();else{st='idle';draw()}}};
- try{me.start()}catch(e){sess=false;say('Não consegui ligar o microfone agora. Tente de novo.')}}
+ bip();setTimeout(()=>{if(rec!==me)return;try{me.start()}catch(e){sess=false;say('Não consegui ligar o microfone agora. Tente de novo.')}},230)}
 
 /* ---------- confirmação e opções ---------- */
 const cancelar=()=>{ans=null;btns=[];say('Cancelado.')};
@@ -1765,14 +1766,14 @@ function acRenovar(t,c,rt,ex){const VB=rt?'Reativar':'Renovar',vb=rt?'reativar':
  const nw=tokName(c.cliente).w,tp=t.split(' ').filter(w=>!nw.includes(w)).join(' '),atual=planOf(nz(c.plano)),pl=planOf(tp)||planOf(ex||'')||(atual&&/\b(mesm[oa] plano|o mesmo|mesmo de sempre)\b/.test(t)?atual:null);
  if(!pl){const an=atual?atual.split(' - ')[0]:'';btns=[['Mesmo plano'+(an?' ('+an+')':''),()=>{ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano))}],['❌ Cancelar',cancelar]];
   ans=async T=>{for(const x of T){if(NO.test(x)){cancelar();return true}if(planOf(x)){ans=null;btns=[];acRenovar(t,c,rt,x);return true}if(atual&&/\b(mesmo|igual|atual|esse|mantem|manter|o de sempre)\b/.test(x)){ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano));return true}}return false};ans.live=1;
-  say(`Qual plano para ${c.cliente.trim()}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`,listen,`Qual plano para ${falaCli(c)}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`);return}
+  say(`Qual plano para ${c.cliente.trim()}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`,listen,`Qual plano para ${falaCli(c)}?${an?' Hoje, '+an+'.':''} Diga o plano, ou o mesmo.`);return}
  const tt=w2n(t),dm=tt.match(/desconto(?: de)? (\d+(?:\.\d+)?)/),ds=dm?+dm[1]:0,pe=/\b(pendente|pendencia|depois|a prazo|fiado|vai pagar)\b/.test(t),ini=/anteontem/.test(t)?-2:/\bontem\b/.test(t)?-1:0;
  let dv=null;if(pe){const hj=hoje(),m=tt.match(/dia (\d{1,2})/);if(/depois de amanha/.test(t))dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+2);else if(m){dv=new Date(hj.getFullYear(),hj.getMonth(),+m[1]);if(dv<hj)dv=new Date(hj.getFullYear(),hj.getMonth()+1,+m[1])}else dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+1)}
  if(ds>=valor(pl)){say('O desconto precisa ser menor que o valor do plano.');return}
  const v=r2(valor(pl)-ds);
  ask(`${VB} ${c.cliente.trim()} no ${pl.split(' - ')[0]} por ${brl(v)}${ds?` (desconto de ${brl(ds)})`:''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?`, pagamento pendente para ${dd(dv)}. Vai aparecer a tela do valor da dívida: toque em OK`:', pago hoje'}. Confirma?`,async()=>{
   const i=ix(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
-  const m=await withAlert(()=>renovar(i));return m.length?m.join(' '):(rt?'Cliente reativado.':'Renovação feita.')},`Você deseja ${vb} ${falaCli(c)}, no ${pl.split(' - ')[0]} por ${brl(v)}${ds?', com desconto de '+brl(ds):''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?', pagamento pendente para '+dd(dv)+'. Vai aparecer a tela do valor da dívida: toque em OK':', pago hoje'}. Confirma?`)}
+  const m=await withAlert(()=>renovar(i));return m.length?m.join(' '):(rt?'Cliente reativado.':'Renovação feita.')},`${VB} ${falaCli(c)}, ${pl.split(' - ')[0]}, ${brl(v)}${ds?', desconto de '+brl(ds):''}${ini?', início '+(ini==-2?'anteontem':'ontem'):''}${pe?', pendente para '+dd(dv):', pago hoje'}. Confirma?`)}
 async function acEmitirNotas(t){if(!/\b(emitir|emite|emita|emitam|emissao)\b/.test(t)||!/\b(notas?|nfs?|nfse|fiscais)\b/.test(t)||/\b(quant[oa]s?|quais|qual|quem|como)\b/.test(t))return false;
  st='exec';draw();let L;try{await nfLoad();L=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k))}catch(e){st='idle';say('Não consegui carregar as notas agora.');return true}st='idle';
  if(!L.length){say('Não há notas disponíveis para emitir agora.');return true}
