@@ -1293,7 +1293,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=31;
+const VERSAO=32;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1373,16 +1373,22 @@ function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catc
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
 /* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
 const nzw=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
-function live(my,fala){if(!SR)return;const FN=nzw(fala).join(' ');let n=0;const go=()=>{if(sayId!==my||st!='falando'||!ans||!ans.live||n++>12)return;const f=ans,W=new Set(nzw(fala)),me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=3;me.continuous=false;
- me.onresult=async e=>{if(rec!==me||sayId!==my||ans!==f)return;const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const t=nzw(a[0]),tx=t.join(' ');
-  let ok=t.length>0&&t.length<=4&&!(t.length>=2&&(' '+FN+' ').includes(' '+tx+' '));
-  if(ok&&f.strict)ok=t.length<=3&&(YES.test(tx)||NO.test(tx))&&!t.some(w=>W.has(w));
-  if(!ok){setTimeout(go,150);return}
-  let res=false;try{res=await f(a.map(nz).filter(Boolean))}catch(x){res=false}
-  if(!res){setTimeout(go,150);return}
-  heard=a[0]||'';lastF=false;if(sayId===my){sayId++;try{TTS&&TTS.cancel()}catch(x){}clearTimeout(TM);if(st=='falando')st='idle';rec=null;B.classList.remove('on')}draw()};
- me.onerror=()=>{if(rec===me)setTimeout(go,300)};me.onend=()=>{if(rec===me&&sayId===my&&st=='falando')setTimeout(go,150)};
- try{me.start()}catch(x){}};go()}
+const LV={s:0,r:0,e:'',t:'',h:0};
+function live(my,fala){if(!SR)return;const FT=nzw(fala),FN=FT.join(' ');let n=0,done=0;
+ const strip=t=>{const o=[];for(let i=0;i<t.length;){let best=0;for(let j=0;j<FT.length;j++){let k=0;while(i+k<t.length&&j+k<FT.length&&t[i+k]===FT[j+k])k++;if(k>best)best=k}if(best>=3)i+=best;else{o.push(t[i]);i++}}return o};
+ const go=()=>{if(done||sayId!==my||st!='falando'||!ans||!ans.live||n++>30)return;const f=ans,W=new Set(FT),me=rec=new SR();me.lang='pt-BR';me.interimResults=true;me.maxAlternatives=3;me.continuous=false;let tm=0,busy=0;
+  const exec=async(rem,alts)=>{if(busy||done||rec!==me||sayId!==my||ans!==f)return;busy=1;let res=false;try{res=await f(alts)}catch(x){res=false}busy=0;
+   if(!res)return;done=1;LV.h++;heard=rem.join(' ');lastF=false;if(sayId===my){sayId++;try{TTS&&TTS.cancel()}catch(x){}clearTimeout(TM);if(st=='falando')st='idle';rec=null;B.classList.remove('on')}draw()};
+  me.onstart=()=>{LV.s++};
+  me.onresult=e=>{if(done||rec!==me||sayId!==my||ans!==f)return;const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);LV.r++;LV.t=String(a[0]||'').slice(0,60);
+   const rem=strip(nzw(a[0])),tx=rem.join(' '),fin=r.isFinal!==false;clearTimeout(tm);
+   let ok=rem.length>0&&rem.length<=3;
+   if(ok&&f.strict){const r2=rem.filter(w=>!W.has(w)).join(' ');ok=!!r2&&(YES.test(r2)||NO.test(r2));if(ok)rem.splice(0,rem.length,...rem.filter(w=>!W.has(w)))}
+   if(!ok){if(fin)setTimeout(go,150);return}
+   const alts=[tx].concat(a.slice(1).map(x=>strip(nzw(x)).join(' ')).filter(Boolean));
+   if(f.strict||fin)exec(rem,alts);else tm=setTimeout(()=>exec(rem,alts),700)};
+  me.onerror=e=>{LV.e=String(e&&e.error||'erro');if(rec===me)setTimeout(go,300)};me.onend=()=>{clearTimeout(tm);if(rec===me&&!done&&sayId===my&&st=='falando')setTimeout(go,150)};
+  try{me.start()}catch(x){LV.e='start'}};go()}
 function say(msg,after,spk){if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
  if(!TTS||typeof SpeechSynthesisUtterance=='undefined'){st='idle';fin();return}
  try{TTS.cancel();const u=new SpeechSynthesisUtterance(fix(spk||msg));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;u.onend=fin;u.onerror=fin;st='falando';draw();TTS.speak(u);if(ans&&SR)live(my,fix(spk||msg));setTimeout(fin,Math.min(70000,4000+fix(spk||msg).length*130))}catch(e){fin()}}
@@ -1781,7 +1787,7 @@ const VOC='valor saldo disponivel livre gastos gastei gasto despesas despesa cli
 const COMUM=new Set('pagar pagos pagas pagou pagamentos falta faltam ainda esse essa lancar lancamento lancamentos renovar renovacao renovacoes reativar pausar para como esta estao tudo mais menos meus minha minhas seus pelo pela pelos desse dessa isso esse essa onde quando porque qual quem tem foi sao dia dias mes meses ano anos hoje agora todos todas nome plano planos conta contas geral'.split(' '));
 function corrige(t){let nomes;try{nomes=new Set(C.concat(S.fixos||[]).map(x=>nz(x.cliente||x.nome||'')).join(' ').split(' '))}catch(e){nomes=new Set()}
  return t.split(' ').map(w=>{if(w.length<4||/\d/.test(w)||COMUM.has(w)||VOC.includes(w)||nomes.has(w))return w;const lim=w.length>=5?2:1;let best=null,bd=9,tie=0;for(const v of VOC){if(Math.abs(v.length-w.length)>lim)continue;const d=lev(w,v);if(d<bd){bd=d;best=v;tie=0}else if(d==bd)tie++}return best&&bd<=lim&&!tie?best:w}).join(' ')}
-function snapV(){try{if(diario())save();const x=fpCalc(),f={};Object.keys(x).forEach(k=>{if(typeof x[k]=='number')f[k]=r2(x[k])});return{fin:f,dia:hd(),mes:S.mes,saldoE:S.saldoE,saldoP:S.saldoP,cartaoE:S.cartaoE,cartaoP:S.cartaoP,fundo:S.fundo}}catch(e){return{erro:String(e&&e.message||e)}}}
+function snapV(){try{if(diario())save();const x=fpCalc(),f={};Object.keys(x).forEach(k=>{if(typeof x[k]=='number')f[k]=r2(x[k])});return{fin:f,dia:hd(),lv:LV,mes:S.mes,saldoE:S.saldoE,saldoP:S.saldoP,cartaoE:S.cartaoE,cartaoP:S.cartaoP,fundo:S.fundo}}catch(e){return{erro:String(e&&e.message||e)}}}
 function logV(m,ex){if(!Q)return null;const e=Object.assign({ts:Q.ts||Date.now(),v:typeof VERSAO!='undefined'?VERSAO:0,m,q:Q.q,r:Q.r,c:snapV()},ex||{});S.vlog=(S.vlog||[]).concat([e]).slice(-100);Q.log=e;try{save()}catch(x){}return e}
 function naoEra(){if(!Q||!Q.r)return;if(Q.log&&Q.log.m=='nao_era_isso'){say('Já anotei essa.');return}const e=logV('nao_era_isso');if(!e)return;
  ans=async T=>{ans=null;btns=[];const t=nz(T[0]||'');if(/^(pular|nao|nada|deixa|sem nota)( |$)/.test(t)){say('Anotado.');return true}e.n=T[0];try{save()}catch(x){}say('Anotado: “'+T[0]+'”.');return true};
