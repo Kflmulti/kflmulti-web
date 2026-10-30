@@ -1320,7 +1320,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=34;
+const VERSAO=35;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1748,12 +1748,13 @@ const AJUDA='Posso responder qualquer dado do app, sozinho ou combinado. Exemplo
 /* ---------- ações ---------- */
 const info=c=>{const p=pend(c);return `${c.cliente.trim()}: plano ${c.plano||'sem plano'}, vence em ${String(c.fim||'').slice(0,5)||'sem data'}, ${ok(c)?'ativo':'pausado'}${p?`, pendência de ${c.pg} com pagamento em ${String(c.datapg).slice(0,5)}`:''}, ${S.cont[c.cliente]||0} renovações.`};
 function acBaixa(t){const pool=ativos().filter(pend);
- if(needCli(t,pool,c=>ask(`Dar baixa no pagamento de ${c.cliente.trim()}, ${c.pg}?`,async()=>{const i=C.indexOf(c),v=c.pg;ficha(i);$('#pe').checked=false;const m=await withAlert(()=>voltarF(i));return m.length?m.join(' '):`Baixa registrada em ${c.cliente.trim()}, ${v}.`},`Dar baixa no pagamento de ${falaCli(c)}, ${c.pg}?`),null))return true;
+ if(needCli(t,pool,c=>ask(`Dar baixa no pagamento de ${c.cliente.trim()}, ${c.pg}?`,async()=>{const i=ix(c),v=c.pg;ficha(i);$('#pe').checked=false;const m=await withAlert(()=>voltarF(i));return m.length?m.join(' '):`Baixa registrada em ${c.cliente.trim()}, ${v}.`},`Dar baixa no pagamento de ${falaCli(c)}, ${c.pg}?`),null))return true;
  const r=achaCli(t,C);fail=r.length?`${r[0].c.cliente.trim()} não está com pagamento pendente.`:'Não achei esse cliente entre os pendentes. Diga o nome e os números.';return false}
 function acPausar(t){return needCli(t,ativos(),c=>ask(`Pausar ${c.cliente.trim()}?`,async()=>{const r=await pausaCli(c);await save();tela('v1');lista();return r?`${c.cliente.trim()} pausado.`:`${c.cliente.trim()} pausado no app. O envio para a planilha ficou na fila.`},`Você deseja pausar ${falaCli(c)}?`),'Não achei esse cliente entre os ativos. Diga o nome e os números, ou o final do código.')}
 function acReativar(t){const pool=C.filter(c=>!ok(c));
  if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c,1));
  const r=achaCli(t,C);fail=r.length?`${r[0].c.cliente.trim()} não está pausado, está ativo.`:'Não achei esse cliente entre os pausados. Diga o nome e os números, ou o final do código.';return false}
+const ix=c=>{let i=C.indexOf(c);if(i<0)i=C.findIndex(x=>x.cliente===c.cliente);if(i<0)throw new Error('não achei mais esse cliente, atualize a lista e tente de novo');return i};
 function acRenovarBusca(t){const pool=ativos().filter(c=>{const d=pd(c.fim);return d&&d<=hoje()});
  if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c));
  const r=achaCli(t,C);if(!r.length){fail='Não achei esse cliente. Diga o nome e os números.';return false}
@@ -1770,7 +1771,7 @@ function acRenovar(t,c,rt,ex){const VB=rt?'Reativar':'Renovar',vb=rt?'reativar':
  if(ds>=valor(pl)){say('O desconto precisa ser menor que o valor do plano.');return}
  const v=r2(valor(pl)-ds);
  ask(`${VB} ${c.cliente.trim()} no ${pl.split(' - ')[0]} por ${brl(v)}${ds?` (desconto de ${brl(ds)})`:''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?`, pagamento pendente para ${dd(dv)}. Vai aparecer a tela do valor da dívida: toque em OK`:', pago hoje'}. Confirma?`,async()=>{
-  const i=C.indexOf(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
+  const i=ix(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
   const m=await withAlert(()=>renovar(i));return m.length?m.join(' '):(rt?'Cliente reativado.':'Renovação feita.')},`Você deseja ${vb} ${falaCli(c)}, no ${pl.split(' - ')[0]} por ${brl(v)}${ds?', com desconto de '+brl(ds):''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?', pagamento pendente para '+dd(dv)+'. Vai aparecer a tela do valor da dívida: toque em OK':', pago hoje'}. Confirma?`)}
 async function acEmitirNotas(t){if(!/\b(emitir|emite|emita|emitam|emissao)\b/.test(t)||!/\b(notas?|nfs?|nfse|fiscais)\b/.test(t)||/\b(quant[oa]s?|quais|qual|quem|como)\b/.test(t))return false;
  st='exec';draw();let L;try{await nfLoad();L=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k))}catch(e){st='idle';say('Não consegui carregar as notas agora.');return true}st='idle';
@@ -1890,12 +1891,12 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  if(/\b(pausa|pausar|pause)\b/.test(t))return acPausar(t);
  if(/\b(reativ\w*|despaus\w*|retom(ar|a|e)|reabr(ir|a|e) (o )?cliente|ativar|ative|ativa o cliente)\b/.test(t))return acReativar(t);
  if(/\b(renova|renovar|renove|renovou)\b/.test(t)&&!/\b(pendent\w*|quantos|quais|quem|pagamentos?)\b/.test(t)&&!/\bclientes? (para|a|que (precisam?|devem?|vao)) renovar/.test(t))return acRenovarBusca(t);
- if(/\b(whats|whatsapp|zap|zapzap)\b/.test(t))return needCli(t,C,async c=>{const i=C.indexOf(c),k=/\bpessoal\b/.test(t)||!String(c.celcon||'').replace(/\D/g,'')?'cel':'celcon';const mm=await withAlert(async()=>wa(i,k));say(mm.length?mm.join(' '):`WhatsApp ${k=='cel'?'pessoal':'comercial'} de ${c.cliente.trim()} preparado. Se não abrir sozinho, toque no botão verde.`)},'Não achei esse cliente. Diga o nome e os números.');
+ if(/\b(whats|whatsapp|zap|zapzap)\b/.test(t))return needCli(t,C,async c=>{const i=ix(c),k=/\bpessoal\b/.test(t)||!String(c.celcon||'').replace(/\D/g,'')?'cel':'celcon';const mm=await withAlert(async()=>wa(i,k));say(mm.length?mm.join(' '):`WhatsApp ${k=='cel'?'pessoal':'comercial'} de ${c.cliente.trim()} preparado. Se não abrir sozinho, toque no botão verde.`)},'Não achei esse cliente. Diga o nome e os números.');
  if(acGasto(t))return true;
  const cli=/\b(cliente|ficha)\b/.test(t)||/(situacao|onde esta|onde fica|quando vence|vencimento|informac|dados|como esta|esta pendente|esta ativo|qual o plano)/.test(t);
- if(cli){const r=achaCli(t,C);if(r.length)return needCli(t,C,c=>{if(/\b(cliente|ficha|abrir|abre|mostrar|mostra|ver)\b/.test(t)){ficha(C.indexOf(c))}say(info(c))})}
+ if(cli){const r=achaCli(t,C);if(r.length)return needCli(t,C,c=>{if(/\b(cliente|ficha|abrir|abre|mostrar|mostra|ver)\b/.test(t)){ficha(ix(c))}say(info(c))})}
  for(const [rx,lb,fn] of NAV)if(rx.test(t)){fn();say('Abri '+lb+'.');return true}
- const r=achaCli(t,C);if(r.length&&r[0].s>=3)return needCli(t,C,c=>{ficha(C.indexOf(c));say('Abri a ficha. '+info(c))});
+ const r=achaCli(t,C);if(r.length&&r[0].s>=3)return needCli(t,C,c=>{ficha(ix(c));say('Abri a ficha. '+info(c))});
  return false}
 const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|valeu|tchau|ja deu|ja chega|ta bom|esta bom|tudo certo|ok)( (obrigad[oa]|mais|nada|valeu|e isso|por hoje|pode parar))?|(pode )?(parar|encerrar?|desligar?|desliga o microfone)|nao (preciso|quero|tem mais|obrigad[oa]))$/,SIM=/^(sim|quero|tenho|pode|claro|uhum|aham)( |$)/;
 async function handle(alts){const F=lastF;lastF=false;const T=alts.map(nz).filter(Boolean);if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
