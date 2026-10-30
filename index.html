@@ -785,7 +785,16 @@ function amrPrevHtml(j,rows){let p;try{p=amrPrev(j,rows)}catch(e){return''}
  `<div style="margin-top:8px">${ln('Vendas previstas do mês',brl(p.prevV),'#1B5E20')}${ln('Despesas (todos os fixos, pagos ou não)',brl(p.prevD),'#C62828')}<div style="color:#888;font-size:12px">${brl(p.des)} já lançadas${p.fx?' + '+brl(p.fx)+' de fixos que ainda faltam lançar':''}</div>${ln('Lucro previsto do mês',brl(p.luc),p.luc>=0?'#1B5E20':'#B71C1C')}<div style="color:#888;font-size:12px">Imposto estimado fora do cálculo, como acima.</div></div>`}
 /* ===== v39: bloco de notas (a voz lê notas inteiras ou itens dentro delas) ===== */
 function notas(){const N=S.notas||[];$('#v6').innerHTML=`<h2>BLOCO DE NOTAS</h2>${btn('➕ NOVA NOTA','#512BD4','notaEd(-1)')}${N.length?N.map((n,i)=>`<div class="card" onclick="notaEd(${i})" style="margin:8px 0;cursor:pointer"><b>${esc(n.t||'Sem título')}</b><div class="lb" style="white-space:pre-line">${esc((n.x||'').split('\n').slice(0,3).join('\n'))}</div></div>`).join(''):'<p style="color:#999;text-align:center">Nenhuma nota ainda. Toque em NOVA NOTA.</p>'}<div class="lb" style="text-align:center">Pela voz: "leia a nota compras" ou "quantos tomates tem na lista?"</div>${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6')}
-function notaEd(i){const n=(S.notas||[])[i]||{t:'',x:''};$('#v6').innerHTML=`<h2>${i>=0?'EDITAR NOTA':'NOVA NOTA'}</h2><input id="nt" placeholder="Título (ex.: Lista de compras)" value="${esc(n.t)}" style="width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px;margin:6px 0"><textarea id="nx" placeholder="Escreva aqui. Uma linha por item ajuda a voz a achar." style="width:100%;box-sizing:border-box;min-height:260px;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px">${esc(n.x)}</textarea>${btn('💾 SALVAR','#2E7D32','notaSv('+i+')')}${i>=0?btn('🗑 APAGAR','#C62828','notaDel('+i+')'):''}${btn('VOLTAR','#9E9E9E','notas()')}`;tela('v6')}
+function notaEd(i){const n=(S.notas||[])[i]||{t:'',x:''};$('#v6').innerHTML=`<h2>${i>=0?'EDITAR NOTA':'NOVA NOTA'}</h2><input id="nt" placeholder="Título (ex.: Lista de compras)" value="${esc(n.t)}" style="width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px;margin:6px 0"><div style="display:flex;gap:6px;margin:6px 0"><input id="nb" placeholder="🔎 Buscar nesta nota" oninput="notaBusca(0)" style="flex:1;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #512BD4;border-radius:10px"><button class="bt" style="height:44px;padding:0 14px" onclick="notaBusca(1)">Próxima ▶</button></div><div id="nbr" style="margin-bottom:6px"></div><textarea id="nx" placeholder="Escreva aqui. Uma linha por item ajuda a voz a achar." style="width:100%;box-sizing:border-box;min-height:260px;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px">${esc(n.x)}</textarea>${btn('💾 SALVAR','#2E7D32','notaSv('+i+')')}${i>=0?btn('🗑 APAGAR','#C62828','notaDel('+i+')'):''}${btn('VOLTAR','#9E9E9E','notas()')}`;tela('v6')}
+let nbI=-1;const nbNa=s=>String(s).split('').map(c=>c.normalize('NFD')[0]).join('').toLowerCase();
+function notaBusca(passo){const q=nbNa($('#nb').value.trim()),ta=$('#nx'),r=$('#nbr');if(!q){r.innerHTML='';nbI=-1;return}
+ const tx=ta.value,low=nbNa(tx),pos=[];let k=-1;while((k=low.indexOf(q,k+1))>=0)pos.push(k);
+ if(!pos.length){r.innerHTML='<span style="color:#C62828">Não encontrado nesta nota.</span>';nbI=-1;return}
+ if(passo){nbI=(nbI+1)%pos.length;notaVai(pos[nbI],q.length)}else nbI=-1;
+ const ls=[];let off=0;tx.split('\n').forEach(l=>{const i=nbNa(l).indexOf(q);if(i>=0)ls.push({p:off+i,l,i});off+=l.length+1});
+ r.innerHTML=`<div class="lb">${pos.length} resultado${pos.length==1?'':'s'}${nbI>=0?' · mostrando o '+(nbI+1)+'º':''} — toque numa linha para ir até ela</div>`+ls.slice(0,30).map(x=>{const a=Math.max(0,x.i-50),z=x.l.slice(a,x.i+q.length+60);const di=x.i-a;return `<div class="card" style="margin:4px 0;padding:8px 10px;font-size:14px;cursor:pointer" onclick="notaVai(${x.p},${q.length})">${a?'…':''}${esc(z.slice(0,di))}<b style="background:#FFF59D">${esc(z.slice(di,di+q.length))}</b>${esc(z.slice(di+q.length))}${a+z.length<x.l.length?'…':''}</div>`}).join('')}
+function notaVai(p,n){const ta=$('#nx'),tx=ta.value,m=document.createElement('div'),cs=getComputedStyle(ta);m.style.cssText=`position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box;border:0;width:${ta.clientWidth}px;font:${cs.font};padding:${cs.padding};letter-spacing:${cs.letterSpacing}`;m.textContent=tx.slice(0,p);document.body.appendChild(m);const y=m.scrollHeight;m.remove();
+ try{ta.scrollIntoView({block:'start'})}catch(e){}ta.focus();ta.setSelectionRange(p,p+n);ta.scrollTop=Math.max(0,y-ta.clientHeight/3)}
 const notaSv=run(async i=>{const t=$('#nt').value.trim(),x=$('#nx').value;if(!t&&!x.trim()){toast('Nota vazia');return}const N=S.notas=S.notas||[],o={t:t||x.trim().split('\n')[0].slice(0,40),x,ts:Date.now()};if(i>=0&&N[i])Object.assign(N[i],o);else N.push(o);await save();toast('Nota salva ✔');notas()});
 const notaDel=run(async i=>{const n=(S.notas||[])[i];if(!n||!confirm('Apagar a nota "'+n.t+'"?'))return;S.notas.splice(i,1);await save();notas()});
 async function amrResumo(k){const el=$('#amrsum');if(!el)return;const mes=amrMes(k),rows=(amrRef(k)||{}).rows||[];
@@ -1326,7 +1335,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=39;
+const VERSAO=40;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1897,6 +1906,36 @@ function notasVoz(t){const N=S.notas||[];
  if(!C1.length||top.best==0&&top.ts>0){const L=String(top.n.x||'').split('\n').map(x=>x.trim()).filter(Boolean);say(`Nota ${top.n.t}. `+(L.length?L.join('. ')+'.':'Está vazia.'));return true}
  const so=sc.filter(x=>x.best==top.best&&x.bl&&x.tot>=top.tot-1).slice(0,2);
  say(so.map(x=>`Na nota ${x.n.t}: ${x.bl}.`).join(' '));return true}
+/* ===== criar nota / acrescentar item por voz ===== */
+let RAWA=null;const noAcc=x=>String(x).split('').map(ch=>ch.normalize('NFD')[0]).join('').toLowerCase();
+const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
+function notaPut(titulo,linha){const N=S.notas=S.notas||[];let n=N.find(x=>nzw(x.t).join(' ')===nzw(titulo).join(' '));let nova=false;if(!n){n={t:titulo,x:'',ts:Date.now()};N.push(n);nova=true}
+ if(linha)n.x=(n.x?n.x.replace(/\s+$/,'')+'\n':'')+linha;n.ts=Date.now();try{save()}catch(e){}try{const h=((document.querySelector('#v6 h2')||{}).textContent||'');if(cur==='v6'&&/BLOCO DE NOTAS/.test(h))notas()}catch(e){}return nova}
+function achaNota(alvo){const N=S.notas||[],TW=nzw(alvo).filter(w=>!/^(lista|nota|notas|minha|de|da|do)$/.test(w)).map(stN);if(!TW.length)return null;
+ let b=null,bs=0;N.forEach(n=>{const tt=nzw(n.t).map(stN),k=TW.filter(w=>tt.includes(w)||tt.some(x=>w.length>=4&&(x.startsWith(w)||w.startsWith(x)))).length;if(k>bs){bs=k;b=n}});return bs?b:null}
+function notasCria(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))return false;
+ const raw=(Q&&Q.q&&(Q.q.find(a=>nz(a)===t)||Q.q[0]))||t,nr=noAcc(raw).trim();let m;
+ const tira=(a)=>a.replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim();
+ /* A: criar nota nova (título e conteúdo ditados) */
+ if(m=nr.match(/^(?:me )?(?:cri(?:a|e|ar)|faz(?:er)?|faca|abr(?:e|a|ir)|inicia(?:r)?) (?:uma |a )?(?:nova )?nota(?: (?:chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)||nr.match(/^nova nota(?: (?:chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)){
+  const ti=m[1]?tira(raw.slice(raw.length-m[1].length)):'';
+  const conteudo=titulo=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];const nv=notaPut(titulo,cap(x));say(`Nota ${titulo} criada. Para acrescentar algo, diga: adiciona, o item, na nota ${titulo}.`);return true};btns=[['❌ Cancelar',cancelar]];say('O que eu escrevo?',listen)};
+  if(ti){conteudo(cap(ti));return true}
+  ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];conteudo(cap(x));return true};btns=[['❌ Cancelar',cancelar]];say('Qual o título da nota?',listen);return true}
+ /* B: acrescentar item em nota/lista */
+ if(m=nr.match(/^(?:me )?(?:anota|anote|anotar|adiciona|adicione|adicionar|coloca|coloque|colocar|poe|ponha|por|inclui|inclua|incluir|escreve|escreva|acrescenta|acrescente) (.+?) (?:na|no|em|a|para|pra|nas|nos|dentro da|dentro do) (?:minha |a |o )?(nota|lista)(?: (?:de|da|do|chamada))? ?(.*)$/)){
+  const i0=m[0].indexOf(m[1]),item=tira(raw.slice(i0,i0+m[1].length)),alvoT=tira(m[3]||''),eh=m[2];
+  const alvo=alvoT?alvoT:(eh=='lista'?'compras':'');
+  const n=achaNota((eh=='lista'?'lista ':'')+alvo)||achaNota(alvo)||(eh=='lista'&&!alvoT?(S.notas||[]).find(x=>/lista/.test(nz(x.t))):null);
+  const itens=item.split(/\s*,\s*/).map(tira).filter(Boolean).map(cap);
+  if(!itens.length)return false;
+  if(n){itens.forEach(x=>notaPut(n.t,x));say(`Acrescentei na nota ${n.t}: ${itens.join('; ')}.`);return true}
+  const ti=cap(tira(alvoT?(eh=='lista'?'lista de ':'')+raw.slice(raw.length-alvoT.length):'Lista'));
+  ask(`Não achei essa nota. Criar a nota ${ti} com: ${itens.join('; ')}?`,async()=>{itens.forEach(x=>notaPut(ti,x));return `Nota ${ti} criada.`});return true}
+ /* C: lembrete/anotação solta */
+ if((m=nr.match(/^(?:me lembra|lembra|lembre|lembrar|(?:anota|anote|anotar) (?:um |o )?lembrete|lembrete)(?: que| de| disso| isso)?:? (.+)$/))&&!/\b(nota|lista)\b/.test(nr)){
+  const x=tira(raw.slice(raw.length-m[1].length));if(!x)return false;const d=new Date(),ti='Lembretes';notaPut(ti,`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}: ${cap(x)}`);say('Anotado nos Lembretes.');return true}
+ return false}
 async function route(t){t=canon(t);
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();say('Abri o suporte da voz.');return true}
@@ -1905,6 +1944,7 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  if(/mais (devagar|lento)|desacelera/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
  if(/\b(repete|repita|fala de novo)\b/.test(t)&&lastSay){say(lastSay);return true}
  if(/\b(cancela|cancelar|esquece|silencio|cala a boca)\b/.test(t)){stopAll();say('Ok.');return true}
+ if(notasCria(t))return true
  if(notasVoz(t))return true
  if(/\b(cadastro|ficha)\b/.test(t)&&/\b(abr\w*|mostr\w*|ver|edit\w*|acess\w*)\b/.test(t)){const t2=t.replace(/\b(abrir|abre|abra|mostrar|mostra|mostre|ver|editar|edite|edicao|acessar|acesse|tela|cadastro|ficha|cliente|final|para|do|da|de|o|a)\b/g,' ').replace(/\s+/g,' ').trim(),r=achaCli(t2,C);if(r.length)return needCli(t2,C,c=>{ficha(ix(c));say('Abri o cadastro de '+c.cliente.trim()+'.',null,'Abri o cadastro de '+falaCli(c)+'.')})}
  if(/\b(abrir|abre|abra|mostrar|mostra|mostre|ir para|va para|vai para|tela)\b/.test(t))for(const [rx,lb,fn] of NAV)if(rx.test(t)){fn();say('Abri '+lb+'.');return true}
@@ -1932,7 +1972,7 @@ const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|val
 async function handle(alts){const F=lastF;lastF=false;const T=alts.map(nz).filter(Boolean);if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
  if(F&&!ans&&T.some(t=>FIM.test(t)||(t.split(' ').length<=6&&/\b(nao|nada)\b/.test(t)&&!/\d/.test(t)))){sess=false;say(pick(TCHAU),()=>{st='idle';heard='';reply='';draw();P.hidden=true});return}
  if(F&&!ans&&T.every(t=>t.split(' ').length<=2&&SIM.test(t))){say(pick(FALE),()=>listen(1));return}
- if(ans){const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
+ if(ans){RAWA=alts;const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
  Q={r:'',q:alts.slice(0,3),ts:Date.now()};fail='';for(const t of T)if(await route(t))return;
  for(const t of T){const c=corrige(t);if(c!==t&&await route(c)){logV('corrigido',{fix:c});return}}
  const m=fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`;Q.r=m;logV('nao_entendi');say(m)}
