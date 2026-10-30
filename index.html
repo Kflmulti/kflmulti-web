@@ -386,7 +386,7 @@ const salvaEd=run(async i=>{const c=C[i],b={cliente_original:c.cliente};['client
  await post('AlteraPlanilha.php',b,true);alert('Cadastro atualizado.');await carregar();tela('v1')});
 
 const vp=p=>{p=(p||'').toUpperCase();return p.includes('GOLD ADVANCED')?600:p.includes('GOLD SMART')?300:p.includes('GOLD')?150:p.includes('MEGA ADVANCED')?1200:p.includes('MEGA SMART')?600:p.includes('MEGA')?300:p.includes('PLUS ADVANCED')?2400:p.includes('PLUS SMART')?1200:p.includes('PLUS')?600:0},lp=p=>(p||'').split('-')[0].replace('Plano','').replace('Combo','').trim();
-const voltarF=run(async i=>{const c=C[i];let nov=null;if(pend(c)&&$('#pe')&&!$('#pe').checked){await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''});const dk=c.cliente.trim().toLowerCase(),dsc=(S.dsc||{})[dk]||0,v=vp(c.plano)-dsc,h=fm(new Date()),pgv=num(c.pg);Object.assign(c,{datapg:'',pg:''});const nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)),pri=nN?(nN.cu||0):(pgv<v?r2(2*(S.custoDia||9)):0);if(nN)nN.done=true;credita(c.cliente,pgv,'P',calcV('P',pgv,v,c.plano,pri));if(nN){const le=S.ent[S.ent.length-1];if(le&&le.k==='P')le.n=1}
+const voltarF=run(async i=>{const c=C[i];let nov=null;if(pend(c)&&$('#pe')&&!$('#pe').checked){await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''});const dk=c.cliente.trim().toLowerCase(),dsc=(S.dsc||{})[dk]||0,v0=vp(c.plano)-dsc,h=fm(new Date()),pgv=num(c.pg);Object.assign(c,{datapg:'',pg:''});const nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)),nE=nN?null:(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&x.done&&x.exp&&!x.cmp&&nmEq(x.cli,c.cliente)&&pgv<=r2(v0-x.v)+.01),v=nE?r2(v0-nE.v):v0,pri=nN?(nN.cu||0):nE?(nE.cu||0):(pgv<v?r2(2*(S.custoDia||9)):0);if(nN)nN.done=true;if(nE)nE.cmp=1;credita(c.cliente,pgv,'P',calcV('P',pgv,v,c.plano,pri));if(nN){const le=S.ent[S.ent.length-1];if(le&&le.k==='P')le.n=1}
  if(v>0&&!S.nf.some(n=>n.cliente.trim().toLowerCase()===c.cliente.trim().toLowerCase()&&n.data===h&&n.valor===brl(v))){const nf={data:h,cliente:c.cliente,valor:brl(v),plano:c.plano,dias:dias(c.plano)};S.nf.push(nf);(S.nfMes=S.nfMes||[]).push(nf);S.totmes=r2((S.totmes||0)+v);hd().ent=r2(hd().ent+v);if(!(S.pagos=S.pagos||[]).includes(c.cliente))S.pagos.push(c.cliente)}
  if(S.dsc)delete S.dsc[dk];await save();if(nN)nov=c}tela('v1');lista();if(nov)await nfPedeDados(nov)});
 /* ===== recuperar vendas de hoje (clientes com início hoje) ===== */
@@ -1320,7 +1320,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=36;
+const VERSAO=37;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
