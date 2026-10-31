@@ -58,17 +58,17 @@ const visto=n=>S.vistos&&S.vistos.d===fm(new Date())&&S.vistos.n.includes(n),ok=
 const vence=()=>ativos().filter(c=>{const d=pd(c.fim);return d&&d<=hoje()}),pend=c=>ok(c)&&c.datapg.trim()&&c.pg.trim();
 const dias=p=>p.includes('SMART')?15:p.includes('ADVANCED')?30:7,valor=p=>(PL.find(x=>x[0]===p)||[0,0])[1];
 const tel=n=>{const d=String(n||'').replace(/\D/g,'');return d.length==11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:d.length==10?`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`:n||''};
-const tela=n=>{cur=n;if(n==='v1'&&pc){const p=pc;pc=null;lm<=p.t0?setC(p.L):refrescar(true)}['login','v1','v2','v3','v4','v5','v6'].forEach(x=>$('#'+x).hidden=x!=n);$('#fab').hidden=n=='login';try{fdb(n)}catch(e){}$('#bM').hidden=n!='v1';$('#bG').style.bottom=n=='v1'?'78px':'18px';$('#bV').style.bottom=$('#bG').style.bottom};
+const tela=n=>{cur=n;if(n==='v1'&&pc){const p=pc;pc=null;lm<=p.t0?setC(p.L):refrescar(true)}['login','v1','v2','v3','v4','v5','v6'].forEach(x=>$('#'+x).hidden=x!=n);$('#fab').hidden=n=='login';try{fdb(n)}catch(e){}$('#bM').hidden=n!='v1';$('#bG').style.bottom=n=='v1'?'78px':'18px';$('#bV').style.bottom=$('#bG').style.bottom;try{bellUp()}catch(e){}};
 async function est(a,d={}){const r=await fetch('estado.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
  if(r.status==401){tela('login');throw Error('login')}const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){throw Error('Resposta inválida do servidor ('+r.status+'): '+t.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,160))}if(j.erro)throw Error(j.erro);return j}
 const FK='kfl_fila',fila=()=>{try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}},setF=a=>{try{localStorage.setItem(FK,JSON.stringify(a))}catch(e){}bd()};
 let dirty=false;function bd(){const n=fila().length;$('#bd').textContent=(n?'⏳ '+n:'')+(dirty?(n?' ':'')+'💾 salvando…':'')}
-async function envia(f,b,form){const r=await fetch(API+f,form?{method:'POST',body:new URLSearchParams(b)}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok)throw Error('HTTP '+r.status)}
+async function envia(f,b,form){const r=await fetch(API+f,form?{method:'POST',body:new URLSearchParams(b)}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok)throw Error('HTTP '+r.status);if(f==='AlteraPlanilha.php'){let j=null;try{j=JSON.parse(await r.text())}catch(e){}if(j&&j.status==='erro')throw Object.assign(Error(j.msg||'erro'),{perm:1})}}
 async function post(f,b,form){lm=Date.now();const it={f,b,form:!!form,n:0,id:Date.now()+Math.random()},q=fila();q.push(it);setF(q);
  for(let i=0;i<3&&fila().some(x=>x.id===it.id);i++)await flush();
  if(fila().some(x=>x.id===it.id)){alert('Sem conexão com o servidor. Ação salva na fila ('+fila().length+') e será reenviada automaticamente.');return false}return true}
-let fq=null;function flush(){if(!fq)fq=(async()=>{const L=fila();L.forEach(c=>{if(!c.id)c.id=Date.now()+Math.random()});setF(L);const gone=new Set(),cnt={};for(const c of L){try{await envia(c.f,c.b,c.form);gone.add(c.id)}catch(e){c.n=(c.n||0)+1;if(c.n>=20)gone.add(c.id);cnt[c.id]=c.n}}
- setF(fila().filter(x=>!gone.has(x.id)).map(x=>(x.id in cnt)?Object.assign(x,{n:cnt[x.id]}):x))})().finally(()=>{fq=null});return fq}
+let fq=null;function flush(){if(!fq)fq=(async()=>{const L=fila();L.forEach(c=>{if(!c.id)c.id=Date.now()+Math.random()});setF(L);const gone=new Set(),cnt={};for(const c of L){try{await envia(c.f,c.b,c.form);gone.add(c.id)}catch(e){if(e.perm){gone.add(c.id);(window.__perm=window.__perm||[]).push(e.message);continue}c.n=(c.n||0)+1;if(c.n>=20)gone.add(c.id);cnt[c.id]=c.n}}
+ setF(fila().filter(x=>!gone.has(x.id)).map(x=>(x.id in cnt)?Object.assign(x,{n:cnt[x.id]}):x));if(window.__perm&&window.__perm.length){const m=window.__perm.slice(0,3).join('\n');window.__perm=[];setTimeout(()=>alert('A planilha recusou a alteração:\n'+m),50)}})().finally(()=>{fq=null});return fq}
 let tt;const toast=m=>{$('#ts').textContent=m;$('#ts').hidden=false;clearTimeout(tt);tt=setTimeout(()=>$('#ts').hidden=true,2200)};
 let nb=0;const busy=d=>{nb=Math.max(0,nb+d);$('#ld').hidden=!nb};
 let rdy=Promise.resolve();
@@ -115,7 +115,7 @@ async function buscaC(n){const t0=await(await fetch(API+'BuscaClientes.php?_='+D
 let cp=null,cur='login',pc=null,lm=0,cl=false,rf0=0,ns=0,lastRf=0,ccTm=0;
 const soft=d=>{ns=Math.max(0,ns+d);$('#so').hidden=!ns};
 function setC(L){C=L;try{localStorage.setItem(CK,JSON.stringify(L))}catch(e){}
- if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){S.novos.push(c.cliente);hd().nov++;if(ok(c))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd()}
+ if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){S.novos.push(c.cliente);hd().nov++;if(ok(c))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd();try{bellUp()}catch(e){}}
 function aplicaC(L,t0){if(lm>t0)return refrescar(true);if(cur!=='v1'){pc={L,t0};return}setC(L)}
 function refrescar(skipS){if(rf0)return rf0;soft(1);cl=true;const t0=Date.now();
  rf0=(async()=>{try{const q0=fila().length;if(!q0)flush();const lp=(async()=>{if(q0){await flush();cp=null}const x=cp?await cp:null;cp=null;return x||buscaC()})();
@@ -384,7 +384,7 @@ const invH=i=>{const x=S.inv[i];if(!x||!x.h.length)return alert('Nenhuma compra 
 function edit(i){const c=C[i],F=[['cliente','Nome'],['plano','Plano'],['situacao','Situação'],['inicio','Início'],['fim','Fim'],['ativo','Ativo (OK/NÃO)'],['cel','Celular'],['celcon','Comercial'],['datapg','Data PG'],['pg','Valor PG (R$)']];
  $('#v6').innerHTML=`<h2>EDITAR CADASTRO</h2>${F.map(([k,l])=>`<div class="lb">${l}</div><input class="in" id="e-${k}" ${['inicio','fim','datapg'].includes(k)?'type="date"':['cel','celcon'].includes(k)?'inputmode="tel"':k=='pg'?'inputmode="decimal"':''} value="${esc(['inicio','fim','datapg'].includes(k)?(pd(c[k])?iso(pd(c[k])):''):k=='plano'?c.plano.split('-')[0].replace('Plano','').replace('Combo','').trim():c[k])}">`).join('')}${btn('SALVAR','#2E7D32',`salvaEd(${i})`)}${btn('CANCELAR','#9E9E9E',`ficha(${i})`)}`;tela('v6');scrollTo(0,0)}
 const salvaEd=run(async i=>{const c=C[i],b={cliente_original:c.cliente};['cliente','plano','inicio','fim','situacao','ativo','datapg','pg','cel','celcon'].forEach(k=>{let v=$('#e-'+k).value.trim();if(['inicio','fim','datapg'].includes(k))v=!v?'':(pd(c[k])&&iso(pd(c[k]))===v?c[k]:fm(fromIso(v)));b[k]=v});
- await post('AlteraPlanilha.php',b,true);alert('Cadastro atualizado.');await carregar();tela('v1')});
+ await post('AlteraPlanilha.php',b,true);const old=c.cliente,nn=(b.cliente||'').trim();if(nn&&nn.toLowerCase()!==old.trim().toLowerCase()){const eq=x=>String(x).trim().toLowerCase()===old.trim().toLowerCase();['cache','novos','renovados','retornados','pausados','pagos','primeira','renmes'].forEach(k=>{if(Array.isArray(S[k]))S[k]=S[k].map(x=>typeof x==='string'&&eq(x)?nn:x)});if(S.vistos&&Array.isArray(S.vistos.n))S.vistos.n=S.vistos.n.map(x=>eq(x)?nn:x);(S.ent||[]).forEach(x=>{if(eq(x.cli))x.cli=nn});['nf','nfMes'].forEach(k=>(S[k]||[]).forEach(x=>{if(eq(x.cliente))x.cliente=nn}));if(S.dsc)Object.keys(S.dsc).forEach(k=>{if(eq(k)){S.dsc[nn.toLowerCase()]=S.dsc[k];delete S.dsc[k]}});if(S.rc&&S.rc.t)Object.keys(S.rc.t).forEach(k=>{if(k===rcN(old)){S.rc.t[rcN(nn)]=S.rc.t[k];delete S.rc.t[k]}});c.cliente=nn;save()}alert('Cadastro atualizado.');await carregar();tela('v1')});
 
 const vp=p=>{p=(p||'').toUpperCase();return p.includes('GOLD ADVANCED')?600:p.includes('GOLD SMART')?300:p.includes('GOLD')?150:p.includes('MEGA ADVANCED')?1200:p.includes('MEGA SMART')?600:p.includes('MEGA')?300:p.includes('PLUS ADVANCED')?2400:p.includes('PLUS SMART')?1200:p.includes('PLUS')?600:0},lp=p=>(p||'').split('-')[0].replace('Plano','').replace('Combo','').trim();
 const voltarF=run(async i=>{const c=C[i];let nov=null;if(pend(c)&&$('#pe')&&!$('#pe').checked){await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''});const dk=c.cliente.trim().toLowerCase(),dsc=(S.dsc||{})[dk]||0,v0=vp(c.plano)-dsc,h=fm(new Date()),pgv=num(c.pg);Object.assign(c,{datapg:'',pg:''});const nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)),nE=nN?null:(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&x.done&&x.exp&&!x.cmp&&nmEq(x.cli,c.cliente)&&pgv<=r2(v0-x.v)+.01),v=nE?r2(v0-nE.v):v0,pri=nN?(nN.cu||0):nE?(nE.cu||0):(pgv<v?r2(2*(S.custoDia||9)):0);if(nN)nN.done=true;if(nE)nE.cmp=1;credita(c.cliente,pgv,'P',calcV('P',pgv,v,c.plano,pri));if(nN){const le=S.ent[S.ent.length-1];if(le&&le.k==='P')le.n=1}
@@ -768,6 +768,11 @@ function amrMonta(mes,vend,desp){const ky=s=>{const p=String(s).split('/');retur
  (desp||[]).forEach((x,i)=>L.push({o:1,i,ky:ky(x.dt),dt:x.dt,d:x.d,g:'',h:r2(+x.v||0),k:'',l:'',m:x.f||x.d}));
  L.sort((a,b)=>a.ky<b.ky?-1:a.ky>b.ky?1:a.o-b.o||a.i-b.i);return L}
 const AMV={},amrVend=async mes=>{const j=await nfx('amr_vendas',{mes});AMV[mes]=j;return j};
+/* ===== v43: sino de avisos (mensagens da Central para enviar) ===== */
+function bellUp(){let b=document.getElementById('bell');if(!b){b=document.createElement('button');b.id='bell';b.style.cssText='position:fixed;left:14px;bottom:96px;z-index:60;width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:#F57C00;color:#fff;font-size:24px;box-shadow:0 2px 8px #0005;display:none';b.innerHTML='🔔<span id="bellN" style="position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;border-radius:11px;background:#C62828;color:#fff;font-size:13px;line-height:22px;font-weight:700"></span>';b.onclick=()=>{try{nt()}catch(e){}};document.body.appendChild(b)}
+ let n=0;try{n=(typeof S!=='undefined'&&S&&S.mes&&window.S_OK)?ntCnt():0}catch(e){}const off=cur==='login'||cur==='v6'&&/CENTRAL DE NOTIFICA/.test((document.querySelector('#v6 h2')||{}).textContent||'');
+ b.style.display=n>0&&!off?'block':'none';const e=document.getElementById('bellN');if(e)e.textContent=n>99?'99+':n}
+setInterval(()=>{try{bellUp()}catch(e){}},30000);
 /* ===== v34: AMR — hoje e previsão otimista do mês ===== */
 function amrPrev(j,rows){const T=hoje(),Tk=iso(T),fimM=new Date(T.getFullYear(),T.getMonth()+1,0),rec=r2((j.vendas||[]).reduce((a,x)=>a+(+x.valor||0),0)),des=r2((rows||[]).reduce((a,x)=>a+x.v,0)),
  nfs=S.nf||[],hv=r2(nfs.reduce((a,n)=>a+(num(n.valor)||vp(n.plano)),0)),P=[];
@@ -1247,11 +1252,11 @@ const ntTx=(t,dia)=>{const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\
 const ntFone=c=>{const d=String((c&&c.cel)||'').replace(/\D/g,'');return !d?'':(d.length>=12&&d.startsWith('55'))?d:'55'+d};
 function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh,L=[],sent=S.ntSent||{};
  const add=(t,cli,c,dia)=>{const key=t+'|'+String(cli).trim().toLowerCase()+'|'+K;L.push({key,t,cli,c,dia,h:NTT[t].h,due:H>=NTT[t].h,sent:!!sent[key],ph:ntFone(c)})};
- (S.ent||[]).forEach(x=>{if(x.k!=='N'||x.done||!x.dt)return;const e0=fromIso(mkI(x.dt));if(isNaN(e0))return;const dd=Math.round((h-e0)/864e5),c=cliBy(x.cli);
+ (S.ent||[]).forEach(x=>{if(x.k!=='N'||x.done||!x.dt)return;const e0=fromIso(mkI(x.dt));if(isNaN(e0))return;const dd=Math.round((h-e0)/864e5),c=cliBy(x.cli);if(c&&!pend(c))return;
   if(dd===1){const p=new Date(e0);p.setDate(p.getDate()+2);add('a',x.cli,c,fm(p).slice(0,5))}
   if(dd===2)add('b',x.cli,c,'')});
  ativos().forEach(c=>{const d=pd(c.fim);if(d&&d.getTime()===h.getTime()){add('c',c.cliente,c,'');add('d',c.cliente,c,'')}});
- if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
+ if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
@@ -1269,12 +1274,19 @@ function rcFila(){const R=S.rc=S.rc||{},T=R.t=R.t||{},sk=R.sk=R.sk||{},h=hoje(),
  const cnt={};(S.ent||[]).forEach(x=>{if(!(x.k==='R'||(x.k==='P'&&!x.n)))return;const d=fromIso(mkI(x.dt));if(isNaN(d))return;const age=(h-d)/864e5;if(age>120||age<0)return;const k=rcN(x.cli),o=cnt[k]=cnt[k]||{a:0,b:0};o.a++;if(age<=60)o.b++});
  C.forEach(c=>{const k=rcN(c.cliente);if(seen.has(k))return;const o=cnt[k];if(!o||o.a<3||o.b<2||!parado(c))return;const d=pd(c.fim);if(!d)return;const dd=(h-d)/864e5;if(dd<7||dd>60||sk[k]===K||!pode(k))return;aut.push({c,k,w:o.a,fim:d.getTime(),src:'aut',ren:o.a})});
  aut.sort((a,b)=>b.w-a.w||b.fim-a.fim);
- return{fila:ini.concat(aut),nf,fe:Object.values(T).filter(t=>t.last===K).length}}
+ const fe=Object.values(T).filter(t=>t.last===K).length;let fila=ini.concat(aut);const falta=rcLim()-fe;
+ if(falta>0&&fila.length<falta){ /* plano B: regras aliviadas, do mais forte para o mais fraco, só com celular */
+  const c365={};(S.ent||[]).forEach(x=>{if(!(x.k==='R'||(x.k==='P'&&!x.n)))return;const d=fromIso(mkI(x.dt));if(isNaN(d))return;const age=(h-d)/864e5;if(age>365||age<0)return;const k=rcN(x.cli);c365[k]=(c365[k]||0)+1});
+  const usados=new Set(fila.map(x=>x.k)),tem=c=>String(c.cel||'').replace(/\D/g,'').length>=10,B=[];
+  C.forEach(c=>{const k=rcN(c.cliente);if(usados.has(k)||seen.has(k)||sk[k]===K||!pode(k)||!parado(c)||!tem(c))return;const d=pd(c.fim);if(!d)return;const dd=(h-d)/864e5,r=c365[k]||0;let t=0;
+   if(r>=2&&dd>=5&&dd<=120)t=1;else if(r>=1&&dd>=3&&dd<=365)t=2;else if(dd>=3&&dd<=365)t=3;if(!t)return;B.push({c,k,w:0,fim:d.getTime(),src:'alt',ren:r,t})});
+  B.sort((a,b)=>a.t-b.t||b.ren-a.ren||b.fim-a.fim);fila=fila.concat(B.slice(0,falta-fila.length))}
+ return{fila,nf,fe}}
 const rcPend=()=>{try{const f=rcFila(),l=rcLim();return f.fe>=l?0:Math.min(l-f.fe,f.fila.length)}catch(e){return 0}};
 function rcHtml(){let f;try{f=rcFila()}catch(e){return ''}const l=rcLim();if(f.fe>=l)return '';const show=f.fila.slice(0,l-f.fe);if(!show.length&&!f.nf.length)return '';
  const T=(S.rc&&S.rc.t)||{};
  return `<div class="lb" style="margin-top:14px">🔁 Reconquista (${f.fe}/${l} hoje)</div>`+show.map(x=>{const d=pd(x.c.fim),n=(T[x.k]||{}).n||0,ph=ntFone(x.c),ky=encodeURIComponent(x.k).replace(/'/g,'%27');
-  return `<div class="card" style="margin:6px 0;padding:12px;border-left:6px solid #C62828" onclick="rcGo('${ky}')"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.c.cliente.trim())}</b><span style="white-space:nowrap">🔁</span></div><div style="color:#777;font-size:13px">Parado desde ${d?fm(d):'?'} · ${x.src==='ini'?'lista inicial':x.ren+' renovações'}${n?' · '+n+' tentativa'+(n>1?'s':''):''}${ph?'':' · ⚠ sem celular'}</div><div style="text-align:right"><button class="bt" style="height:32px;padding:0 12px;font-size:14px" onclick="event.stopPropagation();rcSkip('${ky}')">pular</button></div></div>`}).join('')
+  return `<div class="card" style="margin:6px 0;padding:12px;border-left:6px solid #C62828" onclick="rcGo('${ky}')"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.c.cliente.trim())}</b><span style="white-space:nowrap">🔁</span></div><div style="color:#777;font-size:13px">Parado desde ${d?fm(d):'?'} · ${x.src==='ini'?'lista inicial':x.src==='alt'?'plano B · '+(x.ren?x.ren+' renovação(ões) no último ano':'nunca renovou'):x.ren+' renovações'}${n?' · '+n+' tentativa'+(n>1?'s':''):''}${ph?'':' · ⚠ sem celular'}</div><div style="text-align:right"><button class="bt" style="height:32px;padding:0 12px;font-size:14px" onclick="event.stopPropagation();rcSkip('${ky}')">pular</button></div></div>`}).join('')
   +(f.nf.length?`<div style="color:#C62828;font-size:13px;margin:4px 12px">⚠ não encontrado na lista de clientes: ${f.nf.map(esc).join(', ')}</div>`:'')}
 function rcGo(k){k=decodeURIComponent(k);const x=rcFila().fila.find(x=>x.k===k);if(!x)return;const ph=ntFone(x.c);if(!ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+ph+'?text='+encodeURIComponent(rcTx(x.c)));const R=S.rc=S.rc||{},T=R.t=R.t||{};T[k]={n:((T[k]||{}).n||0)+1,last:iso(hoje())};save();setTimeout(nt,300)}
@@ -1338,7 +1350,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=42;
+const VERSAO=43;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1403,6 +1415,7 @@ function achaCli(t,pool){t=t.replace(/\b(desconto|dia)( de)? \d+(\.\d+)?/g,' ').
   qd.forEach(d=>{if(n.d&&(n.d===d||(d.length>=3&&n.d.endsWith(d))||(d.length>=4&&n.d.includes(d))))s+=4;else md++});
   qw.forEach(w=>{let b=0;n.w.forEach(x=>{const v=x===w?3:(w.length>=4&&(x.startsWith(w)||(x.length>=4&&w.startsWith(x))))?2:(w.length>=5&&lev(x,w)<=1)?2:(w.length>=7&&lev(x,w)<=2)?1:0;if(v>b)b=v});if(b)s+=b;else mw++});
   if(s>0&&!md&&mw<=Math.floor(qw.length/3))R.push({c,s})});
+ if(!R.length&&qd.length&&qw.length)pool.forEach(c=>{const n=tokName(c.cliente);if(!n.d)return;let s=0,mw=0;qw.forEach(w=>{let b=0;n.w.forEach(x=>{const v=x===w?3:(w.length>=4&&(x.startsWith(w)||(x.length>=4&&w.startsWith(x))))?2:(w.length>=5&&lev(x,w)<=1)?2:0;if(v>b)b=v});if(b)s+=b;else mw++});if(!s||mw>Math.floor(qw.length/3))return;if(qd.some(d=>d.length>=4&&n.d.length>=d.length&&lev(n.d.slice(-d.length),d)<=1))R.push({c,s:s-1})});
  return R.sort((a,b)=>b.s-a.s)}
 function needCli(t,pool,cont,nada){const r=achaCli(t,pool);
  if(!r.length){fail=nada||'Não achei esse cliente. Diga o nome e os números, por exemplo: Barbeiro zero seis seis nove cinco cinco.';return false}
@@ -1411,10 +1424,10 @@ function needCli(t,pool,cont,nada){const r=achaCli(t,pool);
 
 /* ---------- painel, fala e escuta ---------- */
 function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;P.style.cssText='position:fixed;left:10px;right:10px;bottom:150px;z-index:10;background:#fff;border:2px solid #512BD4;border-radius:16px;box-shadow:0 6px 20px #0006;padding:12px;font-size:16px;color:#222;max-height:45vh;overflow:auto';document.body.appendChild(P);
-  P.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){const f=btns[+b.dataset.i];f&&f[1]()}else if(e.target.closest('[data-x]')){stopAll();P.hidden=true}else if(e.target.closest('[data-m]'))listen();else if(e.target.closest('[data-e]'))naoEra();else if(e.target.closest('[data-s]'))suporte()})}
- const tt=st=='ouvindo'?'🎤 Ouvindo…':st=='falando'?'🔊 Falando…':st=='exec'?'⏳ Executando…':off?'🎤 Microfone desligado':'🎤 Comando de voz';
- P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-s>🛠 Suporte</button></div>`}
-function stopAll(){sess=false;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
+  P.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){const f=btns[+b.dataset.i];f&&f[1]()}else if(e.target.closest('[data-x]')){stopAll();P.hidden=true}else if(e.target.closest('[data-m]'))listen();else if(e.target.closest('[data-e]'))naoEra();else if(e.target.closest('[data-s]'))suporte();else if(e.target.closest('[data-t]'))digitar()})}
+ const tt=st=='ouvindo'?'🎤 Ouvindo…':st=='falando'?'🔊 Falando…':st=='exec'?'⏳ Executando…':off?'🎤 Microfone desligado':'🎤 Layla';
+ P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-t>⌨ Digitar</button><button class="vzb n" data-s>🛠 Suporte</button></div>`}
+function stopAll(){sess=false;lsn=0;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
 let AC=null;const bip=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=988;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.16);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.18)}catch(e){}try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}};
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
 /* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
@@ -1435,20 +1448,20 @@ function live(my,fala){if(!SR)return;const FT=nzw(fala),FN=FT.join(' ');let n=0,
    if(f.strict||fin)exec(rem,alts);else tm=setTimeout(()=>exec(rem,alts),700)};
   me.onerror=e=>{LV.e=String(e&&e.error||'erro');if(rec===me)setTimeout(go,300)};me.onend=()=>{clearTimeout(tm);if(rec===me&&!done&&sayId===my&&st=='falando')setTimeout(go,150)};
   try{me.start()}catch(x){LV.e='start'}};go()}
-function say(msg,after,spk){if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
+function say(msg,after,spk){if(LIVRE&&!after&&!ans)after=()=>{lvBusy=0;lvOpen()};if(Q&&!Q.r)Q.r=msg;const fu=!after&&sess&&!ans&&!!SR;if(fu){after=()=>listen(1);const mq=pick(MAIS);spk=(spk||msg)+' '+mq;msg+=(fu?'\n\n'+mq:'')}reply=msg;lastSay=msg;draw();P.hidden=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}rec=null;lsn=0;B.classList.remove('on');const my=++sayId;let d=0;const fin=()=>{if(d||my!==sayId)return;d=1;if(st=='falando')st='idle';draw();after&&after()};
  if(!TTS||typeof SpeechSynthesisUtterance=='undefined'){st='idle';fin();return}
  try{TTS.cancel();const u=new SpeechSynthesisUtterance(fix(spk||msg));u.lang='pt-BR';u.rate=RT;const v=(TTS.getVoices()||[]).find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;u.onend=fin;u.onerror=fin;st='falando';draw();TTS.speak(u);if(ans&&SR)live(my,fix(spk||msg));setTimeout(fin,Math.min(70000,4000+fix(spk||msg).length*130))}catch(e){fin()}}
-function listen(f){if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador. Use o Chrome atualizado.');return}
+function listen(f){try{lvRec&&lvRec.abort()}catch(e){}lvRec=null;lsn=Date.now()+12000;if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador. Use o Chrome atualizado.');return}
  if(st=='exec')return;sayId++;try{TTS&&TTS.cancel()}catch(e){}clearTimeout(TM);try{rec&&rec.abort()}catch(e){}
  sess=true;fmode=!!f;off=false;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=4;me.continuous=false;
  const desl=()=>{sess=false;off=true;clearTimeout(TM);st='idle';B.classList.remove('on');try{me.abort()}catch(e){}heard='';reply='';draw();P.hidden=true};
  me.onstart=()=>{if(rec!==me)return;st='ouvindo';B.classList.add('on');heard='';draw();P.hidden=false;if(fmode)TM=setTimeout(()=>{if(rec===me&&st=='ouvindo')desl()},7000)};
  me.onspeechstart=()=>{clearTimeout(TM)};
- me.onresult=e=>{if(rec!==me||st=='falando')return;clearTimeout(TM);const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);heard=a[0]||'';st='idle';B.classList.remove('on');lastF=fmode;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
- me.onerror=e=>{if(rec!==me)return;clearTimeout(TM);B.classList.remove('on');const c=e.error;if(fmode&&(c=='no-speech'||c=='aborted')){desl();return}if(auto0.v&&(c=='not-allowed'||c=='service-not-allowed')){auto0.v=false;sess=false;st='idle';P.hidden=true;return}
+ me.onresult=e=>{if(rec!==me||st=='falando')return;lsn=0;clearTimeout(TM);const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);heard=a[0]||'';st='idle';B.classList.remove('on');lastF=fmode;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
+ me.onerror=e=>{if(rec!==me)return;lsn=0;clearTimeout(TM);B.classList.remove('on');const c=e.error;if(ans&&ans.loop>0&&(c=='no-speech'||c=='aborted')){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode&&(c=='no-speech'||c=='aborted')){desl();return}if(auto0.v&&(c=='not-allowed'||c=='service-not-allowed')){auto0.v=false;sess=false;st='idle';P.hidden=true;return}
   const m=c=='not-allowed'||c=='service-not-allowed'?'Permita o uso do microfone para este app (ícone de cadeado na barra do navegador).':c=='no-speech'?'Não ouvi nada. Toque no microfone e fale de novo.':c=='network'?'Sem internet para reconhecer a voz.':c=='aborted'?null:'Erro no reconhecimento de voz ('+c+').';st='idle';sess=false;if(m)say(m);else draw()};
- me.onend=()=>{if(rec!==me)return;B.classList.remove('on');if(st=='ouvindo'){if(fmode)desl();else{st='idle';draw()}}};
- bip();setTimeout(()=>{if(rec!==me)return;try{me.start()}catch(e){sess=false;say('Não consegui ligar o microfone agora. Tente de novo.')}},230)}
+ me.onend=()=>{if(rec!==me)return;lsn=0;B.classList.remove('on');if(st=='ouvindo'){if(ans&&ans.loop>0){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode)desl();else{st='idle';draw()}}};
+ if(!(ans&&ans.q))bip();setTimeout(()=>{if(rec!==me)return;try{me.start()}catch(e){sess=false;say('Não consegui ligar o microfone agora. Tente de novo.')}},230)}
 
 /* ---------- confirmação e opções ---------- */
 const cancelar=()=>{ans=null;btns=[];say('Cancelado.')};
@@ -1617,7 +1630,7 @@ const nmCat=t=>{const nm=new Set([...(S.vars||[]).map(x=>x.d.trim()),...Object.k
 async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.test(t)?['E']:/pessoal/.test(t)?['P']:['E','P'],both=ent.length==2,out=[];
  const ln=(lb,fn,tot)=>{const v=ent.map(k=>[k,fn(k=='E'?X.E:X.P)]);return lb+': '+(both?`empresa ${brl(v[0][1])}, pessoal ${brl(v[1][1])}, total ${brl(r2(v[0][1]+v[1][1]))}`:`${SCN[ent[0]].toLowerCase()} ${brl(v[0][1])}`)};
  const fx=nmFixo(t),cat=nmCat(t);
- if(cat.length&&/gast|limite|falta|quanto (ja )?(gastei|gasto)|categoria/.test(t)){cat.forEach(n=>{const l=limOf(n),g=catGasto(n);const yn=/\b(ainda|ja)\b.*\b(tenho|tem|sobra|resta|da|posso)\b|tenho limite|tem limite|posso gastar|sobrou/.test(t);out.push(l&&yn?(l>g?`Sim, ainda tem limite em ${n}: faltam ${brl(r2(l-g))} de ${brl(l)} (${Math.round(g/l*100)}% usado).`:`Não, o limite de ${n} acabou: gasto ${brl(g)} de ${brl(l)}, passou ${brl(r2(g-l))}.`):l?`${n}: gasto ${brl(g)} de ${brl(l)} (${Math.round(g/l*100)}%), ${l>=g?'faltam '+brl(r2(l-g)):'passou '+brl(r2(g-l))}.`:`${n}: gasto ${brl(g)} no mês, sem limite definido.`)})}
+ if(cat.length&&/gast|limite|falta|quanto (ja )?(gastei|gasto)|categoria/.test(t)){cat.forEach(n=>{const l=limOf(n),g=catGasto(n);const yn=/\b(ainda|ja)\b.*\b(tenho|tem|sobra|resta|da|posso)\b|tenho limite|tem limite|posso gastar|sobrou|\b(tenho|tem|ha|sobra|resta|posso|dispon\w*)\b.*\blimite\b|\blimite\b.*\b(dispon\w*|sobr\w*|rest\w*|livre|ainda)\b/.test(t);out.push(l&&yn?(l>g?`Sim, ainda tem limite em ${n}: faltam ${brl(r2(l-g))} de ${brl(l)} (${Math.round(g/l*100)}% usado).`:`Não, você não tem mais limite de ${n}: já gastou ${brl(g)} e o limite era ${brl(l)}, passou ${brl(r2(g-l))}.`):l?`${n}: gasto ${brl(g)} de ${brl(l)} (${Math.round(g/l*100)}%), ${l>=g?'faltam '+brl(r2(l-g)):'passou '+brl(r2(g-l))}.`:`${n}: gasto ${brl(g)} no mês, sem limite definido.`)})}
  else if(fx.length&&!/\bfixos\b/.test(t)){fx.forEach(f=>out.push(`${f.nome}: ${brl(f.valor)}, dia ${f.dia}, ${SCN[f.sc||'P'].toLowerCase()}${f.var?', variável':''}, ${f.incluso?'já pago':'ainda a pagar'}${f.cart?', no cartão':''}.`))}
 
  if(out.length)return out.join(' ');
@@ -1918,6 +1931,16 @@ function notaPut(titulo,linha,tp){const N=S.notas=S.notas||[];let n=N.find(x=>nz
  n.ts=Date.now();try{save()}catch(e){}try{const h=((document.querySelector('#v6 h2')||{}).textContent||'');if(cur==='v6'&&/BLOCO DE NOTAS/.test(h))notas()}catch(e){}return nova}
 function achaNota(alvo){const N=S.notas||[],TW=nzw(alvo).filter(w=>!/^(lista|nota|notas|minha|de|da|do)$/.test(w)).map(stN);if(!TW.length)return null;
  let b=null,bs=0;N.forEach(n=>{const tt=nzw(n.t).map(stN),k=TW.filter(w=>tt.includes(w)||tt.some(x=>w.length>=4&&(x.startsWith(w)||w.startsWith(x)))).length;if(k>bs){bs=k;b=n}});return bs?b:null}
+function dictaItens(n,msg){const L=notaTp(n)=='L',tira=a=>a.replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim();
+ const h=async T=>{const r0=tira((RAWA&&RAWA[0])||T[0]||''),z=nz(r0);if(NO.test(z)){ans=null;btns=[];say('Ok.');return true}
+  if(/^(pronto|so isso|e so isso|terminei|terminou|acabou|fim|chega|ja chega|finaliza\w*|conclui\w*|salvar|salva|e isso)$/.test(z)){ans=null;btns=[];say(`Pronto, ${nomeN(n)} atualizada.`);return true}
+  if(/\b(na|no|em|da|do|nas|nos|para) (minha |a |o )?(nota|lista)\b/.test(z)){ans=null;btns=[];return false}
+  if(/^(abrir|abre|abra|mostrar|mostra|fechar|fecha|quanto|quantos|quantas|qual|quais|leia|ler|limpar|limpa|renovar|ativar|desativar|pausar|lancar|lanca|relatorio|saldo|apagar|apaga|tira|tirar|remove|cria|criar|nova|novo|cancela|cancelar)\b/.test(z)){ans=null;btns=[];return false}
+  const x=tira(r0.replace(/^(?:adiciona|adicione|adicionar|coloca|coloque|colocar|anota|anote|anotar|poe|ponha|inclui|inclua|incluir|acrescenta|acrescente|mais)\s+/i,'').replace(/\s+(?:pronto|e so isso|so isso)$/i,''));if(!x)return false;
+  notaPut(n.t,L?x:cap(x));h.loop=4;h.q=0;
+  if(!L){ans=null;btns=[];say(`Acrescentei na ${nomeN(n)}: ${cap(x)}.`);return true}
+  say(`Anotei: ${spItens(x).join('; ')}. Próximo? Diga pronto para terminar.`,listen);return true};
+ h.loop=4;h.q=0;ans=h;btns=[['✅ Pronto',()=>{ans=null;btns=[];say('Pronto.')}],['❌ Cancelar',cancelar]];say(msg,listen)}
 function notasAbre(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t)||/\bbloco\b/.test(t))return false;const m=t.match(/^(?:me )?(?:abrir|abre|abra|mostrar|mostra|mostre|ver|ir para|va para|vai para) (?:a |o |minha |meu |de )*(nota|lista)\s*(.*)$/);if(!m)return false;const N=S.notas||[],al=m[2].trim();
  const n=(al&&(achaNota((m[1]=='lista'?'lista ':'')+al)||achaNota(al)))||(!al&&m[1]=='lista'?N.find(x=>notaTp(x)=='L'):null);if(!n)return false;notaEd(N.indexOf(n));say(`Abri ${nomeN(n)}.`);return true}
 function notasCria(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))return false;
@@ -1926,11 +1949,11 @@ function notasCria(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))re
  /* A: criar nota/lista nova (título e conteúdo ditados) */
  if(m=nr.match(/^(?:me )?(?:cri(?:a|e|ar)|faz(?:er)?|faca|abr(?:e|a|ir)|inicia(?:r)?) (?:uma |a )?(?:nova )?(nota|lista)(?: (chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)||nr.match(/^nova (nota|lista)(?: (chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)){
   const tp=m[1]=='lista'?'L':'N',pr=m[2]||'',ti0=m[3]?tira(raw.slice(raw.length-m[3].length)):'',ti=ti0?(tp=='L'&&/^(de|da|do|para|pra|sobre)$/.test(pr)?'Lista de '+ti0:ti0):'';
-  const conteudo=titulo=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];notaPut(titulo,tp=='L'?x:cap(x),tp);say(tp=='L'?`${/^lista\b/.test(nzw(titulo).join(' '))?titulo:'Lista '+titulo} criada. Para acrescentar, diga: adiciona leite e pão na ${titulo}.`:`Nota ${titulo} criada. Para acrescentar algo, diga: adiciona, o texto, na nota ${titulo}.`);return true};btns=[['❌ Cancelar',cancelar]];say(tp=='L'?'Quais itens? Pode dizer vários.':'O que eu escrevo?',listen)};
+  const conteudo=titulo=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];notaPut(titulo,tp=='L'?x:cap(x),tp);if(tp=='L'){const nn=(S.notas||[]).find(y=>nzw(y.t).join(' ')===nzw(titulo).join(' '));if(nn){dictaItens(nn,`Anotei: ${spItens(x).join('; ')}. Próximo item? Diga pronto para terminar.`);return true}}say(tp=='L'?`${/^lista\b/.test(nzw(titulo).join(' '))?titulo:'Lista '+titulo} criada. Para acrescentar, diga: adiciona leite e pão na ${titulo}.`:`Nota ${titulo} criada. Para acrescentar algo, diga: adiciona, o texto, na nota ${titulo}.`);return true};btns=[['❌ Cancelar',cancelar]];say(tp=='L'?'Quais itens? Pode dizer vários.':'O que eu escrevo?',listen)};
   if(ti){conteudo(cap(ti));return true}
   ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];conteudo(cap(x));return true};btns=[['❌ Cancelar',cancelar]];say(tp=='L'?'Qual o nome da lista?':'Qual o título da nota?',listen);return true}
  /* B: acrescentar item em nota/lista */
- const pedeItens=n=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];notaPut(n.t,notaTp(n)=='L'?x:cap(x));say(`Acrescentei na ${nomeN(n)}: ${notaTp(n)=='L'?spItens(x).join('; '):cap(x)}.`);return true};btns=[['❌ Cancelar',cancelar]];say(notaTp(n)=='L'?'Quais itens?':'O que eu escrevo?',listen)};
+ const pedeItens=n=>dictaItens(n,notaTp(n)=='L'?'Quais itens? Pode dizer um de cada vez.':'O que eu escrevo?');
  const GEN=/^(itens?|coisas?|algo|alguma coisa|alguns itens|mais itens|mais coisas|um item|uns itens|o item|os itens)$/;
  if(m=nr.match(/^(?:me )?(?:anota|anote|anotar|adiciona|adicione|adicionar|coloca|coloque|colocar|poe|ponha|por|inclui|inclua|incluir|escreve|escreva|acrescenta|acrescente) (.+?) (?:na|no|em|a|para|pra|nas|nos|dentro da|dentro do) (?:minha |a |o )?(nota|lista)(?: (?:de|da|do|chamada))? ?(.*)$/)){
   const i0=m[0].indexOf(m[1]),item=tira(raw.slice(i0,i0+m[1].length)),alvoT=tira(m[3]||''),eh=m[2];
@@ -1975,7 +1998,29 @@ function notasRem(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))ret
   if(!I.length){say(`Não achei isso na nota ${n.t}.`);return true}
   ask(`Tirar d${/^lista\b/.test(nzw(n.t).join(' '))?'a ':notaTp(n)=='L'?'a lista ':'a nota '}${/^lista\b/.test(nzw(n.t).join(' '))?n.t:n.t}: ${I.map(i=>semNum(L[i].trim())).join('; ')}?`,async()=>{n.x=L.filter((l,i)=>!I.includes(i)).join('\n');if(notaTp(n)=='L')n.x=notaNum(n.x);n.ts=Date.now();salva();return `Tirei ${I.length} item${I.length==1?'':'ns'} da ${nomeN(n)}.`});return true}
  return false}
-async function route(t){t=canon(t);
+/* ===== Layla: bate-papo (microfone aberto; só obedece quando a fala começa com o nome) ===== */
+const LAY=/^(?:ei |oi |ola |hey |ok |e )?(?:layla|laila|leila|leyla|lyla|lila|aila)\b[\s,.:!?-]*/;
+const STOPLV=/\b(desativ\w*|deslig\w*|encerr\w*|parar|pare|sair)\b.*\b(bate ?papo|conversa livre|microfone aberto|modo conversa|escuta continua)\b|\b(bate ?papo|conversa livre|microfone aberto|modo conversa)\b.*\b(desativ\w*|deslig\w*|encerr\w*)\b/;
+const STARTLV=/\b(ativ\w*|lig\w*|inici\w*|comec\w*|abr\w*)\b.*\b(bate ?papo|conversa livre|microfone aberto|modo conversa|escuta continua)\b/;
+let LIVRE=0,lvRec=null,lvBusy=0,lsn=0;
+function lvBadge(on){let b=document.getElementById('lvb');if(!b){b=document.createElement('button');b.id='lvb';b.style.cssText='position:fixed;top:8px;right:8px;z-index:40;border:2px solid #fff;border-radius:18px;background:#512BD4;color:#fff;font-size:13px;padding:6px 12px;box-shadow:0 2px 8px #0005';b.onclick=()=>stopLivre(true);document.body.appendChild(b)}b.textContent='🟣 Layla ouvindo · toque para sair';b.hidden=!on}
+function stopLivre(say0){LIVRE=0;lvBusy=0;try{lvRec&&lvRec.abort()}catch(e){}lvRec=null;lvBadge(false);if(say0!==2)say('Bate-papo desativado.')}
+function startLivre(){if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador.');return}LIVRE=1;lvBusy=0;lvBadge(true);say('Oi, sou a Layla. Bate-papo ativado. Chame meu nome antes de cada comando.')}
+function lvOpen(){if(!LIVRE||lvRec||!SR)return;if(Date.now()<lsn){setTimeout(lvOpen,800);return}if(st=='falando'||st=='ouvindo'||st=='exec')return;const me=lvRec=new SR();me.lang='pt-BR';me.continuous=true;me.interimResults=false;me.maxAlternatives=3;
+ me.onresult=async e=>{if(!LIVRE||lvBusy||lvRec!==me)return;const r=e.results[e.results.length-1];if(!r.isFinal)return;const a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const z=a.map(nz);
+  if(z.some(t=>STOPLV.test(t.replace(LAY,'')))){stopLivre();return}
+  if(!z.some(t=>LAY.test(t)))return;
+  lvBusy=1;lvRec=null;try{me.abort()}catch(x){}heard=a[0]||'';P.hidden=false;draw();
+  try{await handle(a)}catch(x){say('Deu erro: '+(x&&x.message||x))}
+  setTimeout(()=>{if(LIVRE&&st!='falando'&&st!='ouvindo'&&st!='exec'&&!lvRec){lvBusy=0;lvOpen()}},500)};
+ me.onerror=e=>{if(e.error=='not-allowed'||e.error=='service-not-allowed'){LIVRE=0;lvRec=null;lvBadge(false);say('Permita o uso do microfone para usar o bate-papo.')}};
+ me.onend=()=>{if(lvRec===me){lvRec=null;if(LIVRE&&!lvBusy&&st!='falando'&&st!='ouvindo')setTimeout(lvOpen,250)}};
+ try{me.start()}catch(x){lvRec=null;setTimeout(lvOpen,800)}}
+async function digitar(){const x=await pm('Digite o comando para a Layla:','');if(x&&String(x).trim())handle([String(x).trim()])}
+async function route(t){if(STOPLV.test(t)){stopLivre();return true}
+ if(STARTLV.test(t)&&!/\b(desativ|deslig)/.test(t)){startLivre();return true}
+ t=canon(t);
+ if(/\b(qual (e )?(o )?seu nome|como (voce )?(se )?chama|quem (e )?voce)\b/.test(t)){say('Meu nome é Layla, sou a assistente do KFLMULTI.');return true}
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();say('Abri o suporte da voz.');return true}
  if(/\b(ajuda|comandos|o que (voce )?(sabe|faz|pode)|o que posso)\b/.test(t)){say(AJUDA);return true}
@@ -2010,7 +2055,7 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  const r=achaCli(t,C);if(r.length&&r[0].s>=3)return needCli(t,C,c=>{ficha(ix(c));say('Abri a ficha. '+info(c))});
  return false}
 const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|valeu|tchau|ja deu|ja chega|ta bom|esta bom|tudo certo|ok)( (obrigad[oa]|mais|nada|valeu|e isso|por hoje|pode parar))?|(pode )?(parar|encerrar?|desligar?|desliga o microfone)|nao (preciso|quero|tem mais|obrigad[oa]))$/,SIM=/^(sim|quero|tenho|pode|claro|uhum|aham)( |$)/;
-async function handle(alts){const F=lastF;lastF=false;const T=alts.map(nz).filter(Boolean);if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
+async function handle(alts){const F=lastF;lastF=false;let T=alts.map(nz).filter(Boolean);if(T.some(t=>LAY.test(t))){const T2=T.map(t=>t.replace(LAY,'').trim()).filter(Boolean);if(!T2.length){say('Pois não?',listen);return}T=T2;alts=alts.map(a=>String(a).replace(/^\s*(?:ei |oi |ola |hey |ok )?(?:layla|laila|leila|leyla|lyla|lila|aila)\b[\s,.:!?-]*/i,'')).filter(Boolean)}if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
  if(F&&!ans&&T.some(t=>FIM.test(t)||(t.split(' ').length<=6&&/\b(nao|nada)\b/.test(t)&&!/\d/.test(t)))){sess=false;say(pick(TCHAU),()=>{st='idle';heard='';reply='';draw();P.hidden=true});return}
  if(F&&!ans&&T.every(t=>t.split(' ').length<=2&&SIM.test(t))){say(pick(FALE),()=>listen(1));return}
  if(ans){RAWA=alts;const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
