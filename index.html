@@ -166,10 +166,10 @@ const renovar=run(async i=>{const c=C[i],pl=$('#pl').value;if(!pl)return alert('
  if(pe&&ds>0)(S.dsc=S.dsc||{})[dkk]=ds;else if(S.dsc)delete S.dsc[dkk];
  const env=await post('AlteraPlanilha.php',{cliente:c.cliente,plano:pl.split('-')[0].replace('Plano','').replace('Combo','').trim(),situacao:'RENOVA',ativo:'OK',inicio:fm(ini),fim:fm(fim),datapg:pe?fm(dp):'',pg:pe?val:''});
  if(!pe){S.nf.push({data:fm(new Date()),cliente:c.cliente,valor:vf,plano:pl,dias:dias(pl)});S.totmes+=num(vf);addU(S.renmes,c.cliente);(S.nfMes=S.nfMes||[]).push(S.nf[S.nf.length-1]);hd().ent=r2(hd().ent+num(vf));credita(c.cliente,num(vf),'R',calcV('R',num(vf),num(vf),pl,0))}
- if(ok(c)){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(n=>n.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
+ const eraOk=ok(c);if(eraOk){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(n=>n.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
  if(antes==1&&!S.primeira.includes(c.cliente))S.primeira.push(c.cliente);
  Object.assign(c,{plano:pl,inicio:fm(ini),fim:fm(fim),datapg:pe?fm(dp):'',pg:pe?val:''});
- if(ik)indUsar(c.cliente,ds); await save();alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
+ if(ik)indUsar(c.cliente,ds); await save();tfCria(eraOk?'renovacao':(c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
 async function pausaCli(c){let r=true;
  if(c.pg==='R$ 100,00'){r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',datapg:'',pg:'',situacao:'NOVO'})&&r;r=await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''})&&r}
  else r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',situacao:'NOVO'});
@@ -187,7 +187,7 @@ function fxEf(f,sg){if(sg>0){f.pgTs=Date.now();f.pgV=f.valor;f.pgC=!!f.cart;f.pg
  if(sg<0){delete f.pgTs;delete f.pgV;delete f.pgC;delete f.pgS;delete f.pgP;delete f.pgT}}
 const fxAtivo=f=>f.pgTs&&f.pgTs>(S.manTs||0);
 const pr=(t,v)=>pm(t,(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})),r2=n=>Math.round(n*100)/100+0;
-function menu(){const b=(t,c,f)=>btn(t,c,f);$('#v4').innerHTML=`<h2>GESTÃO</h2><div class="g2">${b('OPERACIONAL','#1976D2','oper()')}${b('GESTÃO FINANCEIRA','#2E7D32','fin()')}${b('INVESTIMENTOS','#455A64','inv()')}</div><div style="color:#777;margin:14px 0 4px">Análises</div><div class="g2">${b('📅 VENCIMENTOS','#6A1B9A','venc()')}${b('📈 HISTÓRICO DIÁRIO','#00796B','histD()')}${b('🔮 PREVISÃO DA SEMANA','#F57C00','prev()')}${b('🧮 SIMULADOR','#6A1B9A','simu()')}${b('🔁 RETENÇÃO','#C62828','ret()')}${b('🎁 INDICAÇÕES','#6A1B9A','indTela()')}${b('📝 BLOCO DE NOTAS'+((S.notas||[]).length?' ('+S.notas.length+')':''),'#512BD4','notas()')}</div><div style="color:#777;margin:14px 0 4px">Notas fiscais</div><div class="g2">${b('🧾 NOTAS A EMITIR','#B45309','nfs()')}${b('🔔 CENTRAL DE NOTIFICAÇÕES'+(ntCnt()?' ('+ntCnt()+')':''),'#2E7D32','nt()')}${b('⏰ R$ 50 VENCIDOS'+(e50l().length?' ('+e50l().length+')':''),'#E65100','e50v()')}${b('📑 AMR (CONTABILIDADE)'+(amrPend().length?' ⚠':''),'#1565C0','amr()')}${b('💼 CARTEIRA (ADMIN)','#00695C',"go('https://kflmulti.com/carteira/admin.php')")}${b('🔎 PROSPECÇÃO','#6A1B9A',"go('https://kflmulti.com/prospeccao')")}${b('🎨 PEDIDO DE ARTE','#E65100',"go('https://kflmulti.com/pedido-arte/')")}${b('📣 ANÚNCIOS META','#C2185B','mtMain()')}</div><div style="color:#777;margin:14px 0 4px">Controle</div><div class="g2">${b('📒 LANÇAMENTOS','#37474F','lanc()')}${b('🎯 LIMITES','#AD1457','lim()')}${b('💾 BACKUP','#455A64','bkp()')}${b('🛟 RECUPERAR VENDAS DE HOJE','#B71C1C','recHoje()')}${b('🔔 LEMBRETE / INSTALAR','#0277BD','appc()')}</div><div style="margin-top:14px" class="g2">${b('🧹 LIMPAR CACHE','#E53935','limpar()')}${b('SAIR','#37474F','sair()')}</div>${btn('🔒 SAIR DE TODOS OS APARELHOS','#B71C1C','sairTodos()')}${btn('TELA PRINCIPAL','#9E9E9E',"tela('v1');lista()")}`;tela('v4')}
+function menu(){const b=(t,c,f)=>btn(t,c,f);$('#v4').innerHTML=`<h2>GESTÃO</h2><div class="g2">${b('OPERACIONAL','#1976D2','oper()')}${b('GESTÃO FINANCEIRA','#2E7D32','fin()')}${b('INVESTIMENTOS','#455A64','inv()')}</div><div style="color:#777;margin:14px 0 4px">Análises</div><div class="g2">${b('📅 VENCIMENTOS','#6A1B9A','venc()')}${b('📈 HISTÓRICO DIÁRIO','#00796B','histD()')}${b('🔮 PREVISÃO DA SEMANA','#F57C00','prev()')}${b('🧮 SIMULADOR','#6A1B9A','simu()')}${b('🔁 RETENÇÃO','#C62828','ret()')}${b('🎁 INDICAÇÕES','#6A1B9A','indTela()')}${b('📋 TAREFAS DA CONSULTORA'+(tfPend()?' ('+tfPend()+')':''),'#00897B','tfTela()')}${b('📝 BLOCO DE NOTAS'+((S.notas||[]).length?' ('+S.notas.length+')':''),'#512BD4','notas()')}</div><div style="color:#777;margin:14px 0 4px">Notas fiscais</div><div class="g2">${b('🧾 NOTAS A EMITIR','#B45309','nfs()')}${b('🔔 CENTRAL DE NOTIFICAÇÕES'+(ntCnt()?' ('+ntCnt()+')':''),'#2E7D32','nt()')}${b('⏰ R$ 50 VENCIDOS'+(e50l().length?' ('+e50l().length+')':''),'#E65100','e50v()')}${b('📑 AMR (CONTABILIDADE)'+(amrPend().length?' ⚠':''),'#1565C0','amr()')}${b('💼 CARTEIRA (ADMIN)','#00695C',"go('https://kflmulti.com/carteira/admin.php')")}${b('🔎 PROSPECÇÃO','#6A1B9A',"go('https://kflmulti.com/prospeccao')")}${b('🎨 PEDIDO DE ARTE','#E65100',"go('https://kflmulti.com/pedido-arte/')")}${b('📣 ANÚNCIOS META','#C2185B','mtMain()')}</div><div style="color:#777;margin:14px 0 4px">Controle</div><div class="g2">${b('📒 LANÇAMENTOS','#37474F','lanc()')}${b('🎯 LIMITES','#AD1457','lim()')}${b('💾 BACKUP','#455A64','bkp()')}${b('🛟 RECUPERAR VENDAS DE HOJE','#B71C1C','recHoje()')}${b('🔔 LEMBRETE / INSTALAR','#0277BD','appc()')}</div>${tfBd()}<div style="margin-top:14px" class="g2">${b('🧹 LIMPAR CACHE','#E53935','limpar()')}${b('SAIR','#37474F','sair()')}</div>${btn('🔒 SAIR DE TODOS OS APARELHOS','#B71C1C','sairTodos()')}${btn('TELA PRINCIPAL','#9E9E9E',"tela('v1');lista()")}`;tela('v4')}
 const sair=run(async()=>{await est('logout');try{localStorage.removeItem('kfl_tk')}catch(e){}tela('login')});
 const sairTodos=run(async()=>{if(!confirm('Sair de TODOS os aparelhos? Será preciso digitar a senha de novo em cada um.'))return;await est('logout',{todos:1});try{localStorage.removeItem('kfl_tk')}catch(e){}tela('login')});
 const limpar=run(async()=>{await carregar();tela('v1')});
@@ -608,7 +608,36 @@ const nfReset=run(async()=>{if(!confirm('Apagar todas as simulações e testes? 
 const nfWaC=(c,f)=>{const d=String(c&&(c.cel||c.celcon)||'').replace(/\D/g,'');if(!d)return alert('Sem número cadastrado'+(c?' para '+c.cliente:''));
  go('https://wa.me/55'+d+'?text='+encodeURIComponent('Olá! Para emitirmos a nota fiscal do seu plano precisamos destes dados: '+(f||'CPF ou CNPJ, nome/razão social, CEP, endereço, cidade, estado e e-mail')+'. Pode nos enviar por aqui? Obrigado! 🙏'))};
 function nfWa(i){const x=NFP.linhas[i];if(!x)return;nfWaC(cliBy(x.cliente),x.faltam&&x.faltam.length?x.faltam.join(', '):'')}
-const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cliente.trim()]}),x=(j.itens||[])[0];if(x&&x.status==='ok')return;f=x&&x.faltam&&x.faltam.length?x.faltam.join(', '):''}catch(e){}nfWaC(c,f)};
+const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cliente.trim()]}),x=(j.itens||[])[0];if(x&&x.status==='ok')return;f=x&&x.faltam&&x.faltam.length?x.faltam.join(', '):''}catch(e){}tfCria('dados_nf',c.cliente,f);nfWaC(c,f)};
+/* ===== tarefas da consultora (lista externa: tarefas.php + consultora.html) ===== */
+let TF=null;
+const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catch(e){return[]}},tfQs=q=>{try{localStorage.setItem('kfl_tfq',JSON.stringify(q))}catch(e){}};
+async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
+async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);return true}catch(e){return false}}
+async function tfAdd(x){try{const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;return j}catch(e){return null}}
+const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length:null;
+const tfPl=c=>(c&&c.plano?lp(c.plano):'');
+const TFP={ativacao:c=>['Ativar o anúncio no Meta'+(tfPl(c)?' (plano '+tfPl(c)+')':''),'Criar a arte, se for preciso','Conferir o código do cliente'],
+ reativacao:c=>['Reativar o anúncio no Meta'+(tfPl(c)?' (plano '+tfPl(c)+')':''),'Trocar ou criar a arte, se for preciso','Conferir o código do cliente'],
+ renovacao:c=>['Manter/renovar o anúncio'+(tfPl(c)?' no plano '+tfPl(c):''),'Trocar a arte, se o cliente pediu'],
+ dados_nf:(c,f)=>['Pedir ao cliente: '+(f||'nome ou razão social, CPF/CNPJ e CEP'),'Atualizar o cadastro com os dados recebidos']};
+const TFT={ativacao:'Ativar o cliente ',reativacao:'Reativar o cliente ',renovacao:'Renovar o cliente ',dados_nf:'Pedir dados para a nota fiscal de '};
+function tfCria(tp,nome,extra,c){try{nome=String(nome||'').trim();if(!nome||!TFT[tp])return;const cl=c||(typeof C!=='undefined'?C.find(x=>nmEq(x.cliente,nome)):null);return tfAdd({tipo:tp,cli:nome,txt:TFT[tp]+nome,passos:TFP[tp](cl,extra),ref:tp+':'+nome.toLowerCase()+':'+iso(new Date())})}catch(e){}}
+const tfUrl=()=>TF&&TF.key?new URL('consultora.html?k='+TF.key,location.href).href:'';
+const tfFd=d=>d.split('-').reverse().join('/');
+const tfBd=()=>{setTimeout(async()=>{await tfLoad();const n=tfPend(),e=document.querySelector('#v4 [onclick="tfTela()"]');if(e&&n!=null)e.textContent='📋 TAREFAS DA CONSULTORA'+(n?' ('+n+')':'')},50);return ''};
+const tfTela=run(async()=>{$('#v6').innerHTML='<h2>TAREFAS DA CONSULTORA</h2><p style="color:#777">Carregando…</p>';tela('v6');const j=await tfLoad();const q=tfQ().length;
+ if(!j){$('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card" style="color:#C62828">Não consegui falar com o servidor (tarefas.php). Confira se o arquivo foi enviado e se você está logado.${q?`<br>${q} tarefa(s) aguardando envio.`:''}</div>${btn('TENTAR DE NOVO','#1976D2','tfTela()')}${btn('VOLTAR','#9E9E9E','menu();tela(\'v4\')')}`;return}
+ const g={};j.t.forEach(t=>(g[t.dia]=g[t.dia]||[]).push(t));const ds=Object.keys(g).sort().reverse(),hj=j.hoje,np=tfPend(),fe=j.f&&j.f[hj];
+ const sec=ds.map(d=>{const a=g[d].slice().sort((x,y)=>(x.feito-y.feito)||x.ts-y.ts),n=a.filter(t=>!t.feito).length;
+  return `<div style="margin:14px 0 4px;font-weight:700">${d===hj?'Hoje':''} ${tfFd(d)} <span style="font-weight:400;color:${n&&d<hj?'#C62828':'#777'}">· ${j.f&&j.f[d]?'dia fechado ✔':n?(d<hj?'ATRASADAS: ':'')+n+' pendente'+(n>1?'s':''):'tudo feito'}</span></div>`+a.map(t=>`<div class="card" style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:9px 12px;${t.feito?'opacity:.65':''}"><div style="font-size:22px">${t.feito?'✅':'⬜'}</div><div style="flex:1"><b style="font-size:14px">${esc(t.txt)}</b>${t.feito&&t.feitoTs?`<div style="color:#777;font-size:12px">feita às ${new Date(t.feitoTs*1000).toTimeString().slice(0,5)}</div>`:t.auto?'<div style="color:#777;font-size:12px">diária automática</div>':''}</div>${t.auto?'':`<button class="bt" style="height:32px" onclick="tfDel('${t.id}')">🗑️</button>`}</div>`).join('')}).join('')||'<p style="color:#999">Nenhuma tarefa.</p>';
+ $('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card"><b>${fe?'Hoje: dia fechado pela consultora ✔':np?np+' tarefa'+(np>1?'s':'')+' pendente'+(np>1?'s':''):'Tudo concluído'}</b>${q?`<div style="color:#E65100;font-size:13px">${q} tarefa(s) aguardando envio ao servidor</div>`:''}</div>${btn('➕ ADICIONAR TAREFA','#2E7D32','tfNova()')}<div class="g2">${btn('🔗 COPIAR LINK','#1976D2','tfCopia()')}${btn('💬 ENVIAR LINK (WHATSAPP)','#25D366','tfZap()')}</div>${sec}${btn('ATUALIZAR','#455A64','tfTela()')}${btn('VOLTAR','#9E9E9E',"menu();tela('v4')")}`;tela('v6');scrollTo(0,0)});
+const tfNova=run(async()=>{const x=await pm('Qual tarefa a consultora deve fazer?','');if(x===null||!String(x).trim())return;const ok=await tfAdd({tipo:'manual',txt:String(x).trim()});toast(ok?'Tarefa enviada ✔':'Sem conexão: fica na fila e será enviada');tfTela()});
+const tfDel=run(async id=>{if(!confirm('Apagar esta tarefa?'))return;try{TF=await tfx('del',{id})}catch(e){alert('Não foi possível apagar: '+e.message)}tfTela()});
+const tfCopia=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');try{await navigator.clipboard.writeText(u);toast('Link copiado ✔')}catch(e){prompt('Copie o link:',u)}});
+const tfZap=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');go('https://wa.me/?text='+encodeURIComponent('Lista de tarefas do dia: '+u))});
+
 /* ===== lançamentos: editar / apagar ===== */
 const aplicaVar=(x,dl)=>{if(x.fx){const f=(S.fixos||[]).find(f=>(f.nome||'').trim().toLowerCase()===x.d.trim().toLowerCase());if(f)f.valor=r2(Math.max(0,f.valor+dl))}if(x.sc==='P'&&x.ts&&x.ts>(S.manTs||0))S.cartaoPA=r2(Math.max(0,(S.cartaoPA||0)+dl))};
 const KN={N:'✨ Cliente novo (entrada)',R:'🔄 Renovação paga',P:'💵 Pendência paga'};
@@ -1024,11 +1053,12 @@ const mtC=run(async(id,todas)=>{await mtDados();const M=mtS(),c=M.cmp.find(x=>x.
  <div style="font-size:11px;color:#777;margin-top:4px">“+n” = entradas ainda em andamento (podem virar venda). Semana começa na segunda.</div>
  <div class="lb">Renovação — o cliente de qualidade</div>
  <div class="card" style="margin:6px 0;font-size:14px;line-height:1.6">${rr.c?`Clientes que terminaram o primeiro plano: <b>${rr.c}</b><br>⭐ Clientes fiéis (renovaram 4 vezes ou mais): <b>${rr.b4}</b><br>Renovaram 2 ou 3 vezes: <b>${rr.b2}</b><br>Renovaram 1 vez: <b>${rr.b1}</b><br>Terminaram o plano e não renovaram: <b>${rr.n}</b><br>Ainda estão no plano (não deu tempo de renovar): <b>${rr.w}</b><br>De cada 100 que terminaram o plano, renovaram: <b>${rr.t==null?'—':Math.round(rr.t*100)}</b><br>Média de renovações por cliente: <b>${rr.media==null?'—':rr.media.toFixed(1).replace('.',',')}</b><br>Cada cliente pagou em média: <b>${mtM(rr.pago)}</b><br>Gasto no Meta por cliente que renovou: <b>${rr.r?mtM(tot.s/rr.r):'—'}</b>${rr.r&&(rr.w||tot.a)?' <i style="color:#777;font-size:12px">(ainda pode mudar)</i>':''}<br>Gasto no Meta por cliente fiel: <b>${rr.b4?mtM(tot.s/rr.b4):'—'}</b>${rr.b4&&(rr.w||tot.a)?' <i style="color:#777;font-size:12px">(ainda pode mudar)</i>':''}<br>Lucro só das renovações: <b style="color:${tot.rlq>=0?'#2E7D32':'#C62828'}">${mtM(tot.rlq)}</b><br>Renovaram em até 4 semanas depois de terminar o plano: <b>${mtCoT(mtCoorte(rs,4),4)}</b><br>Renovaram em até 8 semanas depois de terminar o plano: <b>${mtCoT(mtCoorte(rs,8),8)}</b>${rr.r?btn('👥 VER QUEM RENOVOU NESTA CAMPANHA','#6A1B9A',`mtRenL('${c.id}')`):''}`:'Nenhum cliente concluiu por esta campanha ainda.'}${ql?`<div style="color:#C62828;margin-top:4px">${esc(ql)}</div>`:''}<div style="font-size:11px;color:#777;margin-top:4px">Renovou = pagou um novo plano depois de terminar o primeiro (registrado no app). Quem ainda está no plano não entra na conta. “Ainda pode mudar” = clientes recentes ainda podem renovar. Nas linhas de 4 e 8 semanas só entram os clientes que terminaram o plano há mais tempo que isso.</div></div>
- ${btn('EDITAR CAMPANHA','#455A64',`mtCForm('${c.id}')`)}${btn(mtAtiva(c)?'⏸ PAUSAR CAMPANHA':'▶ REATIVAR CAMPANHA','#B45309',`mtPausa('${c.id}')`)}${btn('VOLTAR','#9E9E9E','mtMain()')}`;tela('v6');scrollTo(0,0)});
+ ${btn('EDITAR CAMPANHA','#455A64',`mtCForm('${c.id}')`)}${btn(mtAtiva(c)?'⏸ PAUSAR CAMPANHA':'▶ REATIVAR CAMPANHA','#B45309',`mtPausa('${c.id}')`)}${btn('🗑 APAGAR CAMPANHA','#B71C1C',`mtApaga('${c.id}')`)}${btn('VOLTAR','#9E9E9E','mtMain()')}`;tela('v6');scrollTo(0,0)});
 const mtRenL=run(async id=>{await mtDados();const c=mtS().cmp.find(x=>x.id===id);if(!c)return;const rs=mtRecs().filter(r=>mtOrig(r)===c.id&&r.st==='C'&&r.nren>0).sort((a,b)=>b.nren-a.nren||(a.ent<b.ent?1:-1));
  const row=r=>{const cl=typeof cliBy==='function'?cliBy(r.n):null,sit=cl?(String(cl.ativo||'').trim().toLowerCase()==='ok'?'🟢 ativo':'⏸ pausado'):'—',fx=r.nren>=4?'⭐ Cliente fiel<br>':'';
   return `<div class="card" style="margin:6px 0;font-size:13px;${cl?'cursor:pointer':''}" ${cl?`onclick="ficha(${C.indexOf(cl)})"`:''}><div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(r.n)}</b><span style="white-space:nowrap">${sit}</span></div>Entrou em ${mtDMY(r.ent)} · renovou ${r.nren} vez${r.nren===1?'':'es'}<br>${fx}Já pagou ao todo <b>${brl(r.pago)}</b> <span style="color:#777">(${brl(r.rbr)} só nas renovações)</span></div>`};
  $('#v6').innerHTML=`<h2>👥 QUEM RENOVOU</h2><div class="lb" style="text-align:center">${esc(c.nome)} · ${rs.length} cliente(s) que renovaram · quem mais renovou aparece primeiro</div>${rs.map(row).join('')||'<div class="card">Nenhum renovador ainda.</div>'}${btn('VOLTAR','#9E9E9E',`mtC('${id}')`)}`;tela('v6');scrollTo(0,0)});
+const mtApaga=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;if(!confirm('APAGAR a campanha "'+c.nome+'"?\n\nOs gastos e conversas lançados nela serão apagados também. Isso não pode ser desfeito.'))return;if(!confirm('Confirma apagar "'+c.nome+'" de vez?'))return;M.cmp=M.cmp.filter(x=>x.id!==id);M.pt=(M.pt||[]).filter(p=>p.c!==id);Object.keys(M.mg||{}).forEach(k=>{if(k.split('|')[0]===id)delete M.mg[k]});mtRC=null;await save();toast('Campanha apagada ✔');mtMain()});
 const mtPausa=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);let pz=0;if(!c)return;if(mtAtiva(c)){if(!confirm('Pausar "'+c.nome+'" hoje? O gasto estimado para de contar a partir de hoje.'))return;c.fim=mtT();pz=1}else{if(!confirm('Reativar "'+c.nome+'"?'))return;c.fim='';const p=await pm('Orçamento diário ao reativar (R$):',String(c.orc[c.orc.length-1].v));if(p===null||!(num(p)>0))return;c.orc.push({d:mtT(),v:num(p)})}mtRC=null;await save();if(pz){alert('Campanha pausada. Informe agora o total gasto e as conversas até ontem para fechar os números.');return mtTot(id)}mtC(id)});
 const mtOrc=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const at=mtOrcOn(c,mtT())||c.orc[c.orc.length-1].v,r=await pm('Novo orçamento diário (R$) — hoje está em '+brl(at)+':',String(at));if(r===null)return;const v=num(r);if(!(v>0))return alert('Valor inválido.');if(v===at)return;
  const l=mtLast(c)||c.orc[0],dias=mtDn(mtT())-mtDn(l.d),pct=(v-at)/at*100;
@@ -1350,7 +1380,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=43;
+const VERSAO=44;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1761,6 +1791,7 @@ const NAV=[
  [/financas? pessoa(l|is)|minhas? financas?|meu dinheiro|dinheiro pessoal|gastos pessoais|gestao financeira|financeiro|financeira|\bfinancas?\b/,'a gestão financeira',()=>fin()],
  [/investimentos?|carteira|bolsa|\bacoes\b|renda fixa/,'os investimentos',()=>inv()],
  [/bloco de notas|minhas notas|lembretes/,'o bloco de notas',()=>notas()],
+ [/tarefas( da consultora)?|lista da consultora/,'as tarefas da consultora',()=>tfTela()],
  [/vencimentos?|calendario de vencimentos/,'os vencimentos',()=>venc()],
  [/historico|historico diario|dias anteriores|\bdiario\b/,'o histórico diário',()=>histD()],
  [/previsao|projecao|semana que vem|proxima semana/,'a previsão da semana',()=>prev()],
@@ -2017,6 +2048,26 @@ function lvOpen(){if(!LIVRE||lvRec||!SR)return;if(Date.now()<lsn){setTimeout(lvO
  me.onend=()=>{if(lvRec===me){lvRec=null;if(LIVRE&&!lvBusy&&st!='falando'&&st!='ouvindo')setTimeout(lvOpen,250)}};
  try{me.start()}catch(x){lvRec=null;setTimeout(lvOpen,800)}}
 async function digitar(){const x=await pm('Digite o comando para a Layla:','');if(x&&String(x).trim())handle([String(x).trim()])}
+/* ---------- tarefas da consultora ---------- */
+async function tarefasVoz(t){
+ if(!/\btarefas?\b/.test(t)||/\b(na|no|da|do|nas|nos) (nota|notas|lista|bloco)\b/.test(t))return false;
+ const raw=(RAWA&&RAWA[0])||'';
+ const abre=/\b(abrir|abre|abra|mostrar|mostra|mostre|ver|ir para|va para|vai para)\b/.test(t)&&!/\b(quantas|quais|pendente|pendentes)\b/.test(t);
+ if(abre&&!/\b(criar|crie|adicionar|adicione|adiciona|nova|novo)\b/.test(t)){tfTela();say('Abri as tarefas da consultora.');return true}
+ if(/\b(criar|crie|adicionar|adicione|adiciona|nova|novo|colocar|coloque|manda|mande|anotar|anote|pedir|peca)\b/.test(t)){
+  let m=raw.match(/tarefa\s*(?:(?:para|pra)\s+(?:a\s+)?consultora)?\s*[:,\-]?\s*(?:de\s+|para\s+|pra\s+)?(.+)$/i),x=m?m[1].replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim():'';
+  if(/^(a )?consultora$/i.test(x))x='';
+  const grava=async v=>{const ok=await tfAdd({tipo:'manual',txt:cap(v)});say(ok?'Tarefa enviada para a consultora.':'Sem conexão, a tarefa ficou na fila e será enviada.');return true};
+  if(x)return await grava(x);
+  ans=async T=>{const v=((RAWA&&RAWA[0])||T[0]||'').replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim();if(NO.test(nz(v))){cancelar();return true}if(!v)return false;ans=null;btns=[];return await grava(v)};
+  btns=[['❌ Cancelar',cancelar]];say('Qual a tarefa para a consultora?',listen);return true}
+ if(/\b(quantas|quais|pendente|pendentes|como (esta|estao)|situacao|status|falta|faltam|consultora)\b/.test(t)){
+  const j=await tfLoad();if(!j){say('Não consegui falar com o servidor das tarefas agora.');return true}
+  const P=j.t.filter(x=>!x.feito),fe=j.f&&j.f[j.hoje];
+  if(!P.length){say(fe?'Todas as tarefas estão feitas e a consultora já fechou o dia.':'Nenhuma tarefa pendente. A consultora ainda não fechou o dia.');return true}
+  const at=P.filter(x=>x.dia<j.hoje).length,nm=P.slice(0,3).map(x=>x.txt).join('; ');
+  say(`A consultora tem ${P.length} tarefa${P.length>1?'s':''} pendente${P.length>1?'s':''}${at?`, ${at} atrasada${at>1?'s':''}`:''}. ${nm}${P.length>3?' e mais '+(P.length-3):''}.`);return true}
+ return false}
 async function route(t){if(STOPLV.test(t)){stopLivre();return true}
  if(STARTLV.test(t)&&!/\b(desativ|deslig)/.test(t)){startLivre();return true}
  t=canon(t);
@@ -2028,6 +2079,7 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  if(/mais (devagar|lento)|desacelera/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
  if(/\b(repete|repita|fala de novo)\b/.test(t)&&lastSay){say(lastSay);return true}
  if(/\b(cancela|cancelar|esquece|silencio|cala a boca)\b/.test(t)){stopAll();say('Ok.');return true}
+ if(await tarefasVoz(t))return true
  if(notasAbre(t))return true
  if(notasRem(t))return true
  if(notasCria(t))return true
@@ -2058,7 +2110,7 @@ const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|val
 async function handle(alts){const F=lastF;lastF=false;let T=alts.map(nz).filter(Boolean);if(T.some(t=>LAY.test(t))){const T2=T.map(t=>t.replace(LAY,'').trim()).filter(Boolean);if(!T2.length){say('Pois não?',listen);return}T=T2;alts=alts.map(a=>String(a).replace(/^\s*(?:ei |oi |ola |hey |ok )?(?:layla|laila|leila|leyla|lyla|lila|aila)\b[\s,.:!?-]*/i,'')).filter(Boolean)}if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
  if(F&&!ans&&T.some(t=>FIM.test(t)||(t.split(' ').length<=6&&/\b(nao|nada)\b/.test(t)&&!/\d/.test(t)))){sess=false;say(pick(TCHAU),()=>{st='idle';heard='';reply='';draw();P.hidden=true});return}
  if(F&&!ans&&T.every(t=>t.split(' ').length<=2&&SIM.test(t))){say(pick(FALE),()=>listen(1));return}
- if(ans){RAWA=alts;const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
+ RAWA=alts;if(ans){const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
  Q={r:'',q:alts.slice(0,3),ts:Date.now()};fail='';for(const t of T)if(await route(t))return;
  for(const t of T){const c=corrige(t);if(c!==t&&await route(c)){logV('corrigido',{fix:c});return}}
  const m=fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`;Q.r=m;logV('nao_entendi');say(m)}
