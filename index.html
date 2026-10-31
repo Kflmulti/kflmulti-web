@@ -435,7 +435,7 @@ function fdb(n){const el=document.getElementById('fdb');if(!el)return;n=n||cur;c
 const fdIr=()=>{window.FDM=1;fdb();fechaDia()};
 const fdVolta=()=>{window.FDM=0;window.HDAY='';fdb();oper()};
 setInterval(()=>{try{fdb(cur)}catch(e){}},30000);document.addEventListener('visibilitychange',()=>{try{fdb(cur)}catch(e){}});
-const fechaDia=run(async()=>{if(!await fila0())return;let a50='';const nowREF=pendDia()||iso(new Date()),ultimoMes=(()=>{const d=fromIso(nowREF);return new Date(d.getFullYear(),d.getMonth()+1,0).getDate()===d.getDate()})();if(nowREF!==iso(new Date())&&ultimoMes&&e50l().length)a50=`<div class="card" style="border-left:6px solid #B45309;line-height:1.5">⚠ O dia finalizado era o último do mês e já virou o mês: as entradas de R$ 50 não foram lançadas como NF. Elas seguem a regra normal (viram NF depois de 7 dias).</div>`;else if(nowREF===iso(new Date())&&diasFimMes()==0){const L5=e50l();if(L5.length){const t5=r2(L5.reduce((a,o)=>a+(o.x.v||0),0));L5.forEach(o=>e50do(o.i));await save();a50=`<div class="card" style="border-left:6px solid #B45309;line-height:1.5">📅 <b>Último dia do mês:</b> ${L5.length} entrada(s) de R$ 50 (${brl(t5)}) foram lançadas como NF para entrar neste mês.</div>`}}const REF=pendDia()||iso(new Date()),LT=REF!==iso(new Date()),t=LT?fromIso(REF):hoje(),T=t.getTime(),dd=n=>Math.round((T-n.getTime())/864e5);window.FDREF=REF;
+const fechaDia=run(async()=>{if(!await fila0())return;let a50='';const nowREF=pendDia()||iso(new Date()),ultimoMes=(()=>{const d=fromIso(nowREF);return new Date(d.getFullYear(),d.getMonth()+1,0).getDate()===d.getDate()})();if(nowREF!==iso(new Date())&&ultimoMes&&e50l().length)a50=`<div class="card" style="border-left:6px solid #B45309;line-height:1.5">⚠ O dia finalizado era o último do mês e já virou o mês: as entradas de R$ 50 não foram lançadas como NF. Elas seguem a regra normal (viram NF depois de 7 dias).</div>`;else if(nowREF===iso(new Date())){const L5=e50l(),ult=diasFimMes()==0;if(L5.length){const t5=r2(L5.reduce((a,o)=>a+(o.x.v||0),0));L5.forEach(o=>e50do(o.i));await save();a50=`<div class="card" style="border-left:6px solid #B45309;line-height:1.5">📅 <b>${ult?'Último dia do mês':'Plano de 7 dias encerrado'}:</b> ${L5.length} entrada(s) de R$ 50 (${brl(t5)}) foram lançadas como NF${ult?' para entrar neste mês':' (o cliente não continuou)'}.</div>`}}const REF=pendDia()||iso(new Date()),LT=REF!==iso(new Date()),t=LT?fromIso(REF):hoje(),T=t.getTime(),dd=n=>Math.round((T-n.getTime())/864e5);window.FDREF=REF;
  const M=new Map(),add=(c,why,prom)=>{const k=c.cliente.trim().toLowerCase();if(!M.has(k))M.set(k,{c,why:[],prom:false});const o=M.get(k);o.why.push(why);if(prom)o.prom=true};
  (LT?ativos().filter(c=>{const d=pd(c.fim);return d&&d<=t}):vence()).forEach(c=>{const d=pd(c.fim),n=dd(d);add(c,n>0?'plano venceu há '+n+' dia'+(n>1?'s':''):'plano vence hoje',false)});
  ativos().filter(pend).forEach(c=>{const d=pd(c.datapg);if(!d)return;const n=dd(d);if(n>=0)add(c,(n>0?'dívida atrasada há '+n+' dia'+(n>1?'s':''):'dívida vence hoje')+' ('+c.pg+')',false);else if(M.has(c.cliente.trim().toLowerCase()))add(c,'tem pagamento combinado para '+fm(d).slice(0,5)+' ('+c.pg+')',true)});
@@ -784,8 +784,9 @@ function amrPrevHtml(j,rows){let p;try{p=amrPrev(j,rows)}catch(e){return''}
  (p.R.some(r=>r.v>0)?`<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="color:#777"><td>Dia</td><td style="text-align:right">Entra</td><td style="text-align:right">Total no mês</td></tr>${p.R.map((r,i)=>`<tr style="border-top:1px solid #eee"><td>${r.k==='dep'?'Depois de '+dm(p.ate):(i===0?'Hoje':dm(r.k))}</td><td style="text-align:right;${r.v?'color:#1B5E20;font-weight:700':'color:#aaa'}">${r.v?'+'+brl(r.v)+' <small>('+r.n+')</small>':'—'}</td><td style="text-align:right;white-space:nowrap">${brl(r.acc)}</td></tr>`).join('')}</table>`:`<div style="font-size:13px;color:#777">Nenhum pagamento pendente para entrar.</div>`)+
  `<div style="margin-top:8px">${ln('Vendas previstas do mês',brl(p.prevV),'#1B5E20')}${ln('Despesas (todos os fixos, pagos ou não)',brl(p.prevD),'#C62828')}<div style="color:#888;font-size:12px">${brl(p.des)} já lançadas${p.fx?' + '+brl(p.fx)+' de fixos que ainda faltam lançar':''}</div>${ln('Lucro previsto do mês',brl(p.luc),p.luc>=0?'#1B5E20':'#B71C1C')}<div style="color:#888;font-size:12px">Imposto estimado fora do cálculo, como acima.</div></div>`}
 /* ===== v39: bloco de notas (a voz lê notas inteiras ou itens dentro delas) ===== */
-function notas(){const N=S.notas||[];$('#v6').innerHTML=`<h2>BLOCO DE NOTAS</h2>${btn('➕ NOVA NOTA','#512BD4','notaEd(-1)')}${N.length?N.map((n,i)=>`<div class="card" onclick="notaEd(${i})" style="margin:8px 0;cursor:pointer"><b>${esc(n.t||'Sem título')}</b><div class="lb" style="white-space:pre-line">${esc((n.x||'').split('\n').slice(0,3).join('\n'))}</div></div>`).join(''):'<p style="color:#999;text-align:center">Nenhuma nota ainda. Toque em NOVA NOTA.</p>'}<div class="lb" style="text-align:center">Pela voz: "leia a nota compras" ou "quantos tomates tem na lista?"</div>${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6')}
-function notaEd(i){const n=(S.notas||[])[i]||{t:'',x:''};$('#v6').innerHTML=`<h2>${i>=0?'EDITAR NOTA':'NOVA NOTA'}</h2><input id="nt" placeholder="Título (ex.: Lista de compras)" value="${esc(n.t)}" style="width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px;margin:6px 0"><div style="display:flex;gap:6px;margin:6px 0"><input id="nb" placeholder="🔎 Buscar nesta nota" oninput="notaBusca(0)" style="flex:1;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #512BD4;border-radius:10px"><button class="bt" style="height:44px;padding:0 14px" onclick="notaBusca(1)">Próxima ▶</button></div><div id="nbr" style="margin-bottom:6px"></div><textarea id="nx" placeholder="Escreva aqui. Uma linha por item ajuda a voz a achar." style="width:100%;box-sizing:border-box;min-height:260px;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px">${esc(n.x)}</textarea>${btn('💾 SALVAR','#2E7D32','notaSv('+i+')')}${i>=0?btn('🗑 APAGAR','#C62828','notaDel('+i+')'):''}${btn('VOLTAR','#9E9E9E','notas()')}`;tela('v6')}
+const notaTp=n=>n&&n.tp?n.tp:(n&&/^lista\b/i.test(String(n.t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''))?'L':'N'),notaNum=x=>{let i=0;return String(x||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>(++i)+'. '+l.replace(/^\d+\s*[.)-]\s*/,'')).join('\n')};
+function notas(){const N=S.notas||[];$('#v6').innerHTML=`<h2>BLOCO DE NOTAS</h2><div class="g2">${btn('📝 NOVA NOTA','#512BD4','notaEd(-1,\'N\')')}${btn('🛒 NOVA LISTA','#00796B','notaEd(-1,\'L\')')}</div>${N.length?N.map((n,i)=>`<div class="card" onclick="notaEd(${i})" style="margin:8px 0;cursor:pointer"><b>${notaTp(n)=='L'?'🛒':'📝'} ${esc(n.t||'Sem título')}</b><div class="lb" style="white-space:pre-line">${esc((n.x||'').split('\n').slice(0,3).join('\n'))}</div></div>`).join(''):'<p style="color:#999;text-align:center">Nada ainda. Toque em NOVA NOTA ou NOVA LISTA.</p>'}<div class="lb" style="text-align:center">Nota = texto livre. Lista = itens numerados, um por linha.<br>Pela voz: "adiciona leite e pão na lista de compras", "leia a nota X", "limpar lista de compras"</div>${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6')}
+function notaEd(i,tp){const n=(S.notas||[])[i]||{t:'',x:'',tp:tp||'N'},T=notaTp(n);$('#v6').innerHTML=`<h2>${i>=0?'EDITAR':'NOVA'} ${T=='L'?'LISTA':'NOTA'}</h2><input id="nt" placeholder="Título (ex.: ${T=='L'?'Lista de compras':'Reunião de sexta'})" value="${esc(n.t)}" style="width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px;margin:6px 0"><select id="ntp" style="width:100%;padding:10px;font-size:15px;border:1px solid #ccc;border-radius:10px;margin-bottom:6px"><option value="N"${T=='N'?' selected':''}>📝 Nota — texto livre</option><option value="L"${T=='L'?' selected':''}>🛒 Lista — itens numerados</option></select><div style="display:flex;gap:6px;margin:6px 0"><input id="nb" placeholder="🔎 Buscar nesta nota" oninput="notaBusca(0)" style="flex:1;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #512BD4;border-radius:10px"><button class="bt" style="height:44px;padding:0 14px" onclick="notaBusca(1)">Próxima ▶</button></div><div id="nbr" style="margin-bottom:6px"></div><textarea id="nx" placeholder="${T=='L'?'Um item por linha. A numeração é automática ao salvar.':'Escreva aqui.'}" style="width:100%;box-sizing:border-box;min-height:260px;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px">${esc(n.x)}</textarea>${btn('💾 SALVAR','#2E7D32','notaSv('+i+')')}${i>=0?btn('🗑 APAGAR','#C62828','notaDel('+i+')'):''}${btn('VOLTAR','#9E9E9E','notas()')}`;tela('v6')}
 let nbI=-1;const nbNa=s=>String(s).split('').map(c=>c.normalize('NFD')[0]).join('').toLowerCase();
 function notaBusca(passo){const q=nbNa($('#nb').value.trim()),ta=$('#nx'),r=$('#nbr');if(!q){r.innerHTML='';nbI=-1;return}
  const tx=ta.value,low=nbNa(tx),pos=[];let k=-1;while((k=low.indexOf(q,k+1))>=0)pos.push(k);
@@ -795,7 +796,7 @@ function notaBusca(passo){const q=nbNa($('#nb').value.trim()),ta=$('#nx'),r=$('#
  r.innerHTML=`<div class="lb">${pos.length} resultado${pos.length==1?'':'s'}${nbI>=0?' · mostrando o '+(nbI+1)+'º':''} — toque numa linha para ir até ela</div>`+ls.slice(0,30).map(x=>{const a=Math.max(0,x.i-50),z=x.l.slice(a,x.i+q.length+60);const di=x.i-a;return `<div class="card" style="margin:4px 0;padding:8px 10px;font-size:14px;cursor:pointer" onclick="notaVai(${x.p},${q.length})">${a?'…':''}${esc(z.slice(0,di))}<b style="background:#FFF59D">${esc(z.slice(di,di+q.length))}</b>${esc(z.slice(di+q.length))}${a+z.length<x.l.length?'…':''}</div>`}).join('')}
 function notaVai(p,n){const ta=$('#nx'),tx=ta.value,m=document.createElement('div'),cs=getComputedStyle(ta);m.style.cssText=`position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box;border:0;width:${ta.clientWidth}px;font:${cs.font};padding:${cs.padding};letter-spacing:${cs.letterSpacing}`;m.textContent=tx.slice(0,p);document.body.appendChild(m);const y=m.scrollHeight;m.remove();
  try{ta.scrollIntoView({block:'start'})}catch(e){}ta.focus();ta.setSelectionRange(p,p+n);ta.scrollTop=Math.max(0,y-ta.clientHeight/3)}
-const notaSv=run(async i=>{const t=$('#nt').value.trim(),x=$('#nx').value;if(!t&&!x.trim()){toast('Nota vazia');return}const N=S.notas=S.notas||[],o={t:t||x.trim().split('\n')[0].slice(0,40),x,ts:Date.now()};if(i>=0&&N[i])Object.assign(N[i],o);else N.push(o);await save();toast('Nota salva ✔');notas()});
+const notaSv=run(async i=>{const t=$('#nt').value.trim(),tp=$('#ntp').value;let x=$('#nx').value;if(!t&&!x.trim()){toast('Nota vazia');return}if(tp=='L')x=notaNum(x);const N=S.notas=S.notas||[],o={t:t||x.trim().split('\n')[0].replace(/^\d+\.\s*/,'').slice(0,40),x,tp,ts:Date.now()};if(i>=0&&N[i])Object.assign(N[i],o);else N.push(o);await save();toast('Salvo ✔');notas()});
 const notaDel=run(async i=>{const n=(S.notas||[])[i];if(!n||!confirm('Apagar a nota "'+n.t+'"?'))return;S.notas.splice(i,1);await save();notas()});
 async function amrResumo(k){const el=$('#amrsum');if(!el)return;const mes=amrMes(k),rows=(amrRef(k)||{}).rows||[];
  try{const j=await amrVend(mes),rec=r2(j.vendas.reduce((a,x)=>a+(+x.valor||0),0)),des=r2(rows.reduce((a,x)=>a+x.v,0)),sn=j.vendas.filter(x=>!x.numero).length;if(!$('#amrsum'))return;
@@ -1236,11 +1237,12 @@ const mtSugOk=run(async()=>{const Z=mtSgX,M=mtS();if(!Z||Z.sel.length!==10)retur
 /* ===== v7: Central de notificações (mensagens do sistema por WhatsApp) ===== */
 const PIXK=()=>String(S.pix||'37210959000161');
 const PIXF=()=>{const d=PIXK().replace(/\D/g,'');return d.length===14?d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):d};
-const NTT={a:{h:20,ic:'🌙',t:'Véspera do prazo dos R$ 100'},b:{h:12,ic:'⏰',t:'Cobrar os R$ 100'},c:{h:9,ic:'🔄',t:'Plano vence hoje — renovação'},d:{h:20,ic:'🌙',t:'Lembrete de pagamento da renovação'}};
+const NTT={a:{h:20,ic:'🌙',t:'Véspera do prazo dos R$ 100'},b:{h:12,ic:'⏰',t:'Cobrar os R$ 100'},c:{h:9,ic:'🔄',t:'Plano vence hoje — renovação'},d:{h:20,ic:'🌙',t:'Lembrete de pagamento da renovação'},e:{h:20,ic:'🧾',t:'Último dia do mês — dados da nota fiscal'}};
 const ntTx=(t,dia)=>{const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\n',P='\n\n*Chave Pix (CNPJ):*\n'+PIXF()+'\n*Empresa:* KFLMULTI';
  if(t==='a')return H+'Olá! Passando para lembrar que o seu plano de panfletagem online tem o prazo de pagamento do restante (R$ 100,00) até amanhã, '+dia+'. Pagando dentro do prazo, o seu anúncio segue ativo por todos os 7 dias, sem interrupção.'+P+'\n\nSe tiver qualquer dúvida, é só responder esta mensagem. 😊';
  if(t==='b')return H+'Olá! Ainda não identificamos o pagamento dos R$ 100,00 restantes do seu plano. Para o seu anúncio não ser pausado, precisamos da confirmação do pagamento hoje.'+P+'\n\nAssim que pagar, é só enviar o comprovante por aqui que liberamos na hora. Qualquer dúvida, estamos à disposição! 🙌';
  if(t==='c')return H+'Olá! O seu plano vence hoje. Gostaria de saber se você vai renovar, manter o mesmo plano ou mudar. Este contato é para o seu anúncio não ser pausado, porque a pausa atrapalha o aprendizado do algoritmo e piora os resultados. Confirma por gentileza para fazermos a configuração da renovação. 🚀';
+ if(t==='e')return H+'Olá! Hoje é o *último dia do mês* e ainda não recebemos os dados para a emissão da sua nota fiscal'+(dia?' (faltam: '+dia+')':'')+'. Se não recebermos até as 22h de hoje, a nota será emitida *sem identificação* (sem os seus dados).\n\nPode nos enviar por aqui o seu nome ou razão social, CPF/CNPJ e o endereço com CEP? Assim emitimos a nota completa. 🙏';
  return H+'Olá! Passando para lembrar que a renovação do seu plano vence hoje e ainda não identificamos o pagamento. Para o anúncio não ser pausado amanhã, precisamos da confirmação até o fim do dia.'+P+'\n\nSe já pagou, é só enviar o comprovante por aqui. Obrigado! 🙏'};
 const ntFone=c=>{const d=String((c&&c.cel)||'').replace(/\D/g,'');return !d?'':(d.length>=12&&d.startsWith('55'))?d:'55'+d};
 function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh,L=[],sent=S.ntSent||{};
@@ -1249,7 +1251,8 @@ function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh
   if(dd===1){const p=new Date(e0);p.setDate(p.getDate()+2);add('a',x.cli,c,fm(p).slice(0,5))}
   if(dd===2)add('b',x.cli,c,'')});
  ativos().forEach(c=>{const d=pd(c.fim);if(d&&d.getTime()===h.getTime()){add('c',c.cliente,c,'');add('d',c.cliente,c,'')}});
- const o={a:1,b:0,c:2,d:3};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
+ if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
+ const o={a:1,b:0,c:2,d:3,e:4};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+it.ph+'?text='+encodeURIComponent(ntTx(it.t,it.dia)));S.ntSent=S.ntSent||{};S.ntSent[key]=Date.now();const lim=iso(new Date(Date.now()-10*864e5));Object.keys(S.ntSent).forEach(k=>{if(k.split('|')[2]<lim)delete S.ntSent[k]});save();setTimeout(nt,300)}
@@ -1335,7 +1338,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=41;
+const VERSAO=42;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1880,7 +1883,7 @@ window.vozEncerra=()=>{sess=false;clearTimeout(TM);try{rec&&rec.abort()}catch(e)
 function canon(t){
  if(!/\b(quant[oa]s?|quais|qual|quem)\b/.test(t)){
   if(/\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*|fech\w*|bater)\b.*\b(dia|expediente|movimento)\b|\b(dia|expediente)\b.*\b(finaliz\w*|encerr\w*|termin\w*|conclu\w*)\b|\bfechamento\b/.test(t))return 'fechar dia'}
- t=t.replace(/\bfix(a|as)\b/g,'fixos').replace(/\bpra\b/g,'para').replace(/\bpro\b/g,'para o');
+ t=t.replace(/\bmissao\b/g,'emissao');if(/\bprontas? para (a )?emissao\b/.test(t)&&!/\b(notas?|nfs?)\b/.test(t))t=t.replace(/\bquantas\b/,'quantas notas');t=t.replace(/\bfix(a|as)\b/g,'fixos').replace(/\bpra\b/g,'para').replace(/\bpro\b/g,'para o');
  t=t.replace(/\b(acertou|acertaram|liquidou|liquidaram|efetuou o pagamento|fez o pagamento|confirm(a|ar|e) (o )?pagamento|recebi (o )?pagamento)\b/g,'pagou');
  t=t.replace(/\b(suspend(e|er|a)|desativ(a|ar|e)|inativ(a|ar|e)|interromp(e|er|a))\b/g,'pausar');
  t=t.replace(/\b(prorrog(a|ar|ue)|estend(e|er|a)|extend(e|er))\b/g,'renovar');
@@ -1903,35 +1906,46 @@ function notasVoz(t){const N=S.notas||[];
  const sc=N.map((n,i)=>{const tt=nzw(n.t).map(stN),ts=tt.filter(w=>w.length>=3&&!GEN.has(w)&&Ts.has(w)).length,TT=new Set(tt);let best=0,bl='';String(n.x||'').split('\n').forEach(l=>{const lw=nzw(l).map(stN);if(!lw.length)return;let k=0;C0.filter(w=>!TT.has(stN(w))).forEach(w=>{const sw=stN(w);if(lw.some(x=>x===sw||(sw.length>=4&&x.startsWith(sw))))k++});if(k>best){best=k;bl=l.trim()}});return{n,i,ts,best,bl,tot:ts*2+best}}).sort((a,b)=>b.tot-a.tot);
  const top=sc[0];if(!top||top.tot==0){if(!forte){const L=N.find(n=>/lista/.test(nzw(n.t).join(' ')));if(L&&C0.length&&/\b(na|da|nessa) lista\b/.test(t)){say('Não achei isso na nota '+L.t+'.');return true}return false}say('Não achei isso nas suas notas.');return true}
  const titW=new Set(nzw(top.n.t).map(stN)),C1=C0.filter(w=>!titW.has(stN(w)));
- if(!C1.length||top.best==0&&top.ts>0){const L=String(top.n.x||'').split('\n').map(x=>x.trim()).filter(Boolean);say(`Nota ${top.n.t}. `+(L.length?L.join('. ')+'.':'Está vazia.'));return true}
+ if(!C1.length||top.best==0&&top.ts>0){const L=String(top.n.x||'').split('\n').map(x=>x.trim()).filter(Boolean);say(`${/^lista\b/.test(nzw(top.n.t).join(' '))?'':notaTp(top.n)=='L'?'Lista ':'Nota '}${top.n.t}. `+(L.length?(notaTp(top.n)=='L'?L.map((l,i)=>(i+1)+', '+semNum(l)):L).join('. ')+'.':'Está vazia.'));return true}
  const so=sc.filter(x=>x.best==top.best&&x.bl&&x.tot>=top.tot-1).slice(0,2);
- say(so.map(x=>`Na nota ${x.n.t}: ${x.bl}.`).join(' '));return true}
+ say(so.map(x=>`Na ${nomeN(x.n)}: ${semNum(x.bl)}.`).join(' '));return true}
 /* ===== criar nota / acrescentar item por voz ===== */
 let RAWA=null;const noAcc=x=>String(x).split('').map(ch=>ch.normalize('NFD')[0]).join('').toLowerCase();
 const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
-function notaPut(titulo,linha){const N=S.notas=S.notas||[];let n=N.find(x=>nzw(x.t).join(' ')===nzw(titulo).join(' '));let nova=false;if(!n){n={t:titulo,x:'',ts:Date.now()};N.push(n);nova=true}
- if(linha)n.x=(n.x?n.x.replace(/\s+$/,'')+'\n':'')+linha;n.ts=Date.now();try{save()}catch(e){}try{const h=((document.querySelector('#v6 h2')||{}).textContent||'');if(cur==='v6'&&/BLOCO DE NOTAS/.test(h))notas()}catch(e){}return nova}
+const nomeN=n=>/^lista\b/.test(nzw(n.t).join(' '))?n.t:(notaTp(n)=='L'?'lista ':'nota ')+n.t;const spItens=x=>String(x).split(/\s*(?:,|;|\be\b)\s*/).map(y=>y.trim()).filter(Boolean).map(cap),semNum=l=>String(l).replace(/^\d+\s*[.)-]\s*/,'');
+function notaPut(titulo,linha,tp){const N=S.notas=S.notas||[];let n=N.find(x=>nzw(x.t).join(' ')===nzw(titulo).join(' '));let nova=false;if(!n){n={t:titulo,x:'',ts:Date.now(),tp:tp||(/^lista\b/.test(nzw(titulo).join(' '))?'L':'N')};N.push(n);nova=true}
+ if(linha){const L=notaTp(n)=='L'?spItens(linha):[linha];n.x=(n.x?n.x.replace(/\s+$/,'')+'\n':'')+L.join('\n');if(notaTp(n)=='L')n.x=notaNum(n.x)}
+ n.ts=Date.now();try{save()}catch(e){}try{const h=((document.querySelector('#v6 h2')||{}).textContent||'');if(cur==='v6'&&/BLOCO DE NOTAS/.test(h))notas()}catch(e){}return nova}
 function achaNota(alvo){const N=S.notas||[],TW=nzw(alvo).filter(w=>!/^(lista|nota|notas|minha|de|da|do)$/.test(w)).map(stN);if(!TW.length)return null;
  let b=null,bs=0;N.forEach(n=>{const tt=nzw(n.t).map(stN),k=TW.filter(w=>tt.includes(w)||tt.some(x=>w.length>=4&&(x.startsWith(w)||w.startsWith(x)))).length;if(k>bs){bs=k;b=n}});return bs?b:null}
+function notasAbre(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t)||/\bbloco\b/.test(t))return false;const m=t.match(/^(?:me )?(?:abrir|abre|abra|mostrar|mostra|mostre|ver|ir para|va para|vai para) (?:a |o |minha |meu |de )*(nota|lista)\s*(.*)$/);if(!m)return false;const N=S.notas||[],al=m[2].trim();
+ const n=(al&&(achaNota((m[1]=='lista'?'lista ':'')+al)||achaNota(al)))||(!al&&m[1]=='lista'?N.find(x=>notaTp(x)=='L'):null);if(!n)return false;notaEd(N.indexOf(n));say(`Abri ${nomeN(n)}.`);return true}
 function notasCria(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))return false;
  const raw=(Q&&Q.q&&(Q.q.find(a=>nz(a)===t)||Q.q[0]))||t,nr=noAcc(raw).trim();let m;
  const tira=(a)=>a.replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim();
- /* A: criar nota nova (título e conteúdo ditados) */
- if(m=nr.match(/^(?:me )?(?:cri(?:a|e|ar)|faz(?:er)?|faca|abr(?:e|a|ir)|inicia(?:r)?) (?:uma |a )?(?:nova )?nota(?: (?:chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)||nr.match(/^nova nota(?: (?:chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)){
-  const ti=m[1]?tira(raw.slice(raw.length-m[1].length)):'';
-  const conteudo=titulo=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];const nv=notaPut(titulo,cap(x));say(`Nota ${titulo} criada. Para acrescentar algo, diga: adiciona, o item, na nota ${titulo}.`);return true};btns=[['❌ Cancelar',cancelar]];say('O que eu escrevo?',listen)};
+ /* A: criar nota/lista nova (título e conteúdo ditados) */
+ if(m=nr.match(/^(?:me )?(?:cri(?:a|e|ar)|faz(?:er)?|faca|abr(?:e|a|ir)|inicia(?:r)?) (?:uma |a )?(?:nova )?(nota|lista)(?: (chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)||nr.match(/^nova (nota|lista)(?: (chamada|com (?:o )?titulo|de|sobre|do|da|para|pra) (.+))?$/)){
+  const tp=m[1]=='lista'?'L':'N',pr=m[2]||'',ti0=m[3]?tira(raw.slice(raw.length-m[3].length)):'',ti=ti0?(tp=='L'&&/^(de|da|do|para|pra|sobre)$/.test(pr)?'Lista de '+ti0:ti0):'';
+  const conteudo=titulo=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];notaPut(titulo,tp=='L'?x:cap(x),tp);say(tp=='L'?`${/^lista\b/.test(nzw(titulo).join(' '))?titulo:'Lista '+titulo} criada. Para acrescentar, diga: adiciona leite e pão na ${titulo}.`:`Nota ${titulo} criada. Para acrescentar algo, diga: adiciona, o texto, na nota ${titulo}.`);return true};btns=[['❌ Cancelar',cancelar]];say(tp=='L'?'Quais itens? Pode dizer vários.':'O que eu escrevo?',listen)};
   if(ti){conteudo(cap(ti));return true}
-  ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];conteudo(cap(x));return true};btns=[['❌ Cancelar',cancelar]];say('Qual o título da nota?',listen);return true}
+  ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];conteudo(cap(x));return true};btns=[['❌ Cancelar',cancelar]];say(tp=='L'?'Qual o nome da lista?':'Qual o título da nota?',listen);return true}
  /* B: acrescentar item em nota/lista */
+ const pedeItens=n=>{ans=async T=>{const x=tira((RAWA&&RAWA[0])||T[0]||'');if(NO.test(nz(x))){cancelar();return true}if(!x)return false;ans=null;btns=[];notaPut(n.t,notaTp(n)=='L'?x:cap(x));say(`Acrescentei na ${nomeN(n)}: ${notaTp(n)=='L'?spItens(x).join('; '):cap(x)}.`);return true};btns=[['❌ Cancelar',cancelar]];say(notaTp(n)=='L'?'Quais itens?':'O que eu escrevo?',listen)};
+ const GEN=/^(itens?|coisas?|algo|alguma coisa|alguns itens|mais itens|mais coisas|um item|uns itens|o item|os itens)$/;
  if(m=nr.match(/^(?:me )?(?:anota|anote|anotar|adiciona|adicione|adicionar|coloca|coloque|colocar|poe|ponha|por|inclui|inclua|incluir|escreve|escreva|acrescenta|acrescente) (.+?) (?:na|no|em|a|para|pra|nas|nos|dentro da|dentro do) (?:minha |a |o )?(nota|lista)(?: (?:de|da|do|chamada))? ?(.*)$/)){
   const i0=m[0].indexOf(m[1]),item=tira(raw.slice(i0,i0+m[1].length)),alvoT=tira(m[3]||''),eh=m[2];
   const alvo=alvoT?alvoT:(eh=='lista'?'compras':'');
   const n=achaNota((eh=='lista'?'lista ':'')+alvo)||achaNota(alvo)||(eh=='lista'&&!alvoT?(S.notas||[]).find(x=>/lista/.test(nz(x.t))):null);
-  const itens=item.split(/\s*,\s*/).map(tira).filter(Boolean).map(cap);
-  if(!itens.length)return false;
-  if(n){itens.forEach(x=>notaPut(n.t,x));say(`Acrescentei na nota ${n.t}: ${itens.join('; ')}.`);return true}
-  const ti=cap(tira(alvoT?(eh=='lista'?'lista de ':'')+raw.slice(raw.length-alvoT.length):'Lista'));
-  ask(`Não achei essa nota. Criar a nota ${ti} com: ${itens.join('; ')}?`,async()=>{itens.forEach(x=>notaPut(ti,x));return `Nota ${ti} criada.`});return true}
+  if(!item)return false;
+  if(n&&GEN.test(noAcc(item))){pedeItens(n);return true}
+  if(n){const L=notaTp(n)=='L'?spItens(item):[cap(item)];notaPut(n.t,item);say(`Acrescentei na ${nomeN(n)}: ${L.join('; ')}.`);return true}
+  const ti=cap(tira(alvoT?(eh=='lista'?'lista de ':'')+raw.slice(raw.length-alvoT.length):'Lista')),tpn=eh=='lista'?'L':'N';
+  if(GEN.test(noAcc(item))){const nn={t:ti,x:'',tp:tpn};ask(`Não achei essa ${eh}. Criar ${tpn=='L'?'a lista':'a nota'} ${ti}?`,async()=>{notaPut(ti,'',tpn);const n2=(S.notas||[]).find(x=>x.t===ti);setTimeout(()=>pedeItens(n2),50);return `${tpn=='L'?'Lista':'Nota'} ${ti} criada.`});return true}
+  ask(`Não achei essa ${eh}. Criar ${tpn=='L'?'a lista':'a nota'} ${ti} com: ${tpn=='L'?spItens(item).join('; '):item}?`,async()=>{notaPut(ti,item,tpn);return `${tpn=='L'?'Lista':'Nota'} ${ti} criada.`});return true}
+ /* B2: adicionar sem dizer onde/o quê */
+ if(/^(?:me )?(?:anota|anote|anotar|adiciona|adicione|adicionar|coloca|colocar|incluir|inclui|acrescenta|acrescentar)(?: (?:itens?|coisas?|algo))?$/.test(nr)){
+  const N=S.notas||[];if(!N.length)return false;
+  ans=async T=>{const x=(RAWA&&RAWA[0])||T[0]||'';if(NO.test(nz(x))){cancelar();return true}const n=achaNota(x)||(/lista/.test(nz(x))?N.find(y=>notaTp(y)=='L'):null);if(!n)return false;ans=null;btns=[];pedeItens(n);return true};btns=[['❌ Cancelar',cancelar]];say('Em qual nota ou lista? '+N.slice(0,5).map(n=>n.t).join(', ')+'.',listen);return true}
  /* C: lembrete/anotação solta */
  if((m=nr.match(/^(?:me lembra|lembra|lembre|lembrar|(?:anota|anote|anotar) (?:um |o )?lembrete|lembrete)(?: que| de| disso| isso)?:? (.+)$/))&&!/\b(nota|lista)\b/.test(nr)){
   const x=tira(raw.slice(raw.length-m[1].length));if(!x)return false;const d=new Date(),ti='Lembretes';notaPut(ti,`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}: ${cap(x)}`);say('Anotado nos Lembretes.');return true}
@@ -1959,7 +1973,7 @@ function notasRem(t){if(/\b(fiscal|fiscais|nf|nfs|emitir|emissao)\b/.test(t))ret
   const L=String(n.x||'').split('\n'),hit=(l,all)=>{const lw=nzw(l).map(stN);const f=w=>lw.some(x=>x===w||(w.length>=4&&(x.startsWith(w)||w.startsWith(x))));return all?W.every(f):W.some(f)};
   let I=L.map((l,i)=>hit(l,true)&&l.trim()?i:-1).filter(i=>i>=0);if(!I.length)I=L.map((l,i)=>hit(l,false)&&l.trim()?i:-1).filter(i=>i>=0);
   if(!I.length){say(`Não achei isso na nota ${n.t}.`);return true}
-  ask(`Tirar da nota ${n.t}: ${I.map(i=>L[i].trim()).join('; ')}?`,async()=>{n.x=L.filter((l,i)=>!I.includes(i)).join('\n');n.ts=Date.now();salva();return `Tirei ${I.length} item${I.length==1?'':'ns'} da nota ${n.t}.`});return true}
+  ask(`Tirar d${/^lista\b/.test(nzw(n.t).join(' '))?'a ':notaTp(n)=='L'?'a lista ':'a nota '}${/^lista\b/.test(nzw(n.t).join(' '))?n.t:n.t}: ${I.map(i=>semNum(L[i].trim())).join('; ')}?`,async()=>{n.x=L.filter((l,i)=>!I.includes(i)).join('\n');if(notaTp(n)=='L')n.x=notaNum(n.x);n.ts=Date.now();salva();return `Tirei ${I.length} item${I.length==1?'':'ns'} da ${nomeN(n)}.`});return true}
  return false}
 async function route(t){t=canon(t);
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
@@ -1969,6 +1983,7 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  if(/mais (devagar|lento)|desacelera/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
  if(/\b(repete|repita|fala de novo)\b/.test(t)&&lastSay){say(lastSay);return true}
  if(/\b(cancela|cancelar|esquece|silencio|cala a boca)\b/.test(t)){stopAll();say('Ok.');return true}
+ if(notasAbre(t))return true
  if(notasRem(t))return true
  if(notasCria(t))return true
  if(notasVoz(t))return true
