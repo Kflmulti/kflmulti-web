@@ -1288,7 +1288,8 @@ function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh
  ativos().forEach(c=>{const d=pd(c.fim);if(d&&d.getTime()===h.getTime()){add('c',c.cliente,c,'');add('d',c.cliente,c,'')}});
  if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
-const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()}catch(e){return 0}};
+const fxVenc=()=>{try{const d=new Date().getDate();return (S.fixos||[]).map((f,i)=>({f,i})).filter(({f})=>f.dia&&f.valor>0&&f.dia<=d&&!f.incluso&&!fxAtivo(f))}catch(e){return[]}};
+const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+it.ph+'?text='+encodeURIComponent(ntTx(it.t,it.dia)));S.ntSent=S.ntSent||{};S.ntSent[key]=Date.now();const lim=iso(new Date(Date.now()-10*864e5));Object.keys(S.ntSent).forEach(k=>{if(k.split('|')[2]<lim)delete S.ntSent[k]});save();setTimeout(nt,300)}
 const ntNext=()=>{const it=ntItens().find(x=>x.due&&!x.sent&&x.ph);if(!it)return toast('Nenhuma mensagem pendente');ntGo(it.key)};
@@ -1353,6 +1354,7 @@ const nt=()=>{const L=ntItens(),pe=L.filter(x=>x.due&&!x.sent),ag=L.filter(x=>!x
  $('#v6').innerHTML=`<div id="ntroot"></div><h2>🔔 CENTRAL DE NOTIFICAÇÕES</h2><div class="lb" style="text-align:center;line-height:1.5">Toque no cliente: o WhatsApp abre com a mensagem do sistema pronta. É só enviar e voltar.</div>
  ${pe.length?btn('▶ ENVIAR PRÓXIMA ('+pe.length+' restante'+(pe.length>1?'s':'')+')','#2E7D32','ntNext()'):'<p style="text-align:center;color:#2E7D32;font-weight:600">✅ Nada pendente agora.</p>'}
  ${pe.length?'<div class="lb" style="margin-top:10px">Para enviar agora</div>'+pe.map(x=>card(x)).join(''):''}
+ ${fxVenc().length?'<div class="lb" style="margin-top:14px">💳 Gastos fixos para pagar (somem ao marcar como pago)</div>'+fxVenc().map(({f})=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #C62828" onclick="fin()"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(f.nome)}</b><span>${f.dia===new Date().getDate()?'vence hoje':'venceu dia '+f.dia}</span></div><div style="color:#777;font-size:13px">${f.valor?brl(f.valor):'valor variável'} · toque para abrir e marcar como pago</div></div>`).join(''):''}
  ${rcHtml()}
  ${ag.length?'<div class="lb" style="margin-top:14px">Agendadas para hoje</div>'+ag.map(x=>card(x,'opacity:.6')).join(''):''}
  ${en.length?'<div class="lb" style="margin-top:14px">Já enviadas ✅</div>'+en.map(x=>card(x,'background:#F1F8E9')).join(''):''}
@@ -1380,7 +1382,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=44;
+const VERSAO=45;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1485,7 +1487,7 @@ function listen(f){try{lvRec&&lvRec.abort()}catch(e){}lvRec=null;lsn=Date.now()+
  if(st=='exec')return;sayId++;try{TTS&&TTS.cancel()}catch(e){}clearTimeout(TM);try{rec&&rec.abort()}catch(e){}
  sess=true;fmode=!!f;off=false;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=4;me.continuous=false;
  const desl=()=>{sess=false;off=true;clearTimeout(TM);st='idle';B.classList.remove('on');try{me.abort()}catch(e){}heard='';reply='';draw();P.hidden=true};
- me.onstart=()=>{if(rec!==me)return;st='ouvindo';B.classList.add('on');heard='';draw();P.hidden=false;if(fmode)TM=setTimeout(()=>{if(rec===me&&st=='ouvindo')desl()},7000)};
+ me.onstart=()=>{if(rec!==me)return;st='ouvindo';B.classList.add('on');heard='';draw();P.hidden=false;if(fmode)TM=setTimeout(()=>{if(rec===me&&st=='ouvindo')desl()},15000)};
  me.onspeechstart=()=>{clearTimeout(TM)};
  me.onresult=e=>{if(rec!==me||st=='falando')return;lsn=0;clearTimeout(TM);const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);heard=a[0]||'';st='idle';B.classList.remove('on');lastF=fmode;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
  me.onerror=e=>{if(rec!==me)return;lsn=0;clearTimeout(TM);B.classList.remove('on');const c=e.error;if(ans&&ans.loop>0&&(c=='no-speech'||c=='aborted')){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode&&(c=='no-speech'||c=='aborted')){desl();return}if(auto0.v&&(c=='not-allowed'||c=='service-not-allowed')){auto0.v=false;sess=false;st='idle';P.hidden=true;return}
@@ -2045,7 +2047,7 @@ function lvOpen(){if(!LIVRE||lvRec||!SR)return;if(Date.now()<lsn){setTimeout(lvO
   try{await handle(a)}catch(x){say('Deu erro: '+(x&&x.message||x))}
   setTimeout(()=>{if(LIVRE&&st!='falando'&&st!='ouvindo'&&st!='exec'&&!lvRec){lvBusy=0;lvOpen()}},500)};
  me.onerror=e=>{if(e.error=='not-allowed'||e.error=='service-not-allowed'){LIVRE=0;lvRec=null;lvBadge(false);say('Permita o uso do microfone para usar o bate-papo.')}};
- me.onend=()=>{if(lvRec===me){lvRec=null;if(LIVRE&&!lvBusy&&st!='falando'&&st!='ouvindo')setTimeout(lvOpen,250)}};
+ me.onend=()=>{if(lvRec===me){lvRec=null;if(LIVRE&&!lvBusy&&st!='falando'&&st!='ouvindo')setTimeout(lvOpen,80)}};
  try{me.start()}catch(x){lvRec=null;setTimeout(lvOpen,800)}}
 async function digitar(){const x=await pm('Digite o comando para a Layla:','');if(x&&String(x).trim())handle([String(x).trim()])}
 /* ---------- tarefas da consultora ---------- */
