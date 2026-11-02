@@ -615,7 +615,7 @@ let TF=null;
 const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catch(e){return[]}},tfQs=q=>{try{localStorage.setItem('kfl_tfq',JSON.stringify(q))}catch(e){}};
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
-async function tfAdd(x){try{const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
+async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
 async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;return j}catch(e){return null}}
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length:null;
 const tfPl=c=>(c&&c.plano?lp(c.plano):'');
@@ -625,6 +625,24 @@ const TFP={ativacao:c=>['Ativar o anúncio no Meta'+(tfPl(c)?' (plano '+tfPl(c)+
  dados_nf:(c,f)=>['Pedir ao cliente: '+(f||'nome ou razão social, CPF/CNPJ e CEP'),'Atualizar o cadastro com os dados recebidos']};
 const TFT={ativacao:'Ativar o cliente ',reativacao:'Reativar o cliente ',renovacao:'Renovar o cliente ',dados_nf:'Pedir dados para a nota fiscal de '};
 function tfCria(tp,nome,extra,c){try{nome=String(nome||'').trim();if(!nome||!TFT[tp])return;const cl=c||(typeof C!=='undefined'?C.find(x=>nmEq(x.cliente,nome)):null);return tfAdd({tipo:tp,cli:nome,txt:TFT[tp]+nome,passos:TFP[tp](cl,extra),ref:tp+':'+nome.toLowerCase()+':'+iso(new Date())})}catch(e){}}
+
+/* ===== desfazer + tela de conferência (renovar/reativar por voz) ===== */
+let UND=null;
+const undoFp=()=>[(S.ent||[]).length,(S.nf||[]).length,(S.nfMes||[]).length,(S.vars||[]).length,Object.keys(S.hist||{}).length,(S.renovados||[]).length,(S.retornados||[]).length,(S.novos||[]).length,(S.pausados||[]).length].join('|');
+function snapUndo(c){window.tfRefs=[];window.tfTx=[];return{c0:JSON.parse(JSON.stringify(c)),S0:JSON.parse(JSON.stringify(S)),ts:Date.now(),refs:[],tx:[]}}
+async function tfDelRefs(refs){if(!refs||!refs.length)return;try{tfQs(tfQ().filter(x=>!refs.includes(x.ref)))}catch(e){}try{TF=await tfx('delref',{refs})}catch(e){}}
+const desfaz=run(async()=>{const u=UND;if(!u)return alert('Nada para desfazer.');if(Date.now()-u.ts>300000){UND=null;return alert('Passaram mais de 5 minutos. Corrija pelo Lançamentos.')}
+ if(undoFp()!==u.n1)return alert('Houve outra operação depois. Para não bagunçar o caixa, corrija pelo Lançamentos.');
+ const c0=u.c0,c=C.find(x=>x.cliente===c0.cliente);if(!c)return alert('Não achei o cliente para desfazer.');
+ await post('AlteraPlanilha.php',{cliente:c0.cliente,plano:lp(c0.plano),situacao:c0.situacao||'',ativo:c0.ativo||'',inicio:c0.inicio||'',fim:c0.fim||'',datapg:c0.datapg||'',pg:c0.pg||''},true);
+ Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,JSON.parse(JSON.stringify(u.S0)));Object.assign(c,c0);
+ await tfDelRefs(u.refs);UND=null;await save();toast('Desfeito ✔');tela('v1');lista()});
+function confTela(u){try{const c=C.find(x=>x.cliente===u.c0.cliente)||u.c0,a=u.c0,li=(t,x,y)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #eee;font-size:15px"><span style="color:#777">${t}</span><span style="text-align:right">${x!==y?`<s style="color:#999">${esc(x||'—')}</s> → `:''}<b>${esc(y||'—')}</b></span></div>`,
+ E=(S.ent||[]).slice((u.S0.ent||[]).length).map(x=>`${KN[x.k]||x.k} ${brl(x.v)}`),N=(S.nf||[]).slice((u.S0.nf||[]).length).map(n=>`NF a emitir ${n.valor}`),ate=new Date(u.ts+300000).toTimeString().slice(0,5);
+ $('#v6').innerHTML=`<h2>✅ CONFERÊNCIA</h2><div class="card"><b style="font-size:18px">${esc(c.cliente)}</b>${li('Plano',lp(a.plano),lp(c.plano))}${li('Início',a.inicio,c.inicio)}${li('Vencimento',a.fim,c.fim)}${li('Situação',a.situacao,c.situacao)}${li('Pagamento',(a.datapg||'')+(a.pg?' · '+a.pg:''),(c.datapg||'')+(c.pg?' · '+c.pg:'')||'pago hoje')}</div>
+ <div class="card"><b>Lançado</b><div style="font-size:15px;margin-top:4px">${[...E,...N].map(esc).join('<br>')||'—'}</div></div>
+ <div class="card"><b>Tarefas para a consultora</b><div style="font-size:15px;margin-top:4px">${(window.tfTx||[]).map(esc).join('<br>')||'—'}</div></div>
+ ${btn('↩ DESFAZER (até '+ate+')','#C62828','desfaz()')}${btn('OK, ESTÁ CERTO','#2E7D32',"tela('v1');lista()")}${btn('📢 VER RELATÓRIO DO DIA','#1976D2','hist()')}`;tela('v6');scrollTo(0,0)}catch(e){}}
 const tfUrl=()=>TF&&TF.key?new URL('consultora.html?k='+TF.key,location.href).href:'';
 const tfFd=d=>d.split('-').reverse().join('/');
 const tfBd=()=>{setTimeout(async()=>{await tfLoad();const n=tfPend(),e=document.querySelector('#v4 [onclick="tfTela()"]');if(e&&n!=null)e.textContent='📋 TAREFAS DA CONSULTORA'+(n?' ('+n+')':'')},50);return ''};
@@ -638,13 +656,13 @@ const tfNova=run(async()=>{const x=await pm('Qual tarefa a consultora deve fazer
 const tfDel=run(async id=>{if(!confirm('Apagar esta tarefa?'))return;try{TF=await tfx('del',{id})}catch(e){alert('Não foi possível apagar: '+e.message)}tfTela()});
 const tfCopia=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');try{await navigator.clipboard.writeText(u);toast('Link copiado ✔')}catch(e){prompt('Copie o link:',u)}});
 const tfZap=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');go('https://wa.me/?text='+encodeURIComponent('Lista de tarefas do dia: '+u))});
-const tfUrgRx=/criativo|arte|logomarca|urgente/i;
-async function tfPergunta(nome){try{const x=await pm('Tem algo para a consultora fazer neste cliente ('+nome+')? Ex: trocar o criativo. Deixe em branco se não tiver.','');if(x===null||!String(x).trim())return;const t=String(x).trim();let u=tfUrgRx.test(t);if(!u)u=confirm('É urgente?\n\nOK = urgente (te aviso se passar 1 hora sem a consultora fazer).\nCancelar = normal.');
+const tfUrgRx=/criativo|\barte\b|logomarca|urg[eê]n/i;
+async function tfPergunta(nome){try{if(window.TFSKIP)return;const x=await pm('Tem algo para a consultora fazer neste cliente ('+nome+')? Ex: trocar o criativo. Deixe em branco se não tiver.','');if(x===null||!String(x).trim())return;const t=String(x).trim();let u=tfUrgRx.test(t);if(!u)u=confirm('É urgente?\n\nOK = urgente (te aviso se passar 1 hora sem a consultora fazer).\nCancelar = normal.');
  const ok=await tfAdd({tipo:'extra',cli:nome,txt:t.charAt(0).toUpperCase()+t.slice(1)+' — '+nome,passos:[],urg:u?1:0,ref:'x:'+Date.now()});toast(ok?'Tarefa enviada à consultora ✔':'Sem conexão: fica na fila')}catch(e){}}
 const tfAck=()=>(S.tfAck=S.tfAck||{});
 function tfAlertas(){try{if(!TF||!S||!S.mes)return[];const now=Date.now()/1000,L=[],A=tfAck();
- TF.t.forEach(t=>{if(t.feito||!t.urg)return;const n=Math.floor((now-t.ts)/3600);if(n>=1&&!A['u|'+t.id+'|'+n])L.push({k:'u|'+t.id+'|'+n,tx:'🚨 '+t.txt,sub:'sem fazer há '+n+' hora'+(n>1?'s':'')+' · cobre a consultora'})});
- const np=tfPend();if(new Date().getHours()>=23&&np&&!A['n|'+TF.hoje])L.push({k:'n|'+TF.hoje,tx:'⏰ 23h: ainda há '+np+' tarefa'+(np>1?'s':'')+' da consultora sem fazer',sub:'confira antes de fechar o dia'});return L}catch(e){return[]}}
+ TF.t.forEach(t=>{if(t.feito||!t.urg)return;const n=Math.floor((now-t.ts)/3600);if(n>=1&&!A['u|'+t.id+'|'+n])L.push({k:'u|'+t.id+'|'+n,tx:'🚨 '+t.txt,sub:'sem fazer há '+n+' hora'+(n>1?'s':'')+' · cobre a consultora',say:'Urgente sem fazer há '+n+' hora'+(n>1?'s':'')+': '+t.txt.replace(/\s+—\s+/g,', ')})});
+ const np=tfPend();if(new Date().getHours()>=23&&np&&!A['n|'+TF.hoje])L.push({k:'n|'+TF.hoje,tx:'⏰ 23h: ainda há '+np+' tarefa'+(np>1?'s':'')+' da consultora sem fazer',sub:'confira antes de fechar o dia',say:'Faltam '+np+' tarefa'+(np>1?'s':'')+' da consultora hoje.'});return L}catch(e){return[]}}
 const tfOk=run(async k=>{k=decodeURIComponent(k);const A=tfAck();A[k]=Date.now();const lim=Date.now()-3*864e5;Object.keys(A).forEach(x=>{if(A[x]<lim)delete A[x]});await save();tfTela()});
 setInterval(()=>{try{if(cur!=='login'&&!document.hidden)tfLoad().then(()=>{try{bellUp()}catch(e){}})}catch(e){}},12e4);setTimeout(()=>{try{if(cur!=='login')tfLoad().then(()=>{try{bellUp()}catch(e){}})}catch(e){}},6000);
 
@@ -1394,7 +1412,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=49;
+const VERSAO=50;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1472,7 +1490,8 @@ function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;
  const tt=st=='ouvindo'?'🎤 Ouvindo…':st=='falando'?'🔊 Falando…':st=='exec'?'⏳ Executando…':off?'🎤 Microfone desligado':'🎤 Layla';
  P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#512BD4">${tt}</b><button class="vzb n" data-x style="margin:0;padding:4px 12px">✖</button></div>${heard?`<div style="color:#666;margin-top:6px">Você: <i>“${html(heard)}”</i></div>`:''}${reply?`<div style="margin-top:6px;line-height:1.4;white-space:pre-line">${html(reply)}</div>`:''}<div>${btns.map((b,i)=>`<button class="vzb${/Cancelar/.test(b[0])?' n':''}" data-i="${i}">${html(b[0])}</button>`).join('')}<button class="vzb n" data-m>🎤 Falar</button>${Q&&Q.r&&!btns.length?'<button class="vzb n" data-e>😕 Não era isso</button>':''}<button class="vzb n" data-t>⌨ Digitar</button><button class="vzb n" data-s>🛠 Suporte</button></div>`}
 function stopAll(){sess=false;lsn=0;sayId++;clearTimeout(TM);try{rec&&rec.abort()}catch(e){}try{TTS&&TTS.cancel()}catch(e){}B.classList.remove('on');st='idle';ans=null;btns=[]}
-let AC=null;const bip=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=988;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.16);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.18)}catch(e){}try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}};
+let JNp=null,JNr='',JNts=0,JNn=0;const JTok=()=>!!JNp&&Date.now()-JNts<30000;
+let AC=null;const bipFim=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=440;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.2,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.3);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.32)}catch(e){}try{navigator.vibrate&&navigator.vibrate([30,60,30])}catch(e){}};const bip=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=988;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.16);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.18)}catch(e){}try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}};
 let RT=1.4;try{RT=+localStorage.getItem('kfl_vzr')||1.4}catch(e){}
 /* microfone aberto durante pergunta de confirmação (só sim/não, ignorando eco da própria fala) */
 const nzw=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
@@ -1498,23 +1517,24 @@ function say(msg,after,spk){if(LIVRE&&!after&&!ans)after=()=>{lvBusy=0;lvOpen()}
 function listen(f){try{lvRec&&lvRec.abort()}catch(e){}lvRec=null;lsn=Date.now()+12000;if(!SR){say('Este aparelho não tem reconhecimento de voz no navegador. Use o Chrome atualizado.');return}
  if(st=='exec')return;sayId++;try{TTS&&TTS.cancel()}catch(e){}clearTimeout(TM);try{rec&&rec.abort()}catch(e){}
  sess=true;fmode=!!f;off=false;const me=rec=new SR();me.lang='pt-BR';me.interimResults=false;me.maxAlternatives=4;me.continuous=false;
- const desl=()=>{sess=false;off=true;clearTimeout(TM);st='idle';B.classList.remove('on');try{me.abort()}catch(e){}heard='';reply='';draw();P.hidden=true};
- me.onstart=()=>{if(rec!==me)return;st='ouvindo';B.classList.add('on');heard='';draw();P.hidden=false;if(fmode)TM=setTimeout(()=>{if(rec===me&&st=='ouvindo')desl()},15000)};
+ const desl=()=>{sess=false;off=true;clearTimeout(TM);st='idle';B.classList.remove('on');try{me.abort()}catch(e){}bipFim();if(JTok()){reply='Ouvi: “'+JNr+'”\nToque no microfone para continuar falando.';draw();P.hidden=false;return}heard='';reply='';draw();P.hidden=true};
+ me.onstart=()=>{if(rec!==me)return;st='ouvindo';B.classList.add('on');heard='';draw();P.hidden=false;if(fmode)TM=setTimeout(()=>{if(rec===me&&st=='ouvindo')desl()},JTok()?8000:15000)};
  me.onspeechstart=()=>{clearTimeout(TM)};
  me.onresult=e=>{if(rec!==me||st=='falando')return;lsn=0;clearTimeout(TM);const r=e.results[e.results.length-1],a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);heard=a[0]||'';st='idle';B.classList.remove('on');lastF=fmode;draw();handle(a).catch(x=>say('Deu erro: '+(x&&x.message||x)))};
  me.onerror=e=>{if(rec!==me)return;lsn=0;clearTimeout(TM);B.classList.remove('on');const c=e.error;if(ans&&ans.loop>0&&(c=='no-speech'||c=='aborted')){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode&&(c=='no-speech'||c=='aborted')){desl();return}if(auto0.v&&(c=='not-allowed'||c=='service-not-allowed')){auto0.v=false;sess=false;st='idle';P.hidden=true;return}
   const m=c=='not-allowed'||c=='service-not-allowed'?'Permita o uso do microfone para este app (ícone de cadeado na barra do navegador).':c=='no-speech'?'Não ouvi nada. Toque no microfone e fale de novo.':c=='network'?'Sem internet para reconhecer a voz.':c=='aborted'?null:'Erro no reconhecimento de voz ('+c+').';st='idle';sess=false;if(m)say(m);else draw()};
- me.onend=()=>{if(rec!==me)return;lsn=0;B.classList.remove('on');if(st=='ouvindo'){if(ans&&ans.loop>0){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode)desl();else{st='idle';draw()}}};
+ me.onend=()=>{if(rec!==me)return;lsn=0;B.classList.remove('on');if(st=='ouvindo'){if(ans&&ans.loop>0){ans.loop--;ans.q=1;st='idle';setTimeout(()=>{if(ans&&ans.loop>=0)listen()},250);return}if(fmode)desl();else{st='idle';bipFim();draw()}}};
  if(!(ans&&ans.q))bip();setTimeout(()=>{if(rec!==me)return;try{me.start()}catch(e){sess=false;say('Não consegui ligar o microfone agora. Tente de novo.')}},230)}
 
 /* ---------- confirmação e opções ---------- */
 const cancelar=()=>{ans=null;btns=[];say('Cancelado.')};
 function refrescaTela(){try{const h=((document.querySelector('#'+cur+' h2')||{}).textContent||'').toUpperCase();if(/LIMITES/.test(h))lim();else if(/GESTÃO FINANCEIRA|FINAN[ÇC]A PESSOAL/.test(h))fin();else if(/^LAN[ÇC]AMENTOS$/.test(h.trim()))lanc();else if(/^VARIÁVEIS$/.test(h.trim()))vv()}catch(e){}}
-function ask(msg,fn,spk){const go=async()=>{ans=null;btns=[];st='exec';draw();let m;try{m=await fn()}catch(e){m='Deu erro: '+(e&&e.message||e)}st='idle';refrescaTela();say(m||'Pronto.')};
+function ask(msg,fn,spk){const go=async()=>{ans=null;btns=[];st='exec';draw();let m;try{m=await fn()}catch(e){m='Deu erro: '+(e&&e.message||e)}st='idle';refrescaTela();say(m&&m.msg!=null?m.msg:(m||'Pronto.'),m&&m.after)};
  btns=[['✅ Confirmar',go],['❌ Cancelar',cancelar]];
  ans=async T=>{const t=T.join(' | ');if(NO.test(t)){cancelar();return true}if(YES.test(t)){go();return true}if(T[0].split(' ').length<=2){say('Diga confirmar ou cancelar.',listen);return true}return false};ans.live=1;ans.strict=1;
  say(msg,listen,spk)}
 const falaCli=c=>{const m=String(c.cliente).trim().match(/^(.*?)\s*(\d{3,})$/);return m?`${m[1]}, código ${m[2].split('').join(' ')}`:String(c.cliente).trim()};
+const falaFim=c=>{const s0=String(c.cliente).trim(),m=s0.match(/^(.*?)\s*(\d{3,})$/);if(!m)return s0;const d=m[2],nm=nz(m[1]),ou=C.filter(x=>x!==c&&nz(String(x.cliente).replace(/\d+\s*$/,'')).trim()===nm.trim());let K=2;while(K<d.length&&ou.some(x=>String(x.cliente).replace(/\D/g,'').slice(-K)===d.slice(-K)))K++;return `${m[1].trim()}, final ${d.slice(-K).split('').join(' ')}`};
 function ops(L,cont){const dg=c=>c.cliente.replace(/\D/g,''),mx=Math.max(...L.map(c=>dg(c).length));let K=3;while(K<mx&&new Set(L.map(c=>dg(c).slice(-K))).size<L.length)K++;const pick=c=>{ans=null;btns=[];cont(c)};
  btns=L.map((c,i)=>[(i+1)+' · '+c.cliente,()=>pick(c)]).concat([['❌ Cancelar',cancelar]]);
  ans=async T=>{for(const t of T){if(NO.test(t)){cancelar();return true}const n=ORD(t);if(n&&n<=L.length){pick(L[n-1]);return true}const r=achaCli(t,L);if(r.length&&(r.length==1||r[0].s-r[1].s>=1)){pick(r[0].c);return true}}return false};ans.live=1;
@@ -1846,14 +1866,37 @@ function acRenovar(t,c,rt,ex){const VB=rt?'Reativar':'Renovar',vb=rt?'reativar':
  const nw=tokName(c.cliente).w,tp=t.split(' ').filter(w=>!nw.includes(w)).join(' '),atual=planOf(nz(c.plano)),pl=planOf(tp)||planOf(ex||'')||(atual&&/\b(mesm[oa] plano|o mesmo|mesmo de sempre)\b/.test(t)?atual:null);
  if(!pl){const an=atual?atual.split(' - ')[0]:'';btns=[['Mesmo plano'+(an?' ('+an+')':''),()=>{ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano))}],['❌ Cancelar',cancelar]];
   ans=async T=>{for(const x of T){if(NO.test(x)){cancelar();return true}if(planOf(x)){ans=null;btns=[];acRenovar(t,c,rt,x);return true}if(atual&&/\b(mesmo|igual|atual|esse|mantem|manter|o de sempre)\b/.test(x)){ans=null;btns=[];acRenovar(t,c,rt,nz(c.plano));return true}}return false};ans.live=1;
-  say(`Qual plano para ${c.cliente.trim()}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`,listen,`Qual plano para ${falaCli(c)}?${an?' Hoje, '+an+'.':''} Diga o plano, ou o mesmo.`);return}
+  say(`Qual plano para ${c.cliente.trim()}?${an?' Hoje está no '+an+'.':''} Gold, Mega ou Plus, Smart ou Advanced. Ou diga o mesmo.`,listen,`Qual plano?${an?' Hoje, '+an+'.':''}`);return}
  const tt=w2n(t),dm=tt.match(/desconto(?: de)? (\d+(?:\.\d+)?)/),ds=dm?+dm[1]:0,pe=/\b(pendente|pendencia|depois|a prazo|fiado|vai pagar)\b/.test(t),ini=/anteontem/.test(t)?-2:/\bontem\b/.test(t)?-1:0;
  let dv=null;if(pe){const hj=hoje(),m=tt.match(/dia (\d{1,2})/);if(/depois de amanha/.test(t))dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+2);else if(m){dv=new Date(hj.getFullYear(),hj.getMonth(),+m[1]);if(dv<hj)dv=new Date(hj.getFullYear(),hj.getMonth()+1,+m[1])}else dv=new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()+1)}
  if(ds>=valor(pl)){say('O desconto precisa ser menor que o valor do plano.');return}
  const v=r2(valor(pl)-ds);
- ask(`${VB} ${c.cliente.trim()} no ${pl.split(' - ')[0]} por ${brl(v)}${ds?` (desconto de ${brl(ds)})`:''}, início ${ini==-2?'anteontem':ini==-1?'ontem':'hoje'}${pe?`, pagamento pendente para ${dd(dv)}. Vai aparecer a tela do valor da dívida: toque em OK`:', pago hoje'}. Confirma?`,async()=>{
-  const i=ix(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
-  const m=await withAlert(()=>renovar(i));return m.length?m.join(' '):(rt?'Cliente reativado.':'Renovação feita.')},`${VB} ${falaCli(c)}, ${pl.split(' - ')[0]}, ${brl(v)}${ds?', desconto de '+brl(ds):''}${ini?', início '+(ini==-2?'anteontem':'ontem'):''}${pe?', pendente para '+dd(dv):', pago hoje'}. Confirma?`)}
+ const raw0=(RAWA&&RAWA[0])||'',mk=raw0.search(/\b(colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\b/i),head=mk>=0?raw0.slice(0,mk):raw0,tail=mk>=0?raw0.slice(mk):(raw0.indexOf('.')>=0?raw0.slice(raw0.indexOf('.')+1):'');
+ const am=head.match(/R\$\s*(\d+(?:[.,]\d{1,2})?)/i)||head.match(/(\d+(?:[.,]\d{1,2})?)\s*reais/i),amt=am?num(am[1]):null,dif=!pe&&amt!=null&&Math.abs(amt-v)>0.01,gde=ds>0&&ds>=0.4*valor(pl);
+ const exec=async()=>{const i=ix(c);ficha(i);$('#pl').value=pl;$('#ds').value=ds?String(ds).replace('.',','):'';$('#pe').checked=pe;$('#dvw').hidden=!pe;const d0=new Date();d0.setDate(d0.getDate()+ini);$('#di').value=iso(d0);if(pe)$('#dv').value=iso(dv);
+  return await withAlert(()=>renovar(i))};
+ const spkTxt=`${VB} ${falaFim(c)}, ${pl.split(' - ')[0]}, ${brl(v)}${ds?', desconto de '+brl(ds):''}${ini?', início '+(ini==-2?'anteontem':'ontem'):''}${pe?', pendente para '+dd(dv):', pago hoje'}. Confirma?`;
+ if(dif||gde){ask(`${dif?`Você falou ${brl(amt)}, mas o plano ${pl.split(' - ')[0]} custa ${brl(v)}. `:`Desconto grande de ${brl(ds)}. `}${VB} ${c.cliente.trim()} no ${pl.split(' - ')[0]} por ${brl(v)}${pe?`, pendente para ${dd(dv)}`:', pago hoje'}. Confirma?`,async()=>{const m=await renovaDireto(c,exec,tail,rt);return m},(dif?`Você falou ${brl(amt)}, mas o plano custa ${brl(v)}. `:'Desconto grande. ')+spkTxt);return}
+ st='exec';draw();renovaDireto(c,exec,tail,rt).then(m=>{st='idle';refrescaTela();say(m.msg,m.after)});return}
+async function renovaDireto(c,exec,tail,rt){const snap=snapUndo(c);window.TFSKIP=1;let m;try{m=await exec()}catch(e){window.TFSKIP=0;return{msg:'Deu erro: '+(e&&e.message||e)}}window.TFSKIP=0;
+ if(!m.some(x=>/registrad/i.test(x)))return{msg:m.join(' ')||'Não consegui concluir.'};
+ snap.n1=undoFp();UND=snap;const ex=extrasVoz(tail);let fez=false;
+ for(const e of ex){await tfAdd({tipo:'extra',cli:c.cliente.trim(),txt:e.txt+' — '+c.cliente.trim(),passos:[],urg:e.urg?1:0,ref:'x:'+Date.now()+Math.random()});fez=true}
+ UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice();confTela(UND);
+ return{msg:'Feito',after:fez?()=>{}:()=>askCons(c)}}
+function extrasVoz(tail){tail=String(tail||'').replace(/^[\s,.;:!?-]+/,'');if(!tail)return[];let t=tail.replace(/^(?:colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\s+(?:isso\s+)?(?:(?:para|pra)\s+)?(?:a\s+)?(?:consultora\s+)?/i,'');const urg=/urg[eê]n/i.test(t)||tfUrgRx.test(t);t=t.replace(/\b(?:com\s+)?urg[eê]ncia\b|\burgente\b/gi,' ').replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').replace(/\s{2,}/g,' ').trim();if(t.length<3)return[];
+ return t.split(/\s+e\s+(?=(?:refazer|trocar|criar|fazer|mudar|alterar|ajustar|verificar|conferir|ativar|enviar|pedir)\b)/i).map(x=>x.replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').trim()).filter(Boolean).map(x=>({txt:cap(x),urg:urg||tfUrgRx.test(x)}))}
+function askCons(c){const nome=c.cliente.trim(),fim=()=>{ans=null;btns=[]};
+ const grava=async(L,urg)=>{fim();for(const x of L){await tfAdd({tipo:'extra',cli:nome,txt:cap(x)+' — '+nome,passos:[],urg:urg?1:0,ref:'x:'+Date.now()+Math.random()})}if(UND){UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice()}say('Ok.',()=>{});return true};
+ btns=[['Nada',()=>{fim();say('Ok.',()=>{})}],['🚨 Trocar criativo',()=>grava(['trocar criativo'],1)]];
+ ans=async T=>{const raw=((RAWA&&RAWA[0])||T[0]||'').replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim(),z=nz(raw);if(!raw)return false;
+  if(/^(nao|nada|nenhum|nenhuma|so isso|so)\b/.test(z)){fim();say('Ok.',()=>{});return true}
+  if(/^(trocar |refazer |novo |fazer )?(o )?criativo$/.test(z))return await grava(['trocar criativo'],1);
+  const L=extrasVoz(raw).map(x=>x.txt);if(!L.length)return false;
+  if(tfUrgRx.test(raw)||/urg[eê]n/i.test(raw))return await grava(L,1);
+  btns=[['🚨 Urgente',()=>grava(L,1)],['Normal',()=>grava(L,0)]];
+  ans=async T2=>{const y=T2.join(' | ');if(NO.test(y)||/\bnormal\b/.test(y))return await grava(L,0);if(YES.test(y)||/urgente/.test(y))return await grava(L,1);return false};ans.live=1;say('Urgente?',listen);return true};
+ ans.live=1;say('Algo para a consultora?',listen)}
 async function acEmitirNotas(t){if(!/\b(emitir|emite|emita|emitam|emissao)\b/.test(t)||!/\b(notas?|nfs?|nfse|fiscais)\b/.test(t)||/\b(quant[oa]s?|quais|qual|quem|como)\b/.test(t))return false;
  st='exec';draw();let L;try{await nfLoad();L=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k))}catch(e){st='idle';say('Não consegui carregar as notas agora.');return true}st='idle';
  if(!L.length){say('Não há notas disponíveis para emitir agora.');return true}
@@ -2054,7 +2097,7 @@ function startLivre(){if(!SR){say('Este aparelho não tem reconhecimento de voz 
 function lvOpen(){if(!LIVRE||lvRec||!SR)return;if(Date.now()<lsn){setTimeout(lvOpen,800);return}if(st=='falando'||st=='ouvindo'||st=='exec')return;const me=lvRec=new SR();me.lang='pt-BR';me.continuous=true;me.interimResults=false;me.maxAlternatives=3;
  me.onresult=async e=>{if(!LIVRE||lvBusy||lvRec!==me)return;const r=e.results[e.results.length-1];if(!r.isFinal)return;const a=[];for(let i=0;i<r.length;i++)a.push(r[i].transcript);const z=a.map(nz);
   if(z.some(t=>STOPLV.test(t.replace(LAY,'')))){stopLivre();return}
-  if(!z.some(t=>LAY.test(t)))return;
+  if(!z.some(t=>LAY.test(t))&&!JTok())return;
   lvBusy=1;lvRec=null;try{me.abort()}catch(x){}heard=a[0]||'';P.hidden=false;draw();
   try{await handle(a)}catch(x){say('Deu erro: '+(x&&x.message||x))}
   setTimeout(()=>{if(LIVRE&&st!='falando'&&st!='ouvindo'&&st!='exec'&&!lvRec){lvBusy=0;lvOpen()}},500)};
@@ -2085,6 +2128,8 @@ async function tarefasVoz(t){
 async function route(t){if(STOPLV.test(t)){stopLivre();return true}
  if(STARTLV.test(t)&&!/\b(desativ|deslig)/.test(t)){startLivre();return true}
  t=canon(t);
+ if(/\b(renov\w*|reativ\w*|ativar|ative)\b/.test(t)){const k=t.search(/\b(colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\b/);if(k>0)t=t.slice(0,k).trim()}
+ if(/^(?:\w+ ){0,3}(desfazer|desfaz|desfaca|errei|foi errado)(?: \w+){0,2}$/.test(t)){if(typeof UND==='undefined'||!UND){say('Nada para desfazer.');return true}const m=await withAlert(()=>desfaz());say(m.length?m.join(' '):'Desfeito.');return true}
  if(/\b(qual (e )?(o )?seu nome|como (voce )?(se )?chama|quem (e )?voce)\b/.test(t)){say('Meu nome é Layla, sou a assistente do KFLMULTI.');return true}
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();say('Abri o suporte da voz.');return true}
@@ -2122,15 +2167,23 @@ if(/\b(suporte|erros da voz|o que (voce )?nao entendeu)\b/.test(t)){suporte();sa
  return false}
 const FIM=/^((nao|nada|so isso|e so isso|e isso|isso mesmo|chega|obrigad[oa]|valeu|tchau|ja deu|ja chega|ta bom|esta bom|tudo certo|ok)( (obrigad[oa]|mais|nada|valeu|e isso|por hoje|pode parar))?|(pode )?(parar|encerrar?|desligar?|desliga o microfone)|nao (preciso|quero|tem mais|obrigad[oa]))$/,SIM=/^(sim|quero|tenho|pode|claro|uhum|aham)( |$)/;
 async function handle(alts){const F=lastF;lastF=false;let T=alts.map(nz).filter(Boolean);if(T.some(t=>LAY.test(t))){const T2=T.map(t=>t.replace(LAY,'').trim()).filter(Boolean);if(!T2.length){say('Pois não?',listen);return}T=T2;alts=alts.map(a=>String(a).replace(/^\s*(?:ei |oi |ola |hey |ok )?(?:layla|laila|leila|leyla|lyla|lila|aila)\b[\s,.:!?-]*/i,'')).filter(Boolean)}if(!T.length){Q={r:'',q:alts.slice(0,3),ts:Date.now()};const m='Não entendi. Diga ajuda para ver o que posso fazer.';Q.r=m;logV('nao_entendi');say(m);return}
+ if(JTok()&&T.some(t=>NO.test(t)&&t.split(' ').length<=3)){JNp=null;JNn=0;reply='';heard='';draw();P.hidden=true;return}
  if(F&&!ans&&T.some(t=>FIM.test(t)||(t.split(' ').length<=6&&/\b(nao|nada)\b/.test(t)&&!/\d/.test(t)))){sess=false;say(pick(TCHAU),()=>{st='idle';heard='';reply='';draw();P.hidden=true});return}
  if(F&&!ans&&T.every(t=>t.split(' ').length<=2&&SIM.test(t))){say(pick(FALE),()=>listen(1));return}
  RAWA=alts;if(ans){const f=ans,r=await f(T);if(r)return;ans=null;btns=[]}
- Q={r:'',q:alts.slice(0,3),ts:Date.now()};fail='';for(const t of T)if(await route(t))return;
- for(const t of T){const c=corrige(t);if(c!==t&&await route(c)){logV('corrigido',{fix:c});return}}
- const m=fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`;Q.r=m;logV('nao_entendi');say(m)}
+ const JT=JTok();if(!JT){JNp=null;JNn=0}
+ Q={r:'',q:alts.slice(0,3),ts:Date.now()};fail='';
+ if(JT){const A2=alts.map(a=>JNr+' '+a),T2=A2.map(nz).filter(Boolean);RAWA=A2;Q.q=A2.slice(0,3);for(const t of T2)if(await route(t)){JNp=null;JNn=0;return};fail='';RAWA=alts;Q.q=alts.slice(0,3)}
+ for(const t of T)if(await route(t)){JNp=null;JNn=0;return}
+ for(const t of T){const c=corrige(t);if(c!==t&&await route(c)){JNp=null;JNn=0;logV('corrigido',{fix:c});return}}
+ const m=fail||`Não entendi “${alts[0]}”. Diga ajuda para ver os comandos.`;
+ if(JNn<3&&SR){JNn++;JNr=JT?JNr+' '+alts[0]:alts[0];JNp=nz(JNr);JNts=Date.now();Q.r='(juntando) '+m;logV('juntando');reply='Ouvi: “'+JNr+'”'+(fail?'\n'+fail:'')+'\nPode continuar falando…';heard='';st='idle';draw();P.hidden=false;if(!LIVRE)listen(1);return}
+ JNp=null;JNn=0;Q.r=m;logV('nao_entendi');say(m)}
 
 B.onclick=()=>{if(st=='ouvindo'){stopAll();draw();return}listen()};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAll()});
+function avisoVoz(){try{if(typeof tfAlertas!=='function'||st!=='idle'||ans||sess||document.hidden||(LIVRE&&lvBusy))return;if(typeof cur!=='undefined'&&cur==='login')return;for(const a of tfAlertas()){if(!a.say)continue;const k='kfl_tv_'+a.k;if(localStorage.getItem(k))continue;localStorage.setItem(k,'1');say(a.say);return}}catch(e){}}
+setInterval(avisoVoz,60000);
 window.vozTeste=handle;
 window.vozInicio=()=>{if(!SR||document.hidden||window.__noAuto)return;const h=new Date().getHours(),sd=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';auto0.v=true;
  say(pick([sd+'! Do que você precisa?','Olá! Como posso ajudar?',sd+'! Em que posso ajudar?','Oi! O que você precisa agora?','Bem-vindo de volta! Do que você precisa?','Oi, tudo bem? Pode falar, o que você precisa?']),()=>listen(1))};
