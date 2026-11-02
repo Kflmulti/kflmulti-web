@@ -173,7 +173,7 @@ const renovar=run(async i=>{const c=C[i],pl=$('#pl').value;if(!pl)return alert('
  const eraOk=ok(c);if(eraOk){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(n=>n.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
  if(antes==1&&!S.primeira.includes(c.cliente))S.primeira.push(c.cliente);
  Object.assign(c,{plano:pl,inicio:fm(ini),fim:fm(fim),datapg:pe?fm(dp):'',pg:pe?val:''});
- if(ik)indUsar(c.cliente,ds); await save();tfCria(eraOk?'renovacao':(c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);await tfPergunta(c.cliente);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
+ if(ik)indUsar(c.cliente,ds); await save();if(!eraOk)tfCria((c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);await tfPergunta(c.cliente);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
 async function pausaCli(c){let r=true;
  if(c.pg==='R$ 100,00'){r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',datapg:'',pg:'',situacao:'NOVO'})&&r;r=await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''})&&r}
  else r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',situacao:'NOVO'});
@@ -1443,7 +1443,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=52;
+const VERSAO=53;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
