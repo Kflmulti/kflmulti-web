@@ -169,7 +169,7 @@ const renovar=run(async i=>{const c=C[i],pl=$('#pl').value;if(!pl)return alert('
  const eraOk=ok(c);if(eraOk){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(n=>n.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
  if(antes==1&&!S.primeira.includes(c.cliente))S.primeira.push(c.cliente);
  Object.assign(c,{plano:pl,inicio:fm(ini),fim:fm(fim),datapg:pe?fm(dp):'',pg:pe?val:''});
- if(ik)indUsar(c.cliente,ds); await save();tfCria(eraOk?'renovacao':(c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
+ if(ik)indUsar(c.cliente,ds); await save();tfCria(eraOk?'renovacao':(c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);await tfPergunta(c.cliente);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
 async function pausaCli(c){let r=true;
  if(c.pg==='R$ 100,00'){r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',datapg:'',pg:'',situacao:'NOVO'})&&r;r=await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''})&&r}
  else r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',situacao:'NOVO'});
@@ -614,7 +614,7 @@ const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cli
 let TF=null;
 const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catch(e){return[]}},tfQs=q=>{try{localStorage.setItem('kfl_tfq',JSON.stringify(q))}catch(e){}};
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
-async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);return true}catch(e){return false}}
+async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
 async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;return j}catch(e){return null}}
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length:null;
@@ -629,15 +629,24 @@ const tfUrl=()=>TF&&TF.key?new URL('consultora.html?k='+TF.key,location.href).hr
 const tfFd=d=>d.split('-').reverse().join('/');
 const tfBd=()=>{setTimeout(async()=>{await tfLoad();const n=tfPend(),e=document.querySelector('#v4 [onclick="tfTela()"]');if(e&&n!=null)e.textContent='📋 TAREFAS DA CONSULTORA'+(n?' ('+n+')':'')},50);return ''};
 const tfTela=run(async()=>{$('#v6').innerHTML='<h2>TAREFAS DA CONSULTORA</h2><p style="color:#777">Carregando…</p>';tela('v6');const j=await tfLoad();const q=tfQ().length;
- if(!j){$('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card" style="color:#C62828">Não consegui falar com o servidor (tarefas.php). Confira se o arquivo foi enviado e se você está logado.${q?`<br>${q} tarefa(s) aguardando envio.`:''}</div>${btn('TENTAR DE NOVO','#1976D2','tfTela()')}${btn('VOLTAR','#9E9E9E','menu();tela(\'v4\')')}`;return}
+ if(!j){$('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card" style="color:#C62828">Não consegui falar com o servidor (tarefas.php). Confira se o arquivo foi enviado e se você está logado.${q?`<br>${q} tarefa(s) aguardando envio.`:''}${window.tfErr?`<br><small>${esc(window.tfErr)}</small>`:''}</div>${btn('TENTAR DE NOVO','#1976D2','tfTela()')}${btn('VOLTAR','#9E9E9E','menu();tela(\'v4\')')}`;return}
  const g={};j.t.forEach(t=>(g[t.dia]=g[t.dia]||[]).push(t));const ds=Object.keys(g).sort().reverse(),hj=j.hoje,np=tfPend(),fe=j.f&&j.f[hj];
  const sec=ds.map(d=>{const a=g[d].slice().sort((x,y)=>(x.feito-y.feito)||x.ts-y.ts),n=a.filter(t=>!t.feito).length;
-  return `<div style="margin:14px 0 4px;font-weight:700">${d===hj?'Hoje':''} ${tfFd(d)} <span style="font-weight:400;color:${n&&d<hj?'#C62828':'#777'}">· ${j.f&&j.f[d]?'dia fechado ✔':n?(d<hj?'ATRASADAS: ':'')+n+' pendente'+(n>1?'s':''):'tudo feito'}</span></div>`+a.map(t=>`<div class="card" style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:9px 12px;${t.feito?'opacity:.65':''}"><div style="font-size:22px">${t.feito?'✅':'⬜'}</div><div style="flex:1"><b style="font-size:14px">${esc(t.txt)}</b>${t.feito&&t.feitoTs?`<div style="color:#777;font-size:12px">feita às ${new Date(t.feitoTs*1000).toTimeString().slice(0,5)}</div>`:t.auto?'<div style="color:#777;font-size:12px">diária automática</div>':''}</div>${t.auto?'':`<button class="bt" style="height:32px" onclick="tfDel('${t.id}')">🗑️</button>`}</div>`).join('')}).join('')||'<p style="color:#999">Nenhuma tarefa.</p>';
- $('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card"><b>${fe?'Hoje: dia fechado pela consultora ✔':np?np+' tarefa'+(np>1?'s':'')+' pendente'+(np>1?'s':''):'Tudo concluído'}</b>${q?`<div style="color:#E65100;font-size:13px">${q} tarefa(s) aguardando envio ao servidor</div>`:''}</div>${btn('➕ ADICIONAR TAREFA','#2E7D32','tfNova()')}<div class="g2">${btn('🔗 COPIAR LINK','#1976D2','tfCopia()')}${btn('💬 ENVIAR LINK (WHATSAPP)','#25D366','tfZap()')}</div>${sec}${btn('ATUALIZAR','#455A64','tfTela()')}${btn('VOLTAR','#9E9E9E',"menu();tela('v4')")}`;tela('v6');scrollTo(0,0)});
-const tfNova=run(async()=>{const x=await pm('Qual tarefa a consultora deve fazer?','');if(x===null||!String(x).trim())return;const ok=await tfAdd({tipo:'manual',txt:String(x).trim()});toast(ok?'Tarefa enviada ✔':'Sem conexão: fica na fila e será enviada');tfTela()});
+  return `<div style="margin:14px 0 4px;font-weight:700">${d===hj?'Hoje':''} ${tfFd(d)} <span style="font-weight:400;color:${n&&d<hj?'#C62828':'#777'}">· ${j.f&&j.f[d]?'dia fechado ✔':n?(d<hj?'ATRASADAS: ':'')+n+' pendente'+(n>1?'s':''):'tudo feito'}</span></div>`+a.map(t=>`<div class="card" style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:9px 12px;${t.feito?'opacity:.65':''}"><div style="font-size:22px">${t.feito?'✅':'⬜'}</div><div style="flex:1"><b style="font-size:14px">${t.urg?'🚨 ':''}${esc(t.txt)}</b>${t.feito&&t.feitoTs?`<div style="color:#777;font-size:12px">feita às ${new Date(t.feitoTs*1000).toTimeString().slice(0,5)}</div>`:t.auto?'<div style="color:#777;font-size:12px">diária automática</div>':''}</div>${t.auto?'':`<button class="bt" style="height:32px" onclick="tfDel('${t.id}')">🗑️</button>`}</div>`).join('')}).join('')||'<p style="color:#999">Nenhuma tarefa.</p>';
+ $('#v6').innerHTML=`<h2>TAREFAS DA CONSULTORA</h2><div class="card"><b>${fe?'Hoje: dia fechado pela consultora ✔':np?np+' tarefa'+(np>1?'s':'')+' pendente'+(np>1?'s':''):'Tudo concluído'}</b>${q?`<div style="color:#E65100;font-size:13px">${q} tarefa(s) aguardando envio ao servidor${window.tfErr?' — '+esc(window.tfErr):''}</div>`:''}</div>${btn('➕ ADICIONAR TAREFA','#2E7D32','tfNova()')}<div class="g2">${btn('🔗 COPIAR LINK','#1976D2','tfCopia()')}${btn('💬 ENVIAR LINK (WHATSAPP)','#25D366','tfZap()')}</div>${sec}${btn('ATUALIZAR','#455A64','tfTela()')}${btn('VOLTAR','#9E9E9E',"menu();tela('v4')")}`;tela('v6');scrollTo(0,0)});
+const tfNova=run(async()=>{const x=await pm('Qual tarefa a consultora deve fazer?','');if(x===null||!String(x).trim())return;const t=String(x).trim();let u=tfUrgRx.test(t);if(!u)u=confirm('É urgente?\n\nOK = urgente (te aviso se passar 1 hora sem fazer).\nCancelar = normal.');const ok=await tfAdd({tipo:'manual',txt:t,urg:u?1:0});toast(ok?'Tarefa enviada ✔':'Sem conexão: fica na fila e será enviada');tfTela()});
 const tfDel=run(async id=>{if(!confirm('Apagar esta tarefa?'))return;try{TF=await tfx('del',{id})}catch(e){alert('Não foi possível apagar: '+e.message)}tfTela()});
 const tfCopia=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');try{await navigator.clipboard.writeText(u);toast('Link copiado ✔')}catch(e){prompt('Copie o link:',u)}});
 const tfZap=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');go('https://wa.me/?text='+encodeURIComponent('Lista de tarefas do dia: '+u))});
+const tfUrgRx=/criativo|arte|logomarca|urgente/i;
+async function tfPergunta(nome){try{const x=await pm('Tem algo para a consultora fazer neste cliente ('+nome+')? Ex: trocar o criativo. Deixe em branco se não tiver.','');if(x===null||!String(x).trim())return;const t=String(x).trim();let u=tfUrgRx.test(t);if(!u)u=confirm('É urgente?\n\nOK = urgente (te aviso se passar 1 hora sem a consultora fazer).\nCancelar = normal.');
+ const ok=await tfAdd({tipo:'extra',cli:nome,txt:t.charAt(0).toUpperCase()+t.slice(1)+' — '+nome,passos:[],urg:u?1:0,ref:'x:'+Date.now()});toast(ok?'Tarefa enviada à consultora ✔':'Sem conexão: fica na fila')}catch(e){}}
+const tfAck=()=>(S.tfAck=S.tfAck||{});
+function tfAlertas(){try{if(!TF||!S||!S.mes)return[];const now=Date.now()/1000,L=[],A=tfAck();
+ TF.t.forEach(t=>{if(t.feito||!t.urg)return;const n=Math.floor((now-t.ts)/3600);if(n>=1&&!A['u|'+t.id+'|'+n])L.push({k:'u|'+t.id+'|'+n,tx:'🚨 '+t.txt,sub:'sem fazer há '+n+' hora'+(n>1?'s':'')+' · cobre a consultora'})});
+ const np=tfPend();if(new Date().getHours()>=23&&np&&!A['n|'+TF.hoje])L.push({k:'n|'+TF.hoje,tx:'⏰ 23h: ainda há '+np+' tarefa'+(np>1?'s':'')+' da consultora sem fazer',sub:'confira antes de fechar o dia'});return L}catch(e){return[]}}
+const tfOk=run(async k=>{k=decodeURIComponent(k);const A=tfAck();A[k]=Date.now();const lim=Date.now()-3*864e5;Object.keys(A).forEach(x=>{if(A[x]<lim)delete A[x]});await save();tfTela()});
+setInterval(()=>{try{if(cur!=='login'&&!document.hidden)tfLoad().then(()=>{try{bellUp()}catch(e){}})}catch(e){}},12e4);setTimeout(()=>{try{if(cur!=='login')tfLoad().then(()=>{try{bellUp()}catch(e){}})}catch(e){}},6000);
 
 /* ===== lançamentos: editar / apagar ===== */
 const aplicaVar=(x,dl)=>{if(x.fx){const f=(S.fixos||[]).find(f=>(f.nome||'').trim().toLowerCase()===x.d.trim().toLowerCase());if(f)f.valor=r2(Math.max(0,f.valor+dl))}if(x.sc==='P'&&x.ts&&x.ts>(S.manTs||0))S.cartaoPA=r2(Math.max(0,(S.cartaoPA||0)+dl))};
@@ -1290,7 +1299,7 @@ function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh
  if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const fxVenc=()=>{try{const d=new Date().getDate();return (S.fixos||[]).map((f,i)=>({f,i})).filter(({f})=>f.dia&&f.valor>0&&f.dia<=d&&!f.incluso&&!fxAtivo(f))}catch(e){return[]}};
-const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length}catch(e){return 0}};
+const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length+tfAlertas().length}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+it.ph+'?text='+encodeURIComponent(ntTx(it.t,it.dia)));S.ntSent=S.ntSent||{};S.ntSent[key]=Date.now();const lim=iso(new Date(Date.now()-10*864e5));Object.keys(S.ntSent).forEach(k=>{if(k.split('|')[2]<lim)delete S.ntSent[k]});save();setTimeout(nt,300)}
 const ntNext=()=>{const it=ntItens().find(x=>x.due&&!x.sent&&x.ph);if(!it)return toast('Nenhuma mensagem pendente');ntGo(it.key)};
@@ -1355,6 +1364,7 @@ const nt=()=>{const L=ntItens(),pe=L.filter(x=>x.due&&!x.sent),ag=L.filter(x=>!x
  $('#v6').innerHTML=`<div id="ntroot"></div><h2>🔔 CENTRAL DE NOTIFICAÇÕES</h2><div class="lb" style="text-align:center;line-height:1.5">Toque no cliente: o WhatsApp abre com a mensagem do sistema pronta. É só enviar e voltar.</div>
  ${pe.length?btn('▶ ENVIAR PRÓXIMA ('+pe.length+' restante'+(pe.length>1?'s':'')+')','#2E7D32','ntNext()'):'<p style="text-align:center;color:#2E7D32;font-weight:600">✅ Nada pendente agora.</p>'}
  ${pe.length?'<div class="lb" style="margin-top:10px">Para enviar agora</div>'+pe.map(x=>card(x)).join(''):''}
+ ${tfAlertas().length?'<div class="lb" style="margin-top:14px">📋 Avisos da consultora (toque para ver e marcar como visto)</div>'+tfAlertas().map(a=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #00897B" onclick="tfOk('${encodeURIComponent(a.k)}')"><b>${esc(a.tx)}</b><div style="color:#777;font-size:13px">${esc(a.sub)}</div></div>`).join(''):''}
  ${fxVenc().length?'<div class="lb" style="margin-top:14px">💳 Gastos fixos para pagar (somem ao marcar como pago)</div>'+fxVenc().map(({f})=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #C62828" onclick="fin()"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(f.nome)}</b><span>${f.dia===new Date().getDate()?'vence hoje':'venceu dia '+f.dia}</span></div><div style="color:#777;font-size:13px">${f.valor?brl(f.valor):'valor variável'} · toque para abrir e marcar como pago</div></div>`).join(''):''}
  ${rcHtml()}
  ${ag.length?'<div class="lb" style="margin-top:14px">Agendadas para hoje</div>'+ag.map(x=>card(x,'opacity:.6')).join(''):''}
@@ -1367,6 +1377,7 @@ function ntIcs(){const p=n=>String(n).padStart(2,'0'),d=new Date(),ds=d.getFullY
  ev=h=>['BEGIN:VEVENT','UID:kfl-central-'+h+'@kflmulti.com','DTSTAMP:'+z,'DTSTART:'+ds+'T'+p(h)+'0000','DTEND:'+ds+'T'+p(h)+'1500','RRULE:FREQ=DAILY','SUMMARY:KFLMULTI - Central de notificações ('+h+'h)','DESCRIPTION:Abra o app e envie as mensagens: '+u,'URL:'+u,'BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:Central de notificações KFLMULTI','END:VALARM','END:VEVENT'],
  ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KFLMULTI//PT',...ev(9),...ev(12),...ev(20),'END:VCALENDAR'].join('\r\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='central-notificacoes.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},800);toast('Abra o arquivo e salve na agenda')}
 function ntNotify(){try{if(!('Notification' in window)||Notification.permission!=='granted'||cur==='login'||!S||!S.mes)return;const H=new Date().getHours(),K=hk();
+ tfAlertas().forEach(a=>{const k='kfl_tn_'+a.k;if(localStorage.getItem(k))return;localStorage.setItem(k,'1');navigator.serviceWorker.ready.then(r=>r.showNotification('KFLMULTI · Consultora',{body:a.tx+' — '+a.sub,tag:'kfl-tf-'+a.k,icon:'icon-192.png'})).catch(()=>{})});
  [9,12,20].forEach(s=>{if(H<s)return;const k='kfl_nn_'+K+'_'+s;if(localStorage.getItem(k))return;const n=ntItens().filter(x=>x.h===s&&x.due&&!x.sent).length;localStorage.setItem(k,'1');if(!n)return;
   navigator.serviceWorker.ready.then(r=>r.showNotification('KFLMULTI · Central de notificações',{body:n+' mensagem(ns) para enviar ('+s+'h). Toque para abrir.',tag:'kfl-nt-'+s,icon:'icon-192.png'})).catch(()=>{})})}catch(e){}}
 setInterval(ntNotify,6e4);setTimeout(ntNotify,8000);
@@ -1383,7 +1394,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=48;
+const VERSAO=49;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -2060,7 +2071,7 @@ async function tarefasVoz(t){
  if(/\b(criar|crie|adicionar|adicione|adiciona|nova|novo|colocar|coloque|manda|mande|anotar|anote|pedir|peca)\b/.test(t)){
   let m=raw.match(/tarefa\s*(?:(?:para|pra)\s+(?:a\s+)?consultora)?\s*[:,\-]?\s*(?:de\s+|para\s+|pra\s+)?(.+)$/i),x=m?m[1].replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim():'';
   if(/^(a )?consultora$/i.test(x))x='';
-  const grava=async v=>{const ok=await tfAdd({tipo:'manual',txt:cap(v)});say(ok?'Tarefa enviada para a consultora.':'Sem conexão, a tarefa ficou na fila e será enviada.');return true};
+  const grava=async v=>{const ok=await tfAdd({tipo:'manual',txt:cap(v),urg:tfUrgRx.test(v)?1:0});say(ok?'Tarefa enviada para a consultora.':'Sem conexão, a tarefa ficou na fila e será enviada.');return true};
   if(x)return await grava(x);
   ans=async T=>{const v=((RAWA&&RAWA[0])||T[0]||'').replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim();if(NO.test(nz(v))){cancelar();return true}if(!v)return false;ans=null;btns=[];return await grava(v)};
   btns=[['❌ Cancelar',cancelar]];say('Qual a tarefa para a consultora?',listen);return true}
