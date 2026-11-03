@@ -119,7 +119,7 @@ async function buscaC(n){const t0=await(await fetch(API+'BuscaClientes.php?_='+D
 let cp=null,cur='login',pc=null,lm=0,cl=false,rf0=0,ns=0,lastRf=0,ccTm=0;
 const soft=d=>{ns=Math.max(0,ns+d);$('#so').hidden=!ns};
 function setC(L){C=L;try{localStorage.setItem(CK,JSON.stringify(L))}catch(e){}
- if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){S.novos.push(c.cliente);hd().nov++;if(ok(c))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd();try{bellUp()}catch(e){}}
+ if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){S.novos.push(c.cliente);hd().nov++;if(ok(c)&&!pgLink(c))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd();try{bellUp()}catch(e){}}
 function aplicaC(L,t0){if(lm>t0)return refrescar(true);if(cur!=='v1'){pc={L,t0};return}setC(L)}
 function refrescar(skipS){if(rf0)return rf0;soft(1);cl=true;const t0=Date.now();
  rf0=(async()=>{try{const q0=fila().length;if(!q0)flush();const lp=(async()=>{if(q0){await flush();cp=null}const x=cp?await cp:null;cp=null;return x||buscaC()})();
@@ -191,7 +191,7 @@ function fxEf(f,sg){if(sg>0){f.pgTs=Date.now();f.pgV=f.valor;f.pgC=!!f.cart;f.pg
  if(sg<0){delete f.pgTs;delete f.pgV;delete f.pgC;delete f.pgS;delete f.pgP;delete f.pgT}}
 const fxAtivo=f=>f.pgTs&&f.pgTs>(S.manTs||0);
 const pr=(t,v)=>pm(t,(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})),r2=n=>Math.round(n*100)/100+0;
-function menu(){const b=(t,c,f)=>btn(t,c,f);$('#v4').innerHTML=`<h2>GESTÃO</h2><div class="g2">${b('OPERACIONAL','#1976D2','oper()')}${b('GESTÃO FINANCEIRA','#2E7D32','fin()')}${b('INVESTIMENTOS','#455A64','inv()')}</div><div style="color:#777;margin:14px 0 4px">Análises</div><div class="g2">${b('📅 VENCIMENTOS','#6A1B9A','venc()')}${b('📈 HISTÓRICO DIÁRIO','#00796B','histD()')}${b('🔮 PREVISÃO DA SEMANA','#F57C00','prev()')}${b('🧮 SIMULADOR','#6A1B9A','simu()')}${b('🔁 RETENÇÃO','#C62828','ret()')}${b('🎁 INDICAÇÕES','#6A1B9A','indTela()')}${b('📋 TAREFAS DA CONSULTORA'+(tfPend()?' ('+tfPend()+')':''),'#00897B','tfTela()')}${b('📝 BLOCO DE NOTAS'+((S.notas||[]).length?' ('+S.notas.length+')':''),'#512BD4','notas()')}</div><div style="color:#777;margin:14px 0 4px">Notas fiscais</div><div class="g2">${b('🧾 NOTAS A EMITIR','#B45309','nfs()')}${b('🔔 CENTRAL DE NOTIFICAÇÕES'+(ntCnt()?' ('+ntCnt()+')':''),'#2E7D32','nt()')}${b('⏰ R$ 50 VENCIDOS'+(e50l().length?' ('+e50l().length+')':''),'#E65100','e50v()')}${b('📑 AMR (CONTABILIDADE)'+(amrPend().length?' ⚠':''),'#1565C0','amr()')}${b('💼 CARTEIRA (ADMIN)','#00695C',"go('https://kflmulti.com/carteira/admin.php')")}${b('🔎 PROSPECÇÃO','#6A1B9A',"go('https://kflmulti.com/prospeccao')")}${b('🎨 PEDIDO DE ARTE','#E65100',"go('https://kflmulti.com/pedido-arte/')")}${b('📣 ANÚNCIOS META','#C2185B','mtMain()')}</div><div style="color:#777;margin:14px 0 4px">Controle</div><div class="g2">${b('📒 LANÇAMENTOS','#37474F','lanc()')}${b('🎯 LIMITES','#AD1457','lim()')}${b('💾 BACKUP','#455A64','bkp()')}${b('🛟 RECUPERAR VENDAS DE HOJE','#B71C1C','recHoje()')}${b('🔔 LEMBRETE / INSTALAR','#0277BD','appc()')}</div>${tfBd()}<div style="margin-top:14px" class="g2">${b('🧹 LIMPAR CACHE','#E53935','limpar()')}${b('SAIR','#37474F','sair()')}</div>${btn('🔒 SAIR DE TODOS OS APARELHOS','#B71C1C','sairTodos()')}${btn('TELA PRINCIPAL','#9E9E9E',"tela('v1');lista()")}`;tela('v4')}
+function menu(){const b=(t,c,f)=>btn(t,c,f);$('#v4').innerHTML=`<h2>GESTÃO</h2><div class="g2">${b('OPERACIONAL','#1976D2','oper()')}${b('GESTÃO FINANCEIRA','#2E7D32','fin()')}${b('INVESTIMENTOS','#455A64','inv()')}</div><div style="color:#777;margin:14px 0 4px">Análises</div><div class="g2">${b('📅 VENCIMENTOS','#6A1B9A','venc()')}${b('📈 HISTÓRICO DIÁRIO','#00796B','histD()')}${b('🔮 PREVISÃO DA SEMANA','#F57C00','prev()')}${b('🧮 SIMULADOR','#6A1B9A','simu()')}${b('🔁 RETENÇÃO','#C62828','ret()')}${b('🎁 INDICAÇÕES','#6A1B9A','indTela()')}${b('📋 TAREFAS DA CONSULTORA'+(tfPend()?' ('+tfPend()+')':''),'#00897B','tfTela()')}${b('👤 CLIENTES PAGOS'+(pgL().filter(r=>r.st==='and'||r.st==='aguard').length?' ('+pgL().filter(r=>r.st==='and'||r.st==='aguard').length+')':''),'#1565C0','pgTela()')}${b('📝 BLOCO DE NOTAS'+((S.notas||[]).length?' ('+S.notas.length+')':''),'#512BD4','notas()')}</div><div style="color:#777;margin:14px 0 4px">Notas fiscais</div><div class="g2">${b('🧾 NOTAS A EMITIR','#B45309','nfs()')}${b('🔔 CENTRAL DE NOTIFICAÇÕES'+(ntCnt()?' ('+ntCnt()+')':''),'#2E7D32','nt()')}${b('⏰ R$ 50 VENCIDOS'+(e50l().length?' ('+e50l().length+')':''),'#E65100','e50v()')}${b('📑 AMR (CONTABILIDADE)'+(amrPend().length?' ⚠':''),'#1565C0','amr()')}${b('💼 CARTEIRA (ADMIN)','#00695C',"go('https://kflmulti.com/carteira/admin.php')")}${b('🔎 PROSPECÇÃO','#6A1B9A',"go('https://kflmulti.com/prospeccao')")}${b('🎨 PEDIDO DE ARTE','#E65100',"go('https://kflmulti.com/pedido-arte/')")}${b('📣 ANÚNCIOS META','#C2185B','mtMain()')}</div><div style="color:#777;margin:14px 0 4px">Controle</div><div class="g2">${b('📒 LANÇAMENTOS','#37474F','lanc()')}${b('🎯 LIMITES','#AD1457','lim()')}${b('💾 BACKUP','#455A64','bkp()')}${b('🛟 RECUPERAR VENDAS DE HOJE','#B71C1C','recHoje()')}${b('🔔 LEMBRETE / INSTALAR','#0277BD','appc()')}</div>${tfBd()}<div style="margin-top:14px" class="g2">${b('🧹 LIMPAR CACHE','#E53935','limpar()')}${b('SAIR','#37474F','sair()')}</div>${btn('🔒 SAIR DE TODOS OS APARELHOS','#B71C1C','sairTodos()')}${btn('TELA PRINCIPAL','#9E9E9E',"tela('v1');lista()")}`;tela('v4')}
 const sair=run(async()=>{await est('logout');try{localStorage.removeItem('kfl_tk')}catch(e){}tela('login')});
 const sairTodos=run(async()=>{if(!confirm('Sair de TODOS os aparelhos? Será preciso digitar a senha de novo em cada um.'))return;await est('logout',{todos:1});try{localStorage.removeItem('kfl_tk')}catch(e){}tela('login')});
 const limpar=run(async()=>{await carregar();tela('v1')});
@@ -420,7 +420,7 @@ function hist(){const ms=[['🕒 PARCIAL DO MÊS','P']];for(let i=0;i<12;i++){co
 const relMes=k=>txt(k==='P'?gerarMes(fm(new Date()).slice(3)):S.rel[k],'RELATÓRIO','hist()');
 function gerarDia(ref){const nf=S.nf,J=a=>a.join('\n'),ent=nf.reduce((t,n)=>t+num(n.valor),0),pg=S.pagos||[],tdy=iso(new Date()),late=ref&&ref!==tdy,dmy=late?ref.split('-').reverse().join('/'):'';
  const h=late?((S.hist||{})[ref]||{}):hd(),ma=S.meuAtivo?MD():0,pl=n=>(C.find(c=>c.cliente===n)||{}).plano||'',L=(a,f,v)=>a.length?J(a.map(f)):v;
- return `*📊 RELATÓRIO GERAL DO DIA${late?' '+dmy:''}*${late?'\n_(finalizado em '+fm(new Date())+')_':''}\n\n*💰 FINANCEIRO (NF):*\n${L(nf,n=>`• ${n.cliente}: ${n.valor}`,'Nenhuma NF gerada.')}\n\n*💵 PENDENTES PAGOS:*\n${L(pg,p=>'💵 '+p,'Nenhum pendente pago.')}\n\n*🔄 CLIENTES RENOVADOS:*\n${L(S.renovados,r=>`✅ ${r} (${pl(r)})`,'Nenhuma renovação registrada.')}\n\n*↩️🔄 CLIENTES RETORNADOS:*\n${L(S.retornados,r=>'↩️✅ '+r,'Nenhum retorno.')}\n\n*✨🔄 NOVOS CLIENTES:*\n${L(S.novos,r=>'✨✅ '+r,'Nenhum cliente novo.')}\n\n*🚫 CLIENTES PAUSADOS:*\n${L(S.pausados,r=>'⛔ '+r,'Nenhum cliente pausado.')}\n\n*🧮 LUCRO POR VENDA:*\n${(()=>{const E=EH(late?ref:''),X=nf.filter(n=>n.e50);if(!E.length&&!X.length)return 'Nenhuma venda com lucro calculado.';return J(E.map(x=>`• ${x.cli} (${x.k=='N'?'novo, entrada':x.k=='P'?'pendência paga':'renovação'}): ${brl(x.v)} − imposto ${brl(x.imp||0)} − anúncio ${brl(x.cu||0)} = *${brl(x.lc)}*`).concat(X.map(n=>{const im=r2(num(n.valor)*IP()/100);return `• ${n.cliente} (entrada de ${n.valor} vencida, NF lançada hoje): imposto ${brl(im)} = *−${brl(im)}*`})))})()}\n\n--- resumo ---\n*Entrada em caixa:* ${brl(h.cx||0)}\n*NFs emitidas:* ${brl(ent)}\n*Imposto das vendas (${PP()}%):* ${brl(h.imp||0)}\n*Anúncio dos clientes (custo das vendas):* ${brl(h.cu||0)}\n*Lucro das vendas:* ${brl(h.lc||0)}\n*Meu anúncio (empresa):* ${brl(ma)}\n*LUCRO LÍQUIDO DO DIA:* ${brl(r2((h.lc||0)-ma))}`}
+ return `*📊 RELATÓRIO GERAL DO DIA${late?' '+dmy:''}*${late?'\n_(finalizado em '+fm(new Date())+')_':''}\n\n*💰 FINANCEIRO (NF):*\n${L(nf,n=>`• ${n.cliente}: ${n.valor}`,'Nenhuma NF gerada.')}\n\n*💵 PENDENTES PAGOS:*\n${L(pg,p=>'💵 '+p,'Nenhum pendente pago.')}\n\n*🔄 CLIENTES RENOVADOS:*\n${L(S.renovados,r=>`✅ ${r} (${pl(r)})`,'Nenhuma renovação registrada.')}\n\n*↩️🔄 CLIENTES RETORNADOS:*\n${L(S.retornados,r=>'↩️✅ '+r,'Nenhum retorno.')}\n\n*✨🔄 NOVOS CLIENTES:*\n${L(S.novos,r=>'✨✅ '+r,'Nenhum cliente novo.')}\n\n${pgRel(late?ref:'')}*🚫 CLIENTES PAUSADOS:*\n${L(S.pausados,r=>'⛔ '+r,'Nenhum cliente pausado.')}\n\n*🧮 LUCRO POR VENDA:*\n${(()=>{const E=EH(late?ref:''),X=nf.filter(n=>n.e50);if(!E.length&&!X.length)return 'Nenhuma venda com lucro calculado.';return J(E.map(x=>`• ${x.cli} (${x.k=='N'?'novo, entrada':x.k=='P'?'pendência paga':'renovação'}): ${brl(x.v)} − imposto ${brl(x.imp||0)} − anúncio ${brl(x.cu||0)} = *${brl(x.lc)}*`).concat(X.map(n=>{const im=r2(num(n.valor)*IP()/100);return `• ${n.cliente} (entrada de ${n.valor} vencida, NF lançada hoje): imposto ${brl(im)} = *−${brl(im)}*`})))})()}\n\n--- resumo ---\n*Entrada em caixa:* ${brl(h.cx||0)}\n*NFs emitidas:* ${brl(ent)}\n*Imposto das vendas (${PP()}%):* ${brl(h.imp||0)}\n*Anúncio dos clientes (custo das vendas):* ${brl(h.cu||0)}\n*Lucro das vendas:* ${brl(h.lc||0)}\n*Meu anúncio (empresa):* ${brl(ma)}\n*LUCRO LÍQUIDO DO DIA:* ${brl(r2((h.lc||0)-ma))}`}
 const EH=ref=>(S.ent||[]).filter(x=>x.dt===(ref?fm(fromIso(ref)):fm(new Date()))&&x.lc!=null);
 async function fila0(){await flush();const n=fila().length;if(n)alert('Há '+n+' ação(ões) pendente(s) na fila de envio. Aguarde o reenvio (toque em ⏳ no topo) e tente de novo.');return !n}
 const envWa=run(async()=>{if(await fila0())go('https://api.whatsapp.com/send?text='+encodeURIComponent(window.vtx))});
@@ -620,7 +620,7 @@ const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catc
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
-async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;return j}catch(e){return null}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);return j}catch(e){return null}}
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length:null;
 const tfPl=c=>(c&&c.plano?lp(c.plano):'');
 const TFP={ativacao:c=>['Ativar o anúncio no Meta'+(tfPl(c)?' (plano '+tfPl(c)+')':''),'Criar a arte, se for preciso','Conferir o código do cliente'],
@@ -812,6 +812,55 @@ const e50D=run(async i=>{const x=S.ent[i];if(!x||x.done)return;if(!confirm('Marc
 const e50v=run(async()=>{const L=e50l(),t=hoje();
  $('#v6').innerHTML=`<h2>R$ 50 VENCIDOS</h2><div class="lb" style="text-align:center;line-height:1.5">${diasFimMes()==0?'<b>Último dia do mês:</b> todas as entradas de R$ 50 abertas precisam virar NF hoje, para o dinheiro que já entrou ficar neste mês. ':''}Entradas de R$ 50 sem a baixa dos R$ 100 há 7 dias ou mais. Lance a NF (sai como não identificada) ou marque como devolvida.</div>${L.map(o=>{const x=o.x,d=Math.round((t-fromIso(mkI(x.dt)))/864e5);return `<div class="card" style="margin:8px 0"><b>${esc(x.cli)}</b><div style="color:#777;font-size:14px">entrada em ${esc(x.dt)} · há ${d} dias · ${brl(x.v)}</div><div class="g2" style="margin-top:8px"><button class="bg" style="background:#B45309" onclick="e50L(${o.i})">🧾 LANÇAR NF</button><button class="bg" style="background:#607D8B" onclick="e50D(${o.i})">↩️ DEVOLVIDO</button></div></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhuma entrada de R$ 50 vencida. 🎉</p>'}${L.length>1?btn('🧾 LANÇAR TODAS ('+L.length+')','#B45309','e50T()'):''}${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6');scrollTo(0,0)});
 
+
+/* ---- clientes pagos (R$ 50) que ainda não estão na planilha ---- */
+let PG=null,pgF='and',pgQ='';
+const pgS=()=>{S.pg=S.pg||{lan:{},reb:{},vinc:{},cache:[]};return S.pg};
+const pgL=()=>PG||(S&&S.pg&&S.pg.cache)||[];
+const pgFone=t=>{t=String(t||'').replace(/\D/g,'');return t.length==11?'('+t.slice(0,2)+') '+t.slice(2,7)+'-'+t.slice(7):t};
+const pgNome=r=>(r.nome?r.nome+' ':'Cliente ')+pgFone(r.tel),pg8=t=>String(t||'').replace(/\D/g,'').slice(-8);
+const PGST={and:'Em andamento',aguard:'Aguardando cliente',conc:'Concluído',desist:'Desistência',exp:'Expirado'},PGC={and:'#1565C0',aguard:'#F57C00',conc:'#2E7D32',desist:'#C62828',exp:'#607D8B'};
+function pgSet(j){if(!j||!Array.isArray(j.pg))return;PG=j.pg;try{pgSync()}catch(e){}}
+function pgSync(){if(!S||!S.mes||!PG)return;const g=pgS();let ch=0;
+ PG.forEach(r=>{
+  if(!g.lan[r.id]){g.lan[r.id]=Date.now();ch=1;
+   if(!r.reemb){credita(pgNome(r),50,'N',calcV('N',50,0,'GOLD',0));const x=S.ent[S.ent.length-1];x.pid=r.id;x.pg=1}}
+  if(r.reemb&&!g.reb[r.id]){g.reb[r.id]=Date.now();ch=1;const x=(S.ent||[]).find(e=>e.pid===r.id&&!e.done);
+   if(x){x.done=true;x.dev=true;S.saldoEA=r2((S.saldoEA||0)-x.v);const a=amrS();a.rows.push({id:amrId(),dt:fm(new Date()),d:'devolução',f:'entrada devolvida cliente',v:r2(x.v),t:'E',cli:x.cli});S.amrDt=Date.now()}}});
+ const sl=PG.map(r=>({id:r.id,tel:r.tel,st:r.st,cts:r.cts||0,ts:r.ts,nome:r.nome||''}));if(JSON.stringify(sl)!==JSON.stringify(g.cache)){g.cache=sl;ch=1}
+ if(ch)save()}
+function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter(x=>x.length==8),pr=id=>(S.ent||[]).find(e=>e.pid===id&&!e.done);
+ let r=L.find(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&ph.includes(pg8(x.tel)));
+ if(!r){const lim=Date.now()/1000-3*86400;r=L.filter(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st==='conc'&&x.cts>=lim&&pr(x.id)).sort((a,b)=>b.cts-a.cts)[0]}
+ if(!r)return false;const x=pr(r.id);g.vinc[r.id]=c.cliente;x.cli=c.cliente;delete x.pg;
+ if(r.st!=='conc')tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
+ toast('Vinculado ao cadastro '+pgFone(r.tel)+' (R$ 50 já contado) ✔');return true}catch(e){return false}}
+const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
+const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length;if(!a&&!g)return'';const p=pgParados().length;
+ return '<div class="lb" style="margin-top:14px">👤 Clientes pagos ainda sem anúncio</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #1565C0" onclick="pgTela()"><b>'+a+' em andamento · '+g+' aguardando o cliente</b><div style="color:#777;font-size:13px">'+(p?p+' parado'+(p>1?'s':'')+' há mais de 24h · ':'')+'toque para abrir</div></div>'};
+function pgRel(ref){try{const L=pgL();if(!L.length)return'';const d0=ref?fm(fromIso(ref)):fm(new Date()),dh=ts=>fm(new Date(ts*1000)),en=L.filter(r=>dh(r.ts)===d0),cn=L.filter(r=>r.st==='conc'&&r.cts&&dh(r.cts)===d0),an=L.filter(r=>r.st==='and'),ag=L.filter(r=>r.st==='aguard');
+ return '*👤 CLIENTES PAGOS (AINDA SEM PLANILHA):*\nCadastrados hoje: '+en.length+'\nConcluídos hoje: '+cn.length+'\nEm andamento: '+an.length+an.map(r=>'\n⏳ '+pgFone(r.tel)).join('')+'\nAguardando o cliente: '+ag.length+ag.map(r=>'\n💤 '+pgFone(r.tel)+(r.mot?' — '+r.mot:'')).join('')+'\n\n'}catch(e){return''}}
+const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;const d={id,st};
+ if(st==='aguard'){const m=await pm('Motivo (ex.: sem WhatsApp comercial):','','text');if(m===null||!String(m).trim())return;d.mot=String(m).trim()}
+ if(st==='desist'){if(!confirm('Registrar DESISTÊNCIA de '+pgFone(r.tel)+'?'))return;d.mot='desistência';d.reemb=confirm('Os R$ 50 foram devolvidos ao cliente?\n\nOK = SIM, devolvido (o valor sai do caixa).\nCancelar = NÃO devolvido.')}
+ if(st==='conc'&&!confirm('Marcar como concluído?'))return;
+ try{pgSet(await tfx('pago_set',d));toast('Atualizado ✔')}catch(e){alert(e.message)}pgTela()});
+const pgNovo=run(async()=>{const t=await pm('Telefone do cliente que pagou (com DDD):','','numeric');if(t===null||!String(t).trim())return;const n=await pm('Nome do negócio (opcional):','','text');
+ try{pgSet(await tfx('pago_add',{tel:String(t),nome:n===null?'':String(n)}));toast('Cadastrado ✔ (R$ 50 lançados)')}catch(e){alert(e.message)}pgTela()});
+function pgLista(){const L=pgL(),q=pgQ.replace(/\D/g,''),qt=pgQ.trim().toLowerCase();let V;
+ if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt));else V=L.filter(r=>pgF==='all'||r.st===pgF);
+ V=V.slice().sort((a,b)=>b.ts-a.ts);const hojeS=Date.now()/1000;
+ $('#pgl').innerHTML=V.map(r=>{const fim=r.ts+365*86400,dl=Math.ceil((fim-hojeS)/86400),dt=fm(new Date(r.ts*1000));
+  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.ret&&r.st==='aguard'?'retorno em '+fm(fromIso(r.ret)):'',r.st==='aguard'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
+  const bt=(t,c,f)=>`<button class="bg" style="background:${c};font-size:13px;padding:8px 6px" onclick="${f}">${t}</button>`;
+  const ab=(r.st==='and'||r.st==='aguard')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
+  return `<div class="card" style="margin:8px 0;border-left:5px solid ${PGC[r.st]}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(pgFone(r.tel))}${r.nome?' · '+esc(r.nome):''}</b><span style="color:${PGC[r.st]};font-weight:700;font-size:13px">${PGST[r.st]}</span></div><div style="color:#777;font-size:13px">pagou em ${dt} · cadastrado por ${r.por==='dono'?'você':'consultora'}${info?' · '+info:''}</div><div class="g2" style="margin-top:8px">${ab}</div></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhum cliente nesta lista.</p>'}
+function pgTela(){const L=pgL(),n=s=>L.filter(r=>r.st===s).length;
+ const chip=(k,t)=>`<button class="bg" style="background:${pgF===k&&!pgQ?'#1565C0':'#78909C'};font-size:13px;padding:8px 6px" onclick="pgQ='';pgF='${k}';pgTela()">${t}</button>`;
+ $('#v6').innerHTML=`<h2>👤 CLIENTES PAGOS</h2><div class="lb" style="text-align:center;line-height:1.5">Pagaram os R$ 50 e ainda não estão na planilha. O valor já entra no caixa; na desistência com reembolso ele sai. Guardados por 12 meses.</div>
+ <input id="pgq" placeholder="🔎 Buscar por telefone ou nome" value="${esc(pgQ)}" oninput="pgQ=this.value;pgLista()" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin:8px 0">
+ <div class="g3">${chip('and','Andamento ('+n('and')+')')}${chip('aguard','Aguardando ('+n('aguard')+')')}${chip('conc','Concluídos ('+n('conc')+')')}${chip('desist','Desist. ('+n('desist')+')')}${chip('exp','Expirados ('+n('exp')+')')}${chip('all','Todos ('+L.length+')')}</div>
+ <div id="pgl"></div>${btn('➕ CADASTRAR CLIENTE PAGO','#2E7D32','pgNovo()')}${btn('VOLTAR','#9E9E9E','menu()')}`;pgLista();tela('v6');scrollTo(0,0)}
 /* ---- AMR: lançamentos que não vêm das NFs ---- */
 const MESN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const amrNome=mes=>{const[m,a]=mes.split('/');return MESN[+m-1]+'/'+a},amrKey=mes=>mes.replace('/','_'),amrMes=k=>k.replace('_','/'),amrId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
@@ -997,7 +1046,7 @@ function mtAct(r,A0){const x=r.x,ent=mkI(x.dt);if(!ent||ent.length!==10)return n
 function mtRecs(){const key=mtTs+'|'+(S.ent||[]).length+'|'+(S.ent||[]).reduce((q,x)=>q+(x.done?1:0)+(x.exp?2:0)+(x.dev?4:0),0)+'|'+Object.keys(mtS().org).length+'|'+(mtIBm?mtIBm.t:0);if(mtRC&&mtRC.k===key)return mtRC.v;
  const R=new Map();
  (mtD&&mtD.clientes||[]).forEach(c=>R.set(mtKey(c.n),{n:c.n,key:mtKey(c.n),cn:c.c||'',u:c.u||'',i:c.i||'',f:c.f||[],x:null,nf:1,bd:c.bd}));
- (S.ent||[]).forEach(x=>{if(x.k!=='N'||!x.dt)return;const k=mtKey(x.cli);let r=R.get(k);if(!r){r={n:x.cli,key:k,cn:'',u:'',i:'',f:[],x:null};R.set(k,r)}if(!r.x||mkI(x.dt)<mkI(r.x.dt))r.x=x});
+ (S.ent||[]).forEach(x=>{if(x.k!=='N'||!x.dt||x.pg)return;const k=mtKey(x.cli);let r=R.get(k);if(!r){r={n:x.cli,key:k,cn:'',u:'',i:'',f:[],x:null};R.set(k,r)}if(!r.x||mkI(x.dt)<mkI(r.x.dt))r.x=x});
  const out=[],AC=new Map(),trk=(S.ent||[]).reduce((m,x)=>{const d=x.dt?mkI(x.dt):'';return d&&(!m||d<m)?d:m},'');
  (S.ent||[]).forEach(x=>{if(!x.dt||!x.cli)return;const k=mtKey(x.cli);if(!AC.has(k))AC.set(k,[]);AC.get(k).push(x)});
  R.forEach(r=>{const big=r.f.filter(a=>a[1]>50.01);let ent=r.x?mkI(r.x.dt):(r.f.length?r.f[0][0]:'');if(!ent||ent.length!==10)return;
@@ -1319,14 +1368,14 @@ const ntTx=(t,dia)=>{const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\
 const ntFone=c=>{const d=String((c&&c.cel)||'').replace(/\D/g,'');return !d?'':(d.length>=12&&d.startsWith('55'))?d:'55'+d};
 function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh,L=[],sent=S.ntSent||{};
  const add=(t,cli,c,dia)=>{const key=t+'|'+String(cli).trim().toLowerCase()+'|'+K;L.push({key,t,cli,c,dia,h:NTT[t].h,due:H>=NTT[t].h,sent:!!sent[key],ph:ntFone(c)})};
- (S.ent||[]).forEach(x=>{if(x.k!=='N'||x.done||!x.dt)return;const e0=fromIso(mkI(x.dt));if(isNaN(e0))return;const dd=Math.round((h-e0)/864e5),c=cliBy(x.cli);if(c&&!pend(c))return;
+ (S.ent||[]).forEach(x=>{if(x.k!=='N'||x.done||!x.dt||x.pg)return;const e0=fromIso(mkI(x.dt));if(isNaN(e0))return;const dd=Math.round((h-e0)/864e5),c=cliBy(x.cli);if(c&&!pend(c))return;
   if(dd===1){const p=new Date(e0);p.setDate(p.getDate()+2);add('a',x.cli,c,fm(p).slice(0,5))}
   if(dd===2)add('b',x.cli,c,'')});
  ativos().forEach(c=>{const d=pd(c.fim);if(d&&d.getTime()===h.getTime()){add('c',c.cliente,c,'');add('d',c.cliente,c,'')}});
  if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const fxVenc=()=>{try{const d=new Date().getDate();return (S.fixos||[]).map((f,i)=>({f,i})).filter(({f})=>f.dia&&f.valor>0&&f.dia<=d&&!f.incluso&&!fxAtivo(f))}catch(e){return[]}};
-const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length+tfAlertas().length}catch(e){return 0}};
+const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length+tfAlertas().length+pgParados().length}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+it.ph+'?text='+encodeURIComponent(ntTx(it.t,it.dia)));S.ntSent=S.ntSent||{};S.ntSent[key]=Date.now();const lim=iso(new Date(Date.now()-10*864e5));Object.keys(S.ntSent).forEach(k=>{if(k.split('|')[2]<lim)delete S.ntSent[k]});save();setTimeout(nt,300)}
 const ntNext=()=>{const it=ntItens().find(x=>x.due&&!x.sent&&x.ph);if(!it)return toast('Nenhuma mensagem pendente');ntGo(it.key)};
@@ -1413,6 +1462,7 @@ const nt=()=>{const L=ntItens(),pe=L.filter(x=>x.due&&!x.sent),ag=L.filter(x=>!x
  $('#v6').innerHTML=`<div id="ntroot"></div><h2>🔔 CENTRAL DE NOTIFICAÇÕES</h2><div class="lb" style="text-align:center;line-height:1.5">Toque no cliente: o WhatsApp abre com a mensagem do sistema pronta. É só enviar e voltar.</div>
  ${pe.length?btn('▶ ENVIAR PRÓXIMA ('+pe.length+' restante'+(pe.length>1?'s':'')+')','#2E7D32','ntNext()'):'<p style="text-align:center;color:#2E7D32;font-weight:600">✅ Nada pendente agora.</p>'}
  ${pe.length?'<div class="lb" style="margin-top:10px">Para enviar agora</div>'+pe.map(x=>card(x)).join(''):''}
+ ${pgCentral()}
  ${tfAlertas().length?'<div class="lb" style="margin-top:14px">📋 Avisos da consultora (toque para ver e marcar como visto)</div>'+tfAlertas().map(a=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #00897B" onclick="tfOk('${encodeURIComponent(a.k)}')"><b>${esc(a.tx)}</b><div style="color:#777;font-size:13px">${esc(a.sub)}</div></div>`).join(''):''}
  ${fxVenc().length?'<div class="lb" style="margin-top:14px">💳 Gastos fixos para pagar (somem ao marcar como pago)</div>'+fxVenc().map(({f})=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #C62828" onclick="fin()"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(f.nome)}</b><span>${f.dia===new Date().getDate()?'vence hoje':'venceu dia '+f.dia}</span></div><div style="color:#777;font-size:13px">${f.valor?brl(f.valor):'valor variável'} · toque para abrir e marcar como pago</div></div>`).join(''):''}
  ${rcHtml()}
@@ -1450,7 +1500,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=55;
+const VERSAO=56;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1835,8 +1885,14 @@ async function dAlertas(){const o=[];
  const fx=(S.fixos||[]).filter(f=>!f.incluso&&f.dia==new Date().getDate());if(fx.length)o.push('fixos vencendo hoje: '+fx.map(f=>f.nome).join(', '));
  return o.length?'Pendências: '+o.join('; ')+'.':'Nenhuma pendência no momento.'}
 
+async function dPagos(t){const L=pgL(),n=s=>L.filter(r=>r.st===s).length,d=String(t).replace(/\D/g,'');
+ if(d.length>=8){const r=L.find(x=>String(x.tel).slice(-8)===d.slice(-8));return r?`Sim, esse telefone pagou no dia ${fm(new Date(r.ts*1000)).slice(0,5)}. Situação: ${PGST[r.st].toLowerCase()}${r.mot?', '+r.mot:''}${r.reemb?', reembolsado':''}.`:'Não achei esse telefone entre os clientes pagos.'}
+ if(!L.length)return 'Nenhum cliente pago cadastrado ainda.';
+ const p=pgParados().length;return `Clientes pagos sem planilha: ${n('and')} em andamento${p?', '+p+' parado'+(p>1?'s':'')+' há mais de 24 horas':''}, ${n('aguard')} aguardando o cliente, ${n('conc')} concluído${n('conc')==1?'':'s'}, ${n('desist')} desistência${n('desist')==1?'':'s'}.`}
+
 /* ===== roteamento das consultas ===== */
 const DOMS=[
+ [/clientes pagos|clientes em andamento|em andamento.*(clientes?|pagos?)|aguardando (o )?cliente|pagaram.*(sem|ainda|nao)|sem anuncio|ja pagou|ja pagaram|telefone.*(pagou|cadastrad)/,()=>dPagos,{test:t=>/\b(abrir|abre|abra|mostrar|mostra|mostre|ir para|va para|vai para)\b/.test(t)}],
  [/o que (falta|tenho|preciso|devo)|pendencias do app|alertas|avisos|resumo geral|tudo que falta/,()=>dAlertas],
  [/\bmeta\b|campanhas?|conversas|orcamento diario/,()=>dMeta],
  [/\b(notas?|nfs?|nfse|fiscais|fiscal)\b/,()=>dNotas],
@@ -1880,6 +1936,7 @@ const NAV=[
  [/notas? fiscais?|notas? a emitir|emitir notas?|emissao de notas?|\bnfs?e?\b|\bnotas\b/,'as notas a emitir',()=>nfs()],
  [/notificac|lembretes?|central de mensagens|mensagens para enviar|central/,'a central de notificações',()=>nt()],
  [/cinquenta vencidos|50 vencidos|entradas vencidas|50 reais vencidos/,'os R$ 50 vencidos',()=>e50v()],
+ [/clientes pagos|pagaram sem anuncio|clientes em andamento/,'os clientes pagos',()=>pgTela()],
  [/\bamr\b|\b(a )?m r\b|\bmr\b|\bemerre\b|\ba erre\b|\bamer\b|contabilidade|contador|relatorio contabil/,'a AMR',()=>amr()],
  [/anuncios?|\bmeta\b|facebook|instagram|campanhas?|trafego/,'os anúncios Meta',()=>mtMain()],
  [/lancamentos?|gastos lancados|despesas lancadas|variaveis/,'os lançamentos',()=>lanc()],
@@ -2189,6 +2246,7 @@ async function route(t){if(STOPLV.test(t)){stopLivre();return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu|erros? do (app|aplicativo)|mensagens? de erro|registro de erros)\b/.test(t)){suporte();say('Abri o suporte e os erros do app.');return true}
  if(/\b(ajuda|comandos|o que (voce )?(sabe|faz|pode)|o que posso)\b/.test(t)){say(AJUDA);return true}
   if(/esper\w* mais|mais (tempo|paciencia)|falo (pausado|devagar)|eu falo (muito )?(pausado|devagar)/.test(t)){PAUSA=Math.min(4000,PAUSA+500);try{localStorage.setItem('kfl_vzw',PAUSA)}catch(e){}say('Pronto, agora espero '+r2(PAUSA/1000).toString().replace('.',',')+' segundos de pausa antes de responder.');return true}
+ if(/telefone|celular|numero|whatsapp/.test(t)&&/\b(ja )?(pagou|pagaram|cadastrad\w*|esta (na lista|cadastrad\w*))\b/.test(t)&&t.replace(/\D/g,'').length>=8&&!/baixa|pendente|renov/.test(t)){say(await dPagos(t));return true}
  if(/esper\w* menos|menos (tempo|espera)|responde mais rapido|nao precisa esperar/.test(t)){PAUSA=Math.max(0,PAUSA-500);try{localStorage.setItem('kfl_vzw',PAUSA)}catch(e){}say(PAUSA?'Pronto, agora espero '+r2(PAUSA/1000).toString().replace('.',',')+' segundos de pausa.':'Pronto, respondo assim que você parar de falar.');return true}
  if(/mais (rapido|depressa|veloz)|acelera|aument\w* (mais )?(a )?velocidade|velocidade (maior|mais alta)/.test(t)){RT=Math.min(2.6,r2(RT+0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais rápido.');return true}
  if(/mais (devagar|lento)|desacelera|diminu\w* (mais )?(a )?velocidade|reduz\w* (mais )?(a )?velocidade|velocidade (menor|mais baixa)/.test(t)){RT=Math.max(0.8,r2(RT-0.2));try{localStorage.setItem('kfl_vzr',RT)}catch(e){}say('Pronto, mais devagar.');return true}
