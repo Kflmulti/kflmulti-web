@@ -1500,7 +1500,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=56;
+const VERSAO=57;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1986,14 +1986,14 @@ async function renovaDireto(c,exec,tail,rt){const snap=snapUndo(c);window.TFSKIP
  snap.n1=undoFp();UND=snap;const ex=extrasVoz(tail);let fez=false;
  for(const e of ex){await tfAdd({tipo:'extra',cli:c.cliente.trim(),txt:e.txt+' — '+c.cliente.trim(),passos:[],urg:e.urg?1:0,ref:'x:'+Date.now()+Math.random()});fez=true}
  UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice();confTela(UND);
- return{msg:'Feito',after:fez?()=>{}:()=>askCons(c)}}
+ return{msg:'Feito',after:fez?undefined:()=>askCons(c)}}
 function extrasVoz(tail){tail=String(tail||'').replace(/^[\s,.;:!?-]+/,'');if(!tail)return[];let t=tail.replace(/^(?:colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\s+(?:isso\s+)?(?:(?:para|pra)\s+)?(?:a\s+)?(?:consultora\s+)?/i,'');const urg=/urg[eê]n/i.test(t)||tfUrgRx.test(t);t=t.replace(/\b(?:com\s+)?urg[eê]ncia\b|\burgente\b/gi,' ').replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').replace(/\s{2,}/g,' ').trim();if(t.length<3)return[];
  return t.split(/\s+e\s+(?=(?:refazer|trocar|criar|fazer|mudar|alterar|ajustar|verificar|conferir|ativar|enviar|pedir)\b)/i).map(x=>x.replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').trim()).filter(Boolean).map(x=>({txt:cap(x),urg:urg||tfUrgRx.test(x)}))}
 function askCons(c){const nome=c.cliente.trim(),fim=()=>{ans=null;btns=[]};
- const grava=async(L,urg)=>{fim();for(const x of L){await tfAdd({tipo:'extra',cli:nome,txt:cap(x)+' — '+nome,passos:[],urg:urg?1:0,ref:'x:'+Date.now()+Math.random()})}if(UND){UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice()}say('Ok.',()=>{});return true};
- btns=[['Nada',()=>{fim();say('Ok.',()=>{})}],['🚨 Trocar criativo',()=>grava(['trocar criativo'],1)]];
+ const grava=async(L,urg)=>{fim();for(const x of L){await tfAdd({tipo:'extra',cli:nome,txt:cap(x)+' — '+nome,passos:[],urg:urg?1:0,ref:'x:'+Date.now()+Math.random()})}if(UND){UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice()}say('Ok.');return true};
+ btns=[['Nada',()=>{fim();say('Ok.')}],['🚨 Trocar criativo',()=>grava(['trocar criativo'],1)]];
  ans=async T=>{const raw=((RAWA&&RAWA[0])||T[0]||'').replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim(),z=nz(raw);if(!raw)return false;
-  if(/^(nao|nada|nenhum|nenhuma|so isso|so)\b/.test(z)){fim();say('Ok.',()=>{});return true}
+  if(/^(nao|nada|nenhum|nenhuma|so isso|so)\b/.test(z)){fim();say('Ok.');return true}
   if(/^(trocar |refazer |novo |fazer )?(o )?criativo$/.test(z))return await grava(['trocar criativo'],1);
   const L=extrasVoz(raw).map(x=>x.txt);if(!L.length)return false;
   if(tfUrgRx.test(raw)||/urg[eê]n/i.test(raw))return await grava(L,1);
