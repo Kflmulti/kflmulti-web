@@ -37,7 +37,7 @@ h2{text-align:center;font-weight:500;font-size:24px;margin:10px 0 14px}
 <div id="v1" hidden>
  <div id="rm" hidden onclick="edSaldos()">🔔 Atualize o saldo de hoje</div>
  <div id="nb" hidden onclick="nfs()"></div>
- <div class="sb">🔎<input id="q" placeholder="Buscar histórico..."></div>
+ <div class="sb">🔎<input id="q" placeholder="Buscar nome, código ou telefone..."></div>
  <div class="tb"><button style="background:#0D47A1" id="bA">ATUALIZAR</button><button style="background:#E53935" id="bP">PENDENTES</button><button style="background:#2E7D32" id="bH">HOJE</button><button style="background:#FF9800" id="bO">OPER</button></div>
  <div id="ls"></div></div>
 <div id="v2" hidden></div><div id="v3" hidden></div><div id="v4" hidden></div><div id="v5" hidden></div><div id="v6" hidden></div>
@@ -136,10 +136,12 @@ async function iniciar(){const p=ini0();rdy=p.catch(()=>{});return p}
 async function ini0(){tela('v1');let rec=false;try{const x=await getE();S=Array.isArray(x)?{}:x||{};SO=true;const rv=REVOF.get(x),lr=(()=>{try{return localStorage.getItem(LR)}catch(e){return null}})();revSet(rv);const l=lsGet();if(l&&typeof l==='object'&&!Array.isArray(l)){if(rv!=null&&lr!==null&&lr!==''&&+lr!==rv){try{localStorage.setItem('kfl_lost',JSON.stringify(l));localStorage.setItem(LD,'0')}catch(e){}setTimeout(()=>alert('Ao abrir, achei alterações antigas guardadas neste aparelho, mas o servidor já tinha dados mais novos (de outro aparelho). Mantive os do servidor para não apagar nada. A cópia antiga ficou guardada em separado.'),1500)}else{S=l;rec=true}}}catch(e){if(e.message=='login')throw e;SO=false;const l=lsGet();S=l||{};alert('Atenção: não consegui ler os dados salvos no servidor ('+e.message+'). '+(l?'Estou usando a cópia guardada neste aparelho, mas nada será enviado ao servidor até corrigir.':'Os clientes serão carregados, mas nada será salvo até corrigir.'))}
  const ch=norm();if(ch||rec)save();if(rec)toast('Recuperei alterações que ainda não tinham sido enviadas ao servidor');lista();refrescar(true);nfBg();try{fdb(cur)}catch(e){}}
 function lista(){const q=$('#q').value.toLowerCase().trim(),h=hoje();
- const l=q?C.filter(c=>c.cliente.toLowerCase().includes(q)):modo=='PENDENTES'?ativos().filter(pend):modo=='HOJE'?vence():ativos();
- $('#ls').innerHTML=l.map(c=>{const n=c.cliente.trim(),dg=(n.match(/\d/)||[''])[0],p=pend(c),d=pd(c.datapg),late=p&&modo=='PENDENTES'&&!q&&d&&d<=h;
-  const inf=p?`📅 ${d?fm(d).slice(0,5):''} - ${esc(c.pg)} | ${esc(c.plano)}${late?` <b style="color:#C62828">· ${d.getTime()==h.getTime()?'vence hoje':'atrasado '+Math.round((h-d)/864e5)+'d'}</b>`:''}`:esc(c.plano);
-  return `<div class="card it${late?' late':''}" onclick="ficha(${C.indexOf(c)})">${visto(n)?'<span class="vb">✔ Visto</span>':''}<div class="av">${esc((n[0]||'').toUpperCase()+dg)}</div><div><b>${esc(n)}</b><small>${inf}</small></div></div>`}).join('')||`<p style="text-align:center;color:#777">${cl&&!C.length?'Carregando clientes...':'Nenhum cliente'}</p>`}
+ const nd=x=>String(x||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,''),qd=nd(q),fone=qd.length>=4&&!/[a-z]/.test(q),fm2=c=>[c.cel,c.celcon].map(nd).some(d=>d&&(d.includes(qd)||(qd.length>=8&&d.slice(-8)===qd.slice(-8))));
+ let pgn='';if(fone&&qd.length>=8)try{const r=pgL().find(r=>nd(r.tel).slice(-8)===qd.slice(-8));if(r)pgn=`<div class="card" style="border-left:5px solid #1565C0;margin:6px 0;padding:10px 12px;font-size:14px">👤 Esse telefone está em <b>Clientes pagos</b> (R$ 50): ${esc(PGST[r.st]||r.st)}${r.nome?' · '+esc(r.nome):''}${r.mot?' · '+esc(r.mot):''}</div>`}catch(e){}
+ const l=q?C.filter(c=>c.cliente.toLowerCase().includes(q)||(fone&&fm2(c))):modo=='PENDENTES'?ativos().filter(pend):modo=='HOJE'?vence():ativos();
+ $('#ls').innerHTML=pgn+l.map(c=>{const n=c.cliente.trim(),dg=(n.match(/\d/)||[''])[0],p=pend(c),d=pd(c.datapg),late=p&&modo=='PENDENTES'&&!q&&d&&d<=h;
+  const inf=fone&&fm2(c)?`📱 ${[c.cel,c.celcon].filter(x=>nd(x)).map(tel).join(' · ')} | ${esc(c.plano)}`:p?`📅 ${d?fm(d).slice(0,5):''} - ${esc(c.pg)} | ${esc(c.plano)}${late?` <b style="color:#C62828">· ${d.getTime()==h.getTime()?'vence hoje':'atrasado '+Math.round((h-d)/864e5)+'d'}</b>`:''}`:esc(c.plano);
+  return `<div class="card it${late?' late':''}" onclick="ficha(${C.indexOf(c)})">${visto(n)?'<span class="vb">✔ Visto</span>':''}<div class="av">${esc((n[0]||'').toUpperCase()+dg)}</div><div><b>${esc(n)}</b><small>${inf}</small></div></div>`}).join('')||`<p style="text-align:center;color:#777">${cl&&!C.length?'Carregando clientes...':fone?'Nenhum cliente cadastrado com esse telefone':'Nenhum cliente'}</p>`}
 const btn=(t,cor,f,x='')=>`<button class="bg" style="background:${cor};${x}" onclick="${f}">${t}</button>`;
 function oper(){const v=vence().length,P=S.pausados.length,ent=r2(((S.hist||{})[hk()]||{}).cx||0);
  const st=(t,n,c)=>`<div class="card st"><span>${t}</span><strong style="color:${c}">${n}</strong></div>`;
@@ -593,15 +595,16 @@ function nfFilaResumo(fim){const q=NFQ;if(!q||!window.vozFala)return;if(fim!==1&
 const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert('Erro: '+e.message)}})(async()=>{if(NFQ&&NFQ.on)return;await nfLoad();const HM=NFP.modo=='homologacao',itens=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k)).map(x=>({linha:x.linha,data:x.data,cliente:x.cliente,valor:x.valor,k:nfK(x)}));
  if(!itens.length){toast('Nada para emitir');return nfv()}
  const q=NFQ={on:true,stop:false,hm:HM,itens,i:0,atual:'',ok:[],err:[],pul:[],mudo:false,voz:!!window.__nfVoz};window.__nfVoz=0;if(cur!=='v6')tela('v6');window.vozCala&&window.vozCala();nfFal('Começando a emissão de '+itens.length+' nota'+(itens.length==1?'':'s')+(HM?', em teste':'')+'.');let wl=null;try{wl=await navigator.wakeLock.request('screen')}catch(e){}
- let seg=0;
- for(let i=0;i<itens.length&&!q.stop;i++){q.i=i;const it=itens[i];q.atual=it.cliente+' — '+it.valor;nfFilaDraw();
+ let seg=0;const fz=f=>{q.fase=f;q.t0=Date.now()};q.lf=Date.now();
+ const wd=setInterval(()=>{if(NFQ!==q||!q.on){clearInterval(wd);return}if(q.mudo||!window.vozFala)return;const T=window.speechSynthesis;if(T&&(T.speaking||T.pending)){q.lf=Date.now();return}if(Date.now()-q.lf>=5000){const s=Math.round((Date.now()-q.t0)/1000);q.lf=Date.now();window.vozFala('Ainda '+(q.fase||'processando')+(s>=10?', '+s+' segundos':'')+'.')}},1000);
+ for(let i=0;i<itens.length&&!q.stop;i++){q.i=i;const it=itens[i];q.atual=it.cliente+' — '+it.valor;nfFilaDraw();fz('atualizando a lista de notas');
   if(i>0){try{await nfLoad()}catch(e){q.err.push({c:it.cliente,m:'Perdi a conexão antes desta nota. A fila parou.'});break}}
   const x=NFP.linhas.find(y=>nfK(y)==it.k);
   if(!x||nfF(x)){q.pul.push({c:it.cliente,m:'já estava emitida'});nfFal(`Nota ${i+1} de ${itens.length}, ${it.cliente.replace(/\d{4,}/,'')}, pulada: já estava emitida.`);continue}
   if(x.em&&x.em.status=='incerto'){q.pul.push({c:it.cliente,m:'resultado incerto — use CONSULTAR'});nfFal(`Nota ${i+1}, ${it.cliente.replace(/\d{4,}/,'')}, pulada: resultado incerto.`);continue}
   const s=nfSit(x);if(!['pronta','lib'].includes(s.k)){q.pul.push({c:it.cliente,m:'mudou de situação (dados ou documento)'});continue}
   const v=nfV(x);if(v>NFMAX||v<=0){nfFal(`Atenção. Valor fora do comum: ${x.cliente.replace(/\d{4,}/,'')}, ${x.valor}. Responda na tela.`);const okv=await new Promise(r=>setTimeout(()=>r(confirm('⚠ VALOR FORA DO COMUM\n\n'+x.cliente+'\n'+x.valor+' (pagamento '+x.data+')\n\nEmitir esta nota mesmo assim?')),50));if(!okv){q.pul.push({c:x.cliente,m:'valor '+x.valor+' — você escolheu não emitir'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}, pulada por sua escolha.`);continue}}
-  const semid=s.k=='lib';let r;
+  const semid=s.k=='lib';let r;nfFal(`Emitindo a nota ${i+1} de ${itens.length}, ${x.cliente.replace(/\d{4,}/,'')}.`);fz('aguardando o portal para a nota '+(i+1));
   try{r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid}})}
   catch(e){q.err.push({c:x.cliente,m:'Sem resposta do servidor ('+(e&&e.message||e)+'). A fila PAROU para não duplicar — use CONSULTAR nesta nota.'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}: o servidor não respondeu. A fila parou. Confira esta nota com consultar.`);break}
   if(r&&r.ok){seg=0;q.ok.push({c:x.cliente,n:(r.em&&r.em.numero)||'?',v,av:r.em&&r.em.aviso||''});nfFal(`Nota ${i+1} de ${itens.length}, ${x.cliente.replace(/\d{4,}/,'')}, emitida, número ${(r.em&&r.em.numero)||'?'}${r.em&&r.em.aviso?'. Atenção: '+r.em.aviso:''}.`)}
@@ -609,7 +612,7 @@ const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert(
   else{seg++;q.err.push({c:x.cliente,m:(r&&r.em&&r.em.erro)||(r&&r.erro)||'não foi emitida'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}, com problema: ${q.err[q.err.length-1].m}.`);if(seg>=3){q.err.push({c:'—',m:'3 erros seguidos: a fila parou para você verificar.'});break}}
   nfFilaDraw()}
  if(q.stop)q.pul.push({c:'—',m:'você parou a fila; as demais continuam na lista'});
- q.on=false;try{wl&&wl.release()}catch(e){}try{await nfLoad()}catch(e){}nfBanner();nfFilaDraw();nfFilaResumo(1);if(q.voz&&window.vozPergunta)window.vozPergunta();toast(q.ok.length+' nota(s) emitida(s)'+(q.err.length?' · '+q.err.length+' com problema':''))});
+ fz('atualizando a lista de notas');try{await nfLoad()}catch(e){}q.on=false;try{wl&&wl.release()}catch(e){}nfBanner();nfFilaDraw();nfFilaResumo(1);if(q.voz&&window.vozPergunta)window.vozPergunta();toast(q.ok.length+' nota(s) emitida(s)'+(q.err.length?' · '+q.err.length+' com problema':''))});
 const nfCons=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await nfx('consultar',{item:{linha:x.linha,data:x.data,cliente:x.cliente}});
  if(r.em&&r.em.status=='ok')toast('A nota existe: nº '+(r.em.numero||'?')+' ✔');else alert('O sistema nacional não tem essa nota.\n'+(r.em&&r.em.erro||'')+'\n\nPode emitir de novo.');await nfLoad();nfv()});
 const nfNum=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await pm('Número da NF emitida para '+x.cliente+' ('+x.data+'):');if(r===null)return;const n=r.trim();if(!/^[0-9A-Za-z./-]{1,20}$/.test(n))return alert('Número inválido.');
@@ -1507,7 +1510,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=60;
+const VERSAO=61;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1799,6 +1802,7 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
  else if(fx.length&&!/\bfixos\b/.test(t)){fx.forEach(f=>out.push(`${f.nome}: ${brl(f.valor)}, dia ${f.dia}, ${SCN[f.sc||'P'].toLowerCase()}${f.var?', variável':''}, ${f.incluso?'já pago':'ainda a pagar'}${f.cart?', no cartão':''}.`))}
 
  if(out.length)return out.join(' ');
+ if(!/\b(hoje|ontem|anteontem|semana|mes|mensal|ano|dias?)\b/.test(t)&&!diaEsp(t)&&(/\bquais\b.*\b(saidas?|gastos?|despesas?|lancamentos?)\b/.test(t)||/\b(lista|listar|liste|fale|diga|me diz[ae]?)\b.*\b(saidas|gastos|despesas|lancamentos)\b/.test(t))&&!/limite|a pagar|faltam|falta\b|fixos?/.test(t))t+=' hoje';
  if((/\b(hoje|ontem|anteontem|semana|7 dias|ultimos? \d+ dias)\b/.test(t)||diaEsp(t))&&/gast|despesa|lancament|lancei|variave|paguei|saidas?\b|saiu\b|compr(ei|as?)\b|pagament/.test(t)&&!/limite|a pagar|faltam|falta\b/.test(t)){
   const pe=per(t),sc=k=>ent.includes(k),V=(S.vars||[]).filter(x=>{const d=pd(x.dt);return d&&pe.ok(iso(d))&&sc(x.sc||'P')}),F=(S.fixos||[]).filter(f=>f.pgTs&&fxAtivo(f)&&pe.ok(iso(new Date(f.pgTs)))&&sc(f.pgS||'P')),
    vv=r2(V.reduce((s,x)=>s+(+x.v||0),0)),fv=r2(F.reduce((s,f)=>s+(+(f.pgV||f.valor)||0),0)),who=both?'':' ('+SCN[ent[0]].toLowerCase()+')';
@@ -2242,6 +2246,7 @@ async function tarefasVoz(t){
   if(H.length)m+=` Hoje, ${fh} de ${pl(H.length,'tarefa feita','tarefas feitas')}.`;
   if(P.length)m+=` Pendentes: ${P.length}${at?`, sendo ${pl(at,'atrasada','atrasadas')}`:''}${ur?`, ${pl(ur,'urgente','urgentes')}`:''}. ${P.slice(0,3).map(x=>x.txt.replace(/\s+—\s+/g,', ')).join('; ')}${P.length>3?' e mais '+(P.length-3):''}.`;
   else m+=' Não há tarefas pendentes.';
+  try{const ab=pgL().filter(r=>r.st==='and'||r.st==='aguard').length,tr=tfPg().length;m+=` Clientes pagos: ${ab} em aberto, ${tr} a tratar.`}catch(e){}
   try{tfTela()}catch(e){}say(m);return true}
  return false}
 async function route(t){if(STOPLV.test(t)){stopLivre();return true}
