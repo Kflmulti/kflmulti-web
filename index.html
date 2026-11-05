@@ -585,7 +585,7 @@ function nfFila(){if(NFQ&&NFQ.on){nfFilaDraw();tela('v6');return}const HM=NFP.mo
  ${n?btn('🚀 CONFIRMAR — '+n+' nota(s) · '+brl(tot),HM?'#6A1B9A':'#C62828','nfFilaGo()'):'<p style="text-align:center;color:#777">Nada para emitir agora.</p>'}${btn('VOLTAR','#9E9E9E','nfv()')}`;tela('v6');scrollTo(0,0)}
 function nfFilaDraw(){if(cur!=='v6'||!NFQ)return;const q=NFQ,HM=q.hm,li=(a,f)=>a.map(f).join('');
  $('#v6').innerHTML=`<h2>${q.on?'EMITINDO…':'FILA CONCLUÍDA'}</h2>${q.on?`<div class="card" style="text-align:center;font-size:17px"><b>${q.i+1} de ${q.itens.length}</b><div style="margin-top:4px">${esc(q.atual||'')}</div><div style="color:#777;font-size:13px;margin-top:6px">${q.stop?'Parando depois desta nota…':'Não feche o app até terminar.'}</div></div>`:''}
- ${q.ok.length?`<div class="card" style="border-left:6px solid #2E7D32;margin:8px 0"><b>✅ Emitidas (${q.ok.length})</b>${li(q.ok,e=>`<div style="font-size:14px">• ${esc(e.c)} — nº ${esc(e.n)}${e.av?` <span style="color:#C62828">⚠ ${esc(e.av)}</span>`:''}</div>`)}</div>`:''}
+ ${q.ok.length?`<div class="card" style="border-left:6px solid #2E7D32;margin:8px 0"><b>✅ Emitidas (${q.ok.length})</b>${li(q.ok,e=>`<div style="font-size:14px">• ${esc(e.c)} — nº ${esc(e.n)}${e.av?` <span style="color:#C62828">⚠ ${esc(e.av)}</span>`:''}${e.cep?` <span style="color:#E65100">📮 ${esc(e.cep)}</span>`:''}</div>`)}</div>`:''}
  ${q.err.length?`<div class="card" style="border-left:6px solid #C62828;margin:8px 0"><b>❌ Com problema (${q.err.length})</b>${li(q.err,e=>`<div style="font-size:14px">• ${esc(e.c)} — ${esc(e.m)}</div>`)}</div>`:''}
  ${q.pul.length?`<div class="card" style="border-left:6px solid #FF9800;margin:8px 0"><b>⏭ Puladas (${q.pul.length})</b>${li(q.pul,e=>`<div style="font-size:14px">• ${esc(e.c)} — ${esc(e.m)}</div>`)}</div>`:''}
  ${q.on?btn(q.stop?'PARANDO…':'⏹ PARAR','#B71C1C','nfFilaStop()')+btn(q.mudo?'🔊 LIGAR A VOZ':'🔇 SILENCIAR A VOZ','#455A64','nfFilaMudo()'):btn('🔊 OUVIR O RESUMO','#455A64','nfFilaResumo()')+btn('VOLTAR ÀS NOTAS','#9E9E9E','nfs()')}`;scrollTo(0,0)}
@@ -595,6 +595,7 @@ function nfFilaResumo(fim){const q=NFQ;if(!q||!window.vozFala)return;if(fim!==1&
  let m=`Resumo da fila. ${n(q.ok)} nota${n(q.ok)==1?'':'s'} emitida${n(q.ok)==1?'':'s'}${q.ok.length?', total '+brl(tot):''}, ${n(q.err.filter(e=>e.c!='—'))} com problema e ${n(q.pul.filter(e=>e.c!='—'))} pulada${n(q.pul.filter(e=>e.c!='—'))==1?'':'s'}.`;
  if(q.err.length)m+=' Com problema: '+q.err.map(e=>(e.c=='—'?'':e.c+', ')+e.m).join('. ')+'.';
  if(q.pul.length)m+=' Puladas: '+q.pul.map(e=>(e.c=='—'?'':e.c+', ')+e.m).join('. ')+'.';
+ {const cc=q.ok.filter(e=>e.cep).map(e=>e.c.replace(/\d{4,}/,'').trim());if(cc.length)m+=' CEP corrigido em: '+cc.join(', ')+'.'}
  window.vozFala(m)}
 const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert('Erro: '+e.message)}})(async()=>{if(NFQ&&NFQ.on)return;await nfLoad();const HM=NFP.modo=='homologacao',itens=NFP.linhas.filter(x=>!nfF(x)&&!(x.em&&x.em.status=='incerto')&&['pronta','lib'].includes(nfSit(x).k)).map(x=>({linha:x.linha,data:x.data,cliente:x.cliente,valor:x.valor,k:nfK(x)}));
  if(!itens.length){toast('Nada para emitir');return nfv()}
@@ -611,7 +612,14 @@ const nfFilaGo=(f=>async()=>{try{await f()}catch(e){if(e.message!='login')alert(
   const semid=s.k=='lib';let r;nfFal(`Emitindo a nota ${i+1} de ${itens.length}, ${x.cliente.replace(/\d{4,}/,'')}.`);fz('aguardando o portal para a nota '+(i+1));
   try{r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid}})}
   catch(e){q.err.push({c:x.cliente,m:'Sem resposta do servidor ('+(e&&e.message||e)+'). A fila PAROU para não duplicar — use CONSULTAR nesta nota.'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}: o servidor não respondeu. A fila parou. Confira esta nota com consultar.`);break}
-  if(r&&r.ok){seg=0;q.ok.push({c:x.cliente,n:(r.em&&r.em.numero)||'?',v,av:r.em&&r.em.aviso||''});nfFal(`Nota ${i+1} de ${itens.length}, ${x.cliente.replace(/\d{4,}/,'')}, emitida, número ${(r.em&&r.em.numero)||'?'}${r.em&&r.em.aviso?'. Atenção: '+r.em.aviso:''}.`)}
+  if(r&&r.confirmar){const cf=r.confirmar,cepEsc=(cf.opcoes&&cf.opcoes.length?cf.opcoes[0].cep:cf.cep)||'';
+   if(cepEsc){fz('corrigindo o CEP da nota '+(i+1));
+    try{r=await nfx('emitir',{item:{linha:x.linha,data:x.data,cliente:x.cliente,semid,cepOk:cepEsc}})}
+    catch(e){q.err.push({c:x.cliente,m:'Sem resposta do servidor ('+(e&&e.message||e)+'). A fila PAROU para não duplicar — use CONSULTAR nesta nota.'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}: o servidor não respondeu. A fila parou. Confira esta nota com consultar.`);break}}}
+  if(r&&r.ok){seg=0;const av0=(r.em&&r.em.aviso)||'',mc=av0.match(/O CEP \d[\s\S]*$/),cepT=mc?mc[0].trim():'',outro=(mc?av0.slice(0,mc.index):av0).trim(),nm=x.cliente.replace(/\d{4,}/,'').trim(),nn=(r.em&&r.em.numero)||'?';
+   q.ok.push({c:x.cliente,n:nn,v,av:outro,cep:cepT});
+   const cepF=!cepT?'':/Não consegui corrigir/.test(cepT)?' O CEP continha um erro, mas não consegui corrigir o cadastro. Corrija à mão.':/teste/.test(cepT)?' O CEP continha um erro; em teste, o cadastro não foi alterado.':' O CEP continha um erro, mas já corrigi.';
+   nfFal(`${nm}, nota emitida, número ${nn}.${cepF}${outro?' Atenção: '+outro.replace(/\.+$/,'')+'.':''}`)}
   else if(r&&r.confirmar){q.pul.push({c:x.cliente,m:'CEP precisa da sua escolha — emita esta pelo botão da nota'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}, pulada: o CEP precisa da sua escolha.`)}
   else{seg++;q.err.push({c:x.cliente,m:(r&&r.em&&r.em.erro)||(r&&r.erro)||'não foi emitida'});nfFal(`Nota ${i+1}, ${x.cliente.replace(/\d{4,}/,'')}, com problema: ${q.err[q.err.length-1].m}.`);if(seg>=3){q.err.push({c:'—',m:'3 erros seguidos: a fila parou para você verificar.'});break}}
   nfFilaDraw()}
@@ -1514,7 +1522,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=69;
+const VERSAO=70;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
