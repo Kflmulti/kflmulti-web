@@ -58,7 +58,7 @@ const visto=n=>S.vistos&&S.vistos.d===fm(new Date())&&S.vistos.n.includes(n),ok=
 const vence=()=>ativos().filter(c=>{const d=pd(c.fim);return d&&d<=hoje()}),pend=c=>ok(c)&&c.datapg.trim()&&c.pg.trim();
 const dias=p=>p.includes('SMART')?15:p.includes('ADVANCED')?30:7,valor=p=>(PL.find(x=>x[0]===p)||[0,0])[1];
 const tel=n=>{const d=String(n||'').replace(/\D/g,'');return d.length==11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:d.length==10?`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`:n||''};
-const tela=n=>{cur=n;if(n==='v1'&&pc){const p=pc;pc=null;lm<=p.t0?setC(p.L):refrescar(true)}['login','v1','v2','v3','v4','v5','v6'].forEach(x=>$('#'+x).hidden=x!=n);$('#fab').hidden=n=='login';try{fdb(n)}catch(e){}$('#bM').hidden=n!='v1';$('#bG').style.bottom=n=='v1'?'78px':'18px';$('#bV').style.bottom=$('#bG').style.bottom;try{bellUp()}catch(e){}};
+const tela=n=>{cur=n;try{bellUp()}catch(e){}if(n==='v1'&&pc){const p=pc;pc=null;lm<=p.t0?setC(p.L):refrescar(true)}['login','v1','v2','v3','v4','v5','v6'].forEach(x=>$('#'+x).hidden=x!=n);$('#fab').hidden=n=='login';try{fdb(n)}catch(e){}$('#bM').hidden=n!='v1';$('#bG').style.bottom=n=='v1'?'78px':'18px';$('#bV').style.bottom=$('#bG').style.bottom;try{bellUp()}catch(e){}};
 async function est(a,d={}){const r=await fetch('estado.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
  if(r.status==401){tela('login');throw Error('login')}const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){throw Error('Resposta inválida do servidor ('+r.status+'): '+t.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,160))}if(j.erro)throw Error(j.erro);return j}
 const FK='kfl_fila',fila=()=>{try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}},setF=a=>{try{localStorage.setItem(FK,JSON.stringify(a))}catch(e){}bd()};
@@ -983,7 +983,7 @@ function amrMonta(mes,vend,desp){const ky=s=>{const p=String(s).split('/');retur
 const AMV={},amrVend=async mes=>{const j=await nfx('amr_vendas',{mes});AMV[mes]=j;return j};
 /* ===== v43: sino de avisos (mensagens da Central para enviar) ===== */
 function bellUp(){let b=document.getElementById('bell');if(!b){b=document.createElement('button');b.id='bell';b.style.cssText='position:fixed;left:14px;bottom:96px;z-index:60;width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:#F57C00;color:#fff;font-size:24px;box-shadow:0 2px 8px #0005;display:none';b.innerHTML='🔔<span id="bellN" style="position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;border-radius:11px;background:#C62828;color:#fff;font-size:13px;line-height:22px;font-weight:700"></span>';b.onclick=()=>{try{nt()}catch(e){}};document.body.appendChild(b)}
- let n=0;try{n=(typeof S!=='undefined'&&S&&S.mes&&window.S_OK)?ntCnt():0}catch(e){}const off=cur==='login'||cur==='v6'&&/CENTRAL DE NOTIFICA/.test((document.querySelector('#v6 h2')||{}).textContent||'');
+ let n=0;try{n=(typeof S!=='undefined'&&S&&S.mes&&window.S_OK)?ntCnt():0}catch(e){}const off=cur!=='v1';
  b.style.display=n>0&&!off?'block':'none';const e=document.getElementById('bellN');if(e)e.textContent=n>99?'99+':n}
 setInterval(()=>{try{bellUp()}catch(e){}},30000);
 /* ===== v34: AMR — hoje e previsão otimista do mês ===== */
@@ -1602,7 +1602,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=79;
+const VERSAO=80;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
