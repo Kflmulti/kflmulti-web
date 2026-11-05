@@ -256,7 +256,7 @@ function fpCalc(){const fx=S.fixos=S.fixos||[],vr=S.vars||[],cd=S.custoDia||9,sv
  const fr=(()=>{const t=hoje();return t.getDate()/new Date(t.getFullYear(),t.getMonth()+1,0).getDate()})();
  const D=(k,Ex)=>{const f=fx.filter(x=>(x.sc||'P')===k),fn=f.filter(x=>!x.var),v=vr.filter(x=>(x.sc||'P')===k),sal=k=='E'?saldoEf():saldoPf(),car=k=='E'?cartEf():cartP(),tot=r2(sm(fn,'valor')),pg=r2(sm(fn.filter(x=>x.incluso),'valor')),pe=r2(tot-pg),peT=k=='E'?r2(sm(fn.filter(x=>!x.incluso&&x.tp),'valor')):0,vt=r2(sm(v,'v')),vnf=r2(sm(v.filter(x=>!x.fx),'v')),rec=r2(sal-car),
   LM=limItens().filter(x=>x.sc===k),rl=r2(LM.reduce((t,x)=>t+Math.max(0,x.L-catGasto(x.n)),0)),nx=r2(LM.reduce((t,x)=>t+x.L,0)*fr),
-  rp=r2(fn.filter(x=>!x.tp&&!/^Imposto \d\d\/\d{4}$/.test((x.nome||'').trim())).reduce((t,x)=>t+(x.valor||0),0)*fr+nx),gasto=r2(pg+vt+(k=='E'?cr:0)),ob=r2(pe-peT+rp+rl+(k=='E'?cr+imp:0)),sep=k=='E'?r2(Math.max(0,ob-rec)):ob,disp=k=='E'?r2(Math.max(0,rec-ob)):r2(rec-ob-Ex.sep-sv);return{f,sal,car,tot,pg,pe,peT,rp,rl,nx,vt,vnf,rec,gasto,disp,ob,sep}};
+  rp=r2(fn.filter(x=>!x.tp&&!/^Imposto \d\d\/\d{4}$/.test((x.nome||'').trim())).reduce((t,x)=>t+(x.valor||0),0)*fr+nx),gasto=r2(pg+vt+(k=='E'?cr:0)),ob=r2(pe-peT+rp+rl+(k=='E'?cr+imp:0)),sep=k=='E'?r2(Math.max(0,ob-rec)):ob,disp=k=='E'?r2(Math.max(0,rec-ob)):r2(rec-ob-Ex.sep-sv);return{f,sal,car,tot,pg,pe,peT,rp,rl,nx,vt,vnf,rec,gasto,disp,ob,sep,el:r2(fn.filter(x=>!x.tp&&!/^Imposto \d\d\/\d{4}$/.test((x.nome||'').trim())).reduce((t,x)=>t+(x.valor||0),0)),lt:r2(LM.reduce((t,x)=>t+x.L,0))}};
  const E=D('E'),P=D('P',E),recT=r2(E.rec+P.rec),gT=r2(E.gasto+P.gasto+sv),rd=r2(E.disp+P.disp);return{fx,vr,cd,sv,imp,cr,D,E,P,recT,gT,rd}}
 const fpHtml=()=>{const{fx,vr,cd,sv,imp,cr,D,E,P,recT,gT,rd}=fpCalc(),t=hoje(),k=rd>=0?'#1B5E20':'#B71C1C';
  const ln=(t,v,c='#333')=>`<div style="display:flex;justify-content:space-between;gap:8px;color:${c};font-size:16px;line-height:1.9"><span style="flex:1;min-width:0">${t}</span><b style="flex:none;white-space:nowrap">${brl(v)}</b></div>`,cap=t=>`<div style="color:#888;font-size:13px;margin:-6px 0 4px">${t}</div>`;
@@ -268,7 +268,7 @@ const fpHtml=()=>{const{fx,vr,cd,sv,imp,cr,D,E,P,recT,gT,rd}=fpCalc(),t=hoje(),k
   <div style="background:${d.disp>=0?'#E8F5E9':'#FFEBEE'};border-radius:12px;padding:8px;text-align:center;margin-top:6px"><span style="color:#555;font-size:14px">DISPONÍVEL ${SCN[k].toUpperCase()}</span><div style="font-size:26px;font-weight:700;color:${d.disp>=0?'#1B5E20':'#B71C1C'}">${brl(d.disp)}</div></div></div>`};
  const row=f=>`<div class="card" style="display:flex;align-items:center;gap:8px;margin:8px 0;padding:16px 12px"><span style="color:#777;font-size:14px;white-space:nowrap">dia ${f.dia}</span><b style="flex:1;font-weight:500;font-size:16px">${esc(f.nome)}${f.var?' <small style="color:#888">variável</small>':''} <span onclick="amrCfForm(${fx.indexOf(f)},'fp')" style="cursor:pointer;padding:6px;font-size:18px">✏️</span></b><span style="color:#c00;font-size:16px;white-space:nowrap">${brl(f.valor)}</span><div style="display:flex;flex-direction:column;gap:4px;flex:none"><button class="bt" title="${f.sc=='E'?'Empresa':'Pessoal'} (toque para trocar)" style="height:30px;width:42px;padding:0;font-size:18px;line-height:1" onclick="scTg(${fx.indexOf(f)})">${SCI[f.sc||'P']}</button>${f.var?'':`<button class="bt" title="${f.cart?'Cartão':'Conta'} (toque para trocar)" style="height:30px;width:42px;padding:0;font-size:18px;line-height:1" onclick="cartTg(${fx.indexOf(f)})">${f.cart?'💳':'💵'}</button>`}</div><input type="checkbox" ${f.incluso?'checked':''} style="width:26px;height:26px" onchange="fxTg(${fx.indexOf(f)},this.checked)"></div>`;
  const lst=(k,d)=>`<div style="color:#777;font-size:22px;margin:14px 0 4px">${SCI[k]} Gastos Fixos — ${SCN[k]} <small>(${brl(r2(sm(d.f,'valor')))})</small></div>`+([...d.f].sort((a,b)=>a.dia-b.dia).map(row).join('')||'<div style="color:#999;padding:6px">Nenhum gasto fixo</div>');
- return{E:bl('E',E),P:bl('P',P),T:(()=>{const fxp=r2(E.pe-E.peT+P.pe-P.peT),rlT=r2(E.rl+P.rl),rpT=r2(E.rp+P.rp),cm=r2(fxp+cr+imp+rlT+rpT+sv),g=(t,v,c)=>ln(t,v,c||'#c00');return `<div class="card" style="border-left:6px solid #1B5E20;margin:12px 0"><div style="font-size:20px;font-weight:700;color:#1B5E20">📊 TOTAL</div>${ln('💰 Dinheiro que você tem',recT,'#1B5E20')}${cap('empresa '+brl(E.rec)+' + pessoal '+brl(P.rec)+' (saldo − cartão)')}<hr style="border:0;border-top:1px solid #eee"><div style="color:#555;font-size:14px;margin:6px 0 0">Para onde ele vai (já separado):</div>${g('Fixos pendentes',fxp)}${g('Anúncios dos clientes que faltam',cr)}${g('Imposto do mês (reserva '+PP()+'%)',imp)}${g('Limites restantes do mês',rlT)}${g('Reserva do mês seguinte',rpT)}${g('Saldo investimento',sv)}<hr style="border:0;border-top:1px solid #eee">${ln('Total separado',cm,'#E65100')}<div class="card st" style="background:${rd>=0?'#E8F5E9':'#FFEBEE'};border-color:transparent;margin:10px 0"><span style="color:${rd>=0?'#1B5E20':'#B71C1C'}">RECEITA DISPONÍVEL (APÓS DESPESAS)</span><strong style="color:${rd>=0?'#1B5E20':'#B71C1C'};font-size:34px;font-weight:700">${brl(rd)}</strong><div style="color:#777;font-size:13px;margin-top:4px">${brl(recT)} − ${brl(cm)} (total separado) = o que sobra para gastar</div></div><hr style="border:0;border-top:1px solid #eee">${ln('Gasto (mês) — só informação',gT,'#888')}${cap('o que já saiu: fixos pagos + variáveis + anúncios restantes + saldo investimento. Não entra na conta acima.')}</div>`})(),L:limCard(),lE:lst('E',E),lP:lst('P',P),R:`<div class="card st" style="background:${rd>=0?'#E8F5E9':'#FFEBEE'};border-color:transparent;margin-top:12px"><span style="color:${k}">RECEITA DISPONÍVEL (APÓS DESPESAS)</span><strong style="color:${k};font-size:34px;font-weight:700">${brl(rd)}</strong><div style="color:#777;font-size:13px;margin-top:4px">disponível empresa + pessoal (já descontados o separado para pagamentos e o saldo investimento)</div></div>`,B:`<div style="display:flex;gap:8px"><button class="bg" style="background:#1976D2;border-radius:14px" onclick="fxMg()">+FIXO</button><button class="bg" style="background:#2E7D32;border-radius:14px" onclick="inc('fp')">INCLUIR VARIÁVEL</button></div>
+ return{E:bl('E',E),P:bl('P',P),T:(()=>{const amh=(()=>{const t0=hoje(),dim=new Date(t0.getFullYear(),t0.getMonth()+1,0).getDate();if(t0.getDate()>=dim)return `<div style="color:#888;font-size:13px;margin:4px 0 0">Amanhã é a virada do mês: atualize o saldo e o cartão logo cedo para o disponível ficar certo.</div>`;const dr=r2((E.el+E.lt+P.el+P.lt)/dim),md=S.meuAtivo?MD():0,fd=FD(),am=r2(rd-md-fd-dr);return `<div style="color:#888;font-size:14px;margin:8px 0 0;display:flex;justify-content:space-between;gap:8px"><span>Disponível amanhã (após a virada do dia)</span><b style="white-space:nowrap;color:${am>=0?'#2E7D32':'#B71C1C'}">${brl(am)}</b></div><div style="color:#999;font-size:12px;margin-top:2px">${brl(rd)} − Meu anúncio ${brl(md)} − fundo ${brl(fd)} − reserva do dia ${brl(dr)}. Não conta vendas nem renovações de amanhã.</div>`})(),fxp=r2(E.pe-E.peT+P.pe-P.peT),rlT=r2(E.rl+P.rl),rpT=r2(E.rp+P.rp),cm=r2(fxp+cr+imp+rlT+rpT+sv),g=(t,v,c)=>ln(t,v,c||'#c00');return `<div class="card" style="border-left:6px solid #1B5E20;margin:12px 0"><div style="font-size:20px;font-weight:700;color:#1B5E20">📊 TOTAL</div>${ln('💰 Dinheiro que você tem',recT,'#1B5E20')}${cap('empresa '+brl(E.rec)+' + pessoal '+brl(P.rec)+' (saldo − cartão)')}<hr style="border:0;border-top:1px solid #eee"><div style="color:#555;font-size:14px;margin:6px 0 0">Para onde ele vai (já separado):</div>${g('Fixos pendentes',fxp)}${g('Anúncios dos clientes que faltam',cr)}${g('Imposto do mês (reserva '+PP()+'%)',imp)}${g('Limites restantes do mês',rlT)}${g('Reserva do mês seguinte',rpT)}${g('Saldo investimento',sv)}<hr style="border:0;border-top:1px solid #eee">${ln('Total separado',cm,'#E65100')}<div class="card st" style="background:${rd>=0?'#E8F5E9':'#FFEBEE'};border-color:transparent;margin:10px 0"><span style="color:${rd>=0?'#1B5E20':'#B71C1C'}">RECEITA DISPONÍVEL (APÓS DESPESAS)</span><strong style="color:${rd>=0?'#1B5E20':'#B71C1C'};font-size:34px;font-weight:700">${brl(rd)}</strong><div style="color:#777;font-size:13px;margin-top:4px">${brl(recT)} − ${brl(cm)} (total separado) = o que sobra para gastar</div></div><hr style="border:0;border-top:1px solid #eee">${ln('Gasto (mês) — só informação',gT,'#888')}${cap('o que já saiu: fixos pagos + variáveis + anúncios restantes + saldo investimento. Não entra na conta acima.')}${amh}</div>`})(),L:limCard(),lE:lst('E',E),lP:lst('P',P),R:`<div class="card st" style="background:${rd>=0?'#E8F5E9':'#FFEBEE'};border-color:transparent;margin-top:12px"><span style="color:${k}">RECEITA DISPONÍVEL (APÓS DESPESAS)</span><strong style="color:${k};font-size:34px;font-weight:700">${brl(rd)}</strong><div style="color:#777;font-size:13px;margin-top:4px">disponível empresa + pessoal (já descontados o separado para pagamentos e o saldo investimento)</div></div>`,B:`<div style="display:flex;gap:8px"><button class="bg" style="background:#1976D2;border-radius:14px" onclick="fxMg()">+FIXO</button><button class="bg" style="background:#2E7D32;border-radius:14px" onclick="inc('fp')">INCLUIR VARIÁVEL</button></div>
  <div class="g2" style="margin-top:10px">${btn('🧾 LANÇAMENTOS','#37474F','lanc()')}${btn('🎯 LIMITES','#AD1457','lim()')}</div>${btn('VER VARIÁVEIS / COMPARTILHAR','#455A64','vv()')}${btn('INVESTIMENTOS','#0D47A1','inv()')}`}};
 const fp=()=>fin();
 const fxTg=run(async(i,v)=>{const f=S.fixos[i];
@@ -1514,7 +1514,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=68;
+const VERSAO=69;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1528,8 +1528,7 @@ const VERSAO=68;
  setTimeout(check,4000);setInterval(check,600000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
 })();
 </script>
-<script id="vz">
-/* ===== CONTROLE POR VOZ (🎤 ao lado do G) ===== */
+<script id="vz">/* ===== CONTROLE POR VOZ (🎤 ao lado do G) ===== */
 (()=>{
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition,TTS=window.speechSynthesis;
 const B=document.getElementById('bV');if(!B)return;
@@ -1581,10 +1580,15 @@ function achaCli(t,pool){t=t.replace(/\b(desconto|dia)( de)? \d+(\.\d+)?/g,' ').
   if(s>0&&!md&&mw<=Math.floor(qw.length/3))R.push({c,s})});
  if(!R.length&&qd.length&&qw.length)pool.forEach(c=>{const n=tokName(c.cliente);if(!n.d)return;let s=0,mw=0;qw.forEach(w=>{let b=0;n.w.forEach(x=>{const v=x===w?3:(w.length>=4&&(x.startsWith(w)||(x.length>=4&&w.startsWith(x))))?2:(w.length>=5&&lev(x,w)<=1)?2:0;if(v>b)b=v});if(b)s+=b;else mw++});if(!s||mw>Math.floor(qw.length/3))return;if(qd.some(d=>d.length>=4&&n.d.length>=d.length&&lev(n.d.slice(-d.length),d)<=1))R.push({c,s:s-1})});
  return R.sort((a,b)=>b.s-a.s)}
-function needCli(t,pool,cont,nada){const r=achaCli(t,pool);
+/* anúncios do mesmo cliente: código de 6 dígitos igual, só o primeiro dígito muda (0 = 1º anúncio, 1 = 2º, 2 = 3º...) */
+const codeOf=c=>{const m=String(c.cliente||'').match(/\d{6}(?!.*\d)/);return m?m[0]:''},sibK=c=>{const k=codeOf(c);return k?k.slice(1):''};
+const sibMin=L=>{if(L.length<2)return null;const k=sibK(L[0]);if(!k||!L.every(c=>sibK(c)===k))return null;return L.slice().sort((a,b)=>+codeOf(a)[0]-+codeOf(b)[0])[0]};
+function needCli(t,pool,cont,nada,sib){const r=achaCli(t,pool);
  if(!r.length){fail=nada||'Não achei esse cliente. Diga o nome e os números, por exemplo: Barbeiro zero seis seis nove cinco cinco.';return false}
  if(r.length==1||r[0].s-r[1].s>=2){cont(r[0].c);return true}
- ops(r.filter(x=>x.s>=r[0].s-1).slice(0,5).map(x=>x.c),cont);return true}
+ const L=r.filter(x=>x.s>=r[0].s-1).slice(0,5).map(x=>x.c);
+ if(sib){const m=sibMin(L);if(m){cont(m);return true}}
+ ops(L,cont);return true}
 
 /* ---------- painel, fala e escuta ---------- */
 function draw(){if(!P){P=document.createElement('div');P.id='vzp';P.hidden=true;P.style.cssText='position:fixed;left:10px;right:10px;bottom:150px;z-index:10;background:#fff;border:2px solid #512BD4;border-radius:16px;box-shadow:0 6px 20px #0006;padding:12px;font-size:16px;color:#222;max-height:45vh;overflow:auto';document.body.appendChild(P);
@@ -1750,7 +1754,7 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'mod',rx:/advanced|avancado/,a:['Advanced (30 dias)','Advanced (30 dias)'],p:i=>i.pl.includes('ADVANCED')},
   {g:'mod',rx:/\bsimples\b|\b7 dias\b/,a:['de 7 dias','de 7 dias'],p:i=>i.pl&&!/SMART|ADVANCED/.test(i.pl)},
   {g:'dia',rx:/renovad|renovaram|renovou|renovacoes? de hoje/,a:['renovado hoje','renovados hoje'],p:i=>i.ren},
-  {g:'dia',rx:/retornad|voltaram|retornaram/,a:['retornado hoje','retornados hoje'],p:i=>i.ret},
+  {g:'dia',rx:/retornad|reativad|voltaram|retornaram/,a:['retornado hoje','retornados hoje'],p:i=>i.ret},
   {g:'dia',rx:/\bnovos?\b|entraram/,a:['novo hoje','novos hoje'],p:i=>i.nov},
   {g:'dia',rx:/pausad.*hoje|hoje.*pausad/,a:['pausado hoje','pausados hoje'],p:i=>i.pau},
   {g:'dia',rx:/primeira renova|1a renova/,a:['na primeira renovação','na primeira renovação'],p:i=>i.pri},
@@ -1773,8 +1777,8 @@ function dCli(t){CT=t;
   return `Para renovar hoje ou atrasados: ${R.length}${R.length?', somando '+sv(R,i=>i.vp):''}. Com pagamento pendente para hoje: ${P.length}${P.length?', somando '+sv(P,i=>i.pg):''}. Juntos: ${U.length} cliente${U.length==1?'':'s'}${U.length?': '+nomes(U.map(i=>i.n),10):''}.`}
  if(/previsao|vou receber|a receber|prever/.test(t)){const I=itCli(),A=I.filter(i=>i.a),P=A.filter(i=>i.pe),h0=hj0(),d7=addD(h0,6),R=A.filter(i=>i.df&&i.df<=d7),H=R.filter(i=>i.df<=h0),Am=R.filter(i=>Dh(i.df,addD(h0,1)));return `Previsão: ${P.length} pendente${P.length==1?'':'s'} a receber, ${brl(somaV(P.map(i=>({v:i.pg}))))}. Renovações previstas até os próximos 7 dias: ${R.length} cliente${R.length==1?'':'s'}, ${brl(somaV(R.map(i=>({v:i.vp}))))}, sendo ${H.length} hoje ou atrasado${H.length==1?'':'s'} e ${Am.length} amanhã.`}
  const rc=achaCli(t,C),forte=rc.length&&rc[0].s>=3&&(rc.length==1||rc[0].s-rc[1].s>=2);if(forte)return info(rc[0].c)+(pend(rc[0].c)?'':'')+(rc[0].c.cel?'':'');
- const pe=per(t),hist=/renovad|renovaram|retornad|voltaram|\bnovos?\b|pausad/.test(t)&&pe.ex&&!/pendent|ativos/.test(t);
- if(hist){const mm=[[/renovad|renovaram/,'ren','renovado'],[/retornad|voltaram/,'ret','retornado'],[/\bnovos?\b/,'nov','novo'],[/pausad/,'pau','pausado']].filter(x=>x[0].test(t));
+ const pe=per(t),hist=/renovad|renovaram|retornad|reativad|voltaram|\bnovos?\b|pausad/.test(t)&&pe.ex&&!/pendent|ativos/.test(t);
+ if(hist){const mm=[[/renovad|renovaram/,'ren','renovado'],[/retornad|reativad|voltaram/,'ret',/reativad/.test(t)?'reativado':'retornado'],[/\bnovos?\b/,'nov','novo'],[/pausad/,'pau','pausado']].filter(x=>x[0].test(t));
   return mm.map(x=>{const n=hSum(pe,x[1]);return `${n} ${x[2]}${n==1?'':'s'} ${pe.lb}`}).join(', ')+'.'}
  return motor(CLI0,t,itCli())}
 
@@ -1917,7 +1921,7 @@ const DOMS=[
  [/investiment|\bcotas?\b|\bacoes?\b|\bfiis?\b|renda fixa|provento|dividendo|carteira|patrimonio|\betf\b|\bcdb\b|saldo invest|\bfundo\b|aporte|investido/,()=>dInv],
  [/saldo|cartao|fatura|fixos?|variave|disponivel|despesas?|\bgast(o|os|ei)\b|\blivre\b|\bsobra\b|\bsaidas?\b|\bsaiu\b|\bpaguei\b|\bcompr(ei|as?)\b|imposto|faturamento|limites?|receita|custo (por|do) dia|lancamentos?|anuncios?|lucro.*\bmes\b|\bmes\b.*lucro|lucro mensal|aluguel/,()=>dFin,{test:t=>(/faturamento/.test(t)&&/\b(semana|hoje|ontem|anteontem)\b|ultim\w* \d+ dias|\bdia \d+\b/.test(t)&&!/saldo|cartao|fatura\b|fixos?|disponivel|despesa|gasto|limite|receita|imposto|lucro|custo/.test(t))}],
  [/entrou|entrada|caixa|lucro|custos?|vendas?|vendi|baixas?|recebi|ganhei|faturei|faturamento|cinquenta|\b50\b|devolvid|expirad/,()=>dVendas],
- [/clientes?|ativos?|pausad|pendent|vence|vencim|atrasad|renov|retorn|\bnovos?\b|\bplano\b|\bgold\b|\bmega\b|\bplus\b|smart|advanced|contat|chamei|falei|celular|a renovar|faltam|previsao|vou receber|a receber|\bfalt\w* (entrar|cair)|\b(vai|vao|vem) (entrar|cair)/,()=>dCli]];
+ [/clientes?|ativos?|pausad|pendent|vence|vencim|atrasad|renov|retorn|reativ|\bnovos?\b|\bplano\b|\bgold\b|\bmega\b|\bplus\b|smart|advanced|contat|chamei|falei|celular|a renovar|faltam|previsao|vou receber|a receber|\bfalt\w* (entrar|cair)|\b(vai|vao|vem) (entrar|cair)/,()=>dCli]];
 const invNome=t=>(S.inv||[]).some(x=>x.n.trim().length>1&&new RegExp('\\b'+nz(x.n).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(t));
 async function consulta(t){
  if(/faturamento/.test(t)&&/previsao/.test(t)&&/semana/.test(t)){const a=await dVendas(t.replace(/previsao( de)?/g,' ')),b=await dCli('previsao');return say(String(a||'').replace(/[.\s]+$/,'')+'. '+String(b||''))||true}
@@ -1972,12 +1976,13 @@ function acBaixa(t){const pool=ativos().filter(pend);
  const r=achaCli(t,C);fail=r.length?`${r[0].c.cliente.trim()} não está com pagamento pendente.`:'Não achei esse cliente entre os pendentes. Diga o nome e os números.';return false}
 function acPausar(t){return needCli(t,ativos(),c=>ask(`Pausar ${c.cliente.trim()}?`,async()=>{const r=await pausaCli(c);await save();tela('v1');lista();return r?`${c.cliente.trim()} pausado.`:`${c.cliente.trim()} pausado no app. O envio para a planilha ficou na fila.`},`Você deseja pausar ${falaCli(c)}?`),'Não achei esse cliente entre os ativos. Diga o nome e os números, ou o final do código.')}
 function acReativar(t){const pool=C.filter(c=>!ok(c));
- if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c,1));
+ if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c,1),null,true);
  const r=achaCli(t,C);fail=r.length?`${r[0].c.cliente.trim()} não está pausado, está ativo.`:'Não achei esse cliente entre os pausados. Diga o nome e os números, ou o final do código.';return false}
 const ix=c=>{let i=C.indexOf(c);if(i<0)i=C.findIndex(x=>x.cliente===c.cliente);if(i<0)throw new Error('não achei mais esse cliente, atualize a lista e tente de novo');return i};
 function acRenovarBusca(t){const pool=ativos().filter(c=>{const d=pd(c.fim);return d&&d<=hoje()});
  if(achaCli(t,pool).length)return needCli(t,pool,c=>acRenovar(t,c));
  const r=achaCli(t,C);if(!r.length){fail='Não achei esse cliente. Diga o nome e os números.';return false}
+ {const L0=r.filter(x=>x.s>=r[0].s-1).slice(0,5).map(x=>x.c);if(L0.length>1&&L0.every(c=>!ok(c))){const m=sibMin(L0);if(m){acRenovar(t,m,1);return true}}}
  const go=()=>{ans=null;btns=[];needCli(t,C,c=>acRenovar(t,c))};btns=[['✅ Procurar em todos',go],['❌ Cancelar',cancelar]];
  ans=async T=>{const x=T.join(' | ');if(NO.test(x)){cancelar();return true}if(YES.test(x)){go();return true}return false};ans.live=1;ans.strict=1;
  say(`Não achei esse cliente entre os que precisam renovar hoje. Quer procurar entre todos os clientes?`,listen);return true}
@@ -2055,7 +2060,7 @@ async function acFecha(){window.FDL=null;await fechaDia();if(!window.FDL){say('A
 
 
 /* ---------- suporte: registro do que a voz não entendeu / errou, e correção de palavras parecidas ---------- */
-const VOC='valor saldo disponivel livre gastos gastei gasto despesas despesa clientes cliente pendentes pendente vencimento vencimentos vencem renovar renovou renovados pausados pausado pausar investimento investimentos aporte aportes proventos dividendos rendimento receita lucro liquido faturamento imposto cartao fatura fixos variaveis hoje ontem semana entradas retornados novos quanto quantos quantas quais tenho paguei lancamentos anuncio anuncios notas emitir relatorio empresa pessoal total fundo reserva custo sobra'.split(' ');
+const VOC='valor saldo disponivel livre gastos gastei gasto despesas despesa clientes cliente pendentes pendente vencimento vencimentos vencem renovar renovou renovados pausados pausado pausar investimento investimentos aporte aportes proventos dividendos rendimento receita lucro liquido faturamento imposto cartao fatura fixos variaveis hoje ontem semana entradas retornados reativados reativado novos quanto quantos quantas quais tenho paguei lancamentos anuncio anuncios notas emitir relatorio empresa pessoal total fundo reserva custo sobra'.split(' ');
 const COMUM=new Set('pagar pagos pagas pagou pagamentos falta faltam ainda esse essa lancar lancamento lancamentos renovar renovacao renovacoes reativar pausar para como esta estao tudo mais menos meus minha minhas seus pelo pela pelos desse dessa isso esse essa onde quando porque qual quem tem foi sao dia dias mes meses ano anos hoje agora todos todas nome plano planos conta contas geral'.split(' '));
 function corrige(t){let nomes;try{nomes=new Set(C.concat(S.fixos||[]).map(x=>nz(x.cliente||x.nome||'')).join(' ').split(' '))}catch(e){nomes=new Set()}
  return t.split(' ').map(w=>{if(w.length<4||/\d/.test(w)||COMUM.has(w)||VOC.includes(w)||nomes.has(w))return w;const lim=w.length>=5?2:1;let best=null,bd=9,tie=0;for(const v of VOC){if(Math.abs(v.length-w.length)>lim)continue;const d=lev(w,v);if(d<bd){bd=d;best=v;tie=0}else if(d==bd)tie++}return best&&bd<=lim&&!tie?best:w}).join(' ')}
@@ -2244,6 +2249,8 @@ async function tarefasVoz(t){
   btns=[['❌ Cancelar',cancelar]];say('Qual a tarefa para a consultora?',listen);return true}
  if(cons||/\b(quantas|quais|pendentes?|como (esta|estao)|situacao|status|falta|faltam)\b/.test(t)){
   const j=await tfLoad();if(!j){say('Não consegui falar com o servidor das tarefas agora.');return true}
+  if(/\bclientes? (novos?|pagos?)\b|\bnovos clientes\b/.test(t)){const L=pgL(),n=s=>L.filter(r=>r.st===s).length,h0=new Date().toDateString(),ch=L.filter(r=>r.st==='conc'&&r.cts&&new Date(r.cts*1000).toDateString()===h0).length,tr=tfPg().length;
+   say(`Clientes pagos: ${ch} concluído${ch==1?'':'s'} hoje, ${n('and')} em andamento, ${n('aguard')} aguardando e ${tr} a tratar.`);return true}
   const P=j.t.filter(x=>!x.feito),H=j.t.filter(x=>x.dia===j.hoje),fe=!!(j.f&&j.f[j.hoje]),fh=H.filter(x=>x.feito).length,at=P.filter(x=>x.dia<j.hoje).length,ur=P.filter(x=>x.urg).length;
   const fin=/\b(finaliz\w*|fechou|fechar|termin\w*|conclu\w*|acab\w*|encerr\w*)\b/.test(t),pl=(n,a,b)=>n+' '+(n==1?a:b);
   let m=fin?(fe?'Sim, a consultora já fechou o dia.':'Ainda não. A consultora não fechou o dia.'):(fe?'A consultora já fechou o dia.':'A consultora ainda não fechou o dia.');
@@ -2325,5 +2332,4 @@ window.vozInicio=()=>{if(!SR||document.hidden||window.__noAuto)return;const h=ne
  say(pick([sd+'! Do que você precisa?','Olá! Como posso ajudar?',sd+'! Em que posso ajudar?','Oi! O que você precisa agora?','Bem-vindo de volta! Do que você precisa?','Oi, tudo bem? Pode falar, o que você precisa?']),()=>listen(1))};
 {let n=0;const iv=setInterval(()=>{n++;let pronto=false;try{pronto=typeof SO!=='undefined'&&SO&&cur==='v1'&&C.length>0}catch(e){}if(pronto){clearInterval(iv);window.vozInicio()}else if(n>60)clearInterval(iv)},500)}
 })();
-
 </script></body></html>
