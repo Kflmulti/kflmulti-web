@@ -169,7 +169,7 @@ function wa(i,k){if(!String(C[i][k]||'').replace(/\D/g,''))return alert('Sem nú
 const T1='Olá... A renovação do seu plano é hoje, gostaria de saber se vai renovar, se vai manter o mesmo plano ou se vai alterar... O contato é feito para não deixar o anúncio pausar pois a pausa do anúncio atrapalha o aprendizado do algoritmo para melhorar cada vez mais',T2='Confirma por gentileza para eu poder fazer a configuração de renovação para seu anúncio não pausar';
 const waGo=run(async(i,k,m)=>{const c=C[i],d=String(c[k]||'').replace(/\D/g,''),t=vence().includes(c)?(m?T1:T2):'';$('#md').hidden=true;
  go('https://wa.me/55'+d+(t?'?text='+encodeURIComponent(t):''));if(!S.vistos.n.includes(c.cliente))S.vistos.n.push(c.cliente);(S.contato=S.contato||{})[c.cliente]=hk();await save();tela('v1');lista()});
-const renovar=run(async i=>{const c=C[i],pl=$('#pl').value;if(!pl)return alert('Selecione um plano!');const ds=Math.max(0,r2(num($('#ds')?$('#ds').value:'')));if(ds>=valor(pl))return alert('O desconto precisa ser menor que o valor do plano.');const ik=!!($('#ik')&&$('#ik').checked);if(ik&&pl!=='Plano GOLD - R$ 150,00')return alert('O desconto de indicação só vale no Gold 7 dias.');if(ik&&!(ds>0))return alert('Informe o valor do desconto de indicação.');
+const renovar=run(async i=>{const c=C[i],ub=undoBegin(c),pl=$('#pl').value;if(!pl)return alert('Selecione um plano!');const ds=Math.max(0,r2(num($('#ds')?$('#ds').value:'')));if(ds>=valor(pl))return alert('O desconto precisa ser menor que o valor do plano.');const ik=!!($('#ik')&&$('#ik').checked);if(ik&&pl!=='Plano GOLD - R$ 150,00')return alert('O desconto de indicação só vale no Gold 7 dias.');if(ik&&!(ds>0))return alert('Informe o valor do desconto de indicação.');
  if(!$('#di').value||($('#pe').checked&&!$('#dv').value))return alert('Preencha as datas.');const pe=$('#pe').checked,ini=fromIso($('#di').value),fim=new Date(ini);fim.setDate(fim.getDate()+dias(pl));
  let val='R$ 0,00',dp=null;
  if(pe){dp=fromIso($('#dv').value);const r=await pm('Insira o valor da dívida (ex: 150,00):',c.pg||brl(valor(pl)-ds));if(r===null)return;let v=num(r);if(v<=0)v=valor(pl)-ds;val=brl(v)}
@@ -180,7 +180,7 @@ const renovar=run(async i=>{const c=C[i],pl=$('#pl').value;if(!pl)return alert('
  const eraOk=ok(c);if(eraOk){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(n=>n.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
  if(antes==1&&!S.primeira.includes(c.cliente))S.primeira.push(c.cliente);
  Object.assign(c,{plano:pl,inicio:fm(ini),fim:fm(fim),datapg:pe?fm(dp):'',pg:pe?val:''});
- if(ik)indUsar(c.cliente,ds); await save();if(!eraOk)tfCria((c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);await tfPergunta(c.cliente);alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
+ if(ik)indUsar(c.cliente,ds); await save();if(!eraOk)tfCria((c.situacao&&/reativ/i.test(c.situacao)?'reativacao':'ativacao'),c.cliente,'',c);await tfPergunta(c.cliente);await undoEnd(ub,c,eraOk?'Renovação':'Reativação');alert(env?'Renovação registrada e enviada.':'Renovação registrada (envio na fila).');tela('v1');lista()});
 async function pausaCli(c){let r=true;
  if(c.pg==='R$ 100,00'){r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',datapg:'',pg:'',situacao:'NOVO'})&&r;r=await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''})&&r}
  else r=await post('AlteraPlanilha.php',{cliente:c.cliente,ativo:'NÃO',situacao:'NOVO'});
@@ -682,11 +682,37 @@ function tfCria(tp,nome,extra,c){try{nome=String(nome||'').trim();if(!nome||!TFT
 
 /* ===== desfazer + tela de conferência (renovar/reativar por voz) ===== */
 let UND=null;
+/* ===== v75: desfazer renovação a qualquer hora ===== */
+const UARR=['ent','nf','nfMes','vars','renovados','retornados','novos','pausados','renmes','primeira'],UNUM=['saldoEA','cartaoEA','cartaoCl','custo','custoAj','totmes','fatAj','meuTotal','saldoPA','cartaoPA'];
+function undoBegin(c){window.tfRefs=[];window.tfTx=[];const s={};UARR.forEach(k=>{s[k]=(S[k]||[]).map(x=>JSON.stringify(x))});UNUM.forEach(k=>{s[k]=S[k]||0});const k=hk(),hh=(S.hist||{})[k];s.hk=k;s.h=hh?JSON.parse(JSON.stringify(hh)):null;const cl=c&&c.cliente;s.cont=cl&&S.cont?S.cont[cl]:undefined;s.dsc=cl&&S.dsc?S.dsc[String(cl).trim().toLowerCase()]:undefined;return{s,c0:JSON.parse(JSON.stringify(c))}}
+function msDiff(a,b){const m=new Map();a.forEach(x=>m.set(x,(m.get(x)||0)+1));const add=[];b.forEach(x=>{const n=m.get(x)||0;if(n>0)m.set(x,n-1);else add.push(x)});const del=[];m.forEach((n,x)=>{for(let i=0;i<n;i++)del.push(x)});return{add,del}}
+async function undoEnd(ub,c,tipo){try{const s=ub.s,r={id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),ts:Date.now(),cli:c.cliente,tipo,c0:ub.c0,c1:JSON.parse(JSON.stringify(c)),arr:{},num:{},hk:s.hk,h:{},cont:s.cont,dsc:s.dsc,refs:(window.tfRefs||[]).slice()};
+ UARR.forEach(k=>{const d=msDiff(s[k],(S[k]||[]).map(x=>JSON.stringify(x)));if(d.add.length||d.del.length)r.arr[k]=d});
+ UNUM.forEach(k=>{const d=r2((S[k]||0)-s[k]);if(d)r.num[k]=d});
+ const h1=(S.hist||{})[s.hk];if(h1){const h0=s.h||{};Object.keys(h1).forEach(f=>{if(typeof h1[f]==='number'){const d=r2(h1[f]-(h0[f]||0));if(d)r.h[f]=d}})}
+ r.v=(r.arr.ent&&r.arr.ent.add.length)?(JSON.parse(r.arr.ent.add[0]).v||0):0;
+ (S.und=S.und||[]).push(r);if(S.und.length>30)S.und.splice(0,S.und.length-30);await save();return r.id}catch(e){return null}}
+async function undoApply(r){const c=C.find(x=>x.cliente===r.cli);if(!c)throw new Error('Não achei o cliente na planilha.');
+ if((c.fim||'')!==(r.c1.fim||'')||(c.inicio||'')!==(r.c1.inicio||'')||(c.plano||'')!==(r.c1.plano||''))throw new Error('O cliente mudou depois dessa renovação (outra renovação ou edição). Desfaça primeiro a mais recente.');
+ for(const k of Object.keys(r.arr)){const cur=(S[k]||[]).map(x=>JSON.stringify(x));for(const a of r.arr[k].add){const i=cur.indexOf(a);if(i<0)throw new Error(k==='nf'||k==='nfMes'?'A nota fiscal dessa renovação já foi emitida ou alterada. Cancele a nota e corrija à mão.':'Um lançamento dessa renovação já foi alterado ('+k+'). Corrija pelo Lançamentos.');cur.splice(i,1)}}
+ for(const k of Object.keys(r.arr)){const a=S[k]=S[k]||[],js=a.map(x=>JSON.stringify(x));r.arr[k].add.forEach(x=>{const i=js.indexOf(x);if(i>=0){js.splice(i,1);a.splice(i,1)}});r.arr[k].del.forEach(x=>a.push(JSON.parse(x)))}
+ const man=r.ts<=(S.manTs||0),AUTO=['saldoEA','cartaoEA','cartaoCl','saldoPA','cartaoPA'];
+ Object.keys(r.num).forEach(k=>{if(man&&AUTO.includes(k))return;S[k]=r2((S[k]||0)-r.num[k])});
+ const hh=(S.hist||{})[r.hk];if(hh)Object.keys(r.h).forEach(f=>{hh[f]=r2((hh[f]||0)-r.h[f])});
+ if(S.cont){if(r.cont===undefined)delete S.cont[r.cli];else S.cont[r.cli]=r.cont}
+ const dk=String(r.cli).trim().toLowerCase();if(r.dsc===undefined){if(S.dsc)delete S.dsc[dk]}else(S.dsc=S.dsc||{})[dk]=r.dsc;
+ const c0=r.c0;await post('AlteraPlanilha.php',{cliente:c0.cliente,plano:lp(c0.plano),situacao:c0.situacao||'',ativo:c0.ativo||'',inicio:c0.inicio||'',fim:c0.fim||'',datapg:c0.datapg||'',pg:c0.pg||''},true);Object.assign(c,c0);
+ await tfDelRefs(r.refs);S.und=(S.und||[]).filter(x=>x.id!==r.id);await save()}
+const undoRec=run(async id=>{const r=(S.und||[]).find(x=>x.id===id);if(!r)return;
+ if(!confirm('Desfazer '+r.tipo.toLowerCase()+' de '+r.cli+(r.v?' ('+brl(r.v)+')':'')+'?\n\n• O cliente volta na planilha ao que era antes ('+(r.c0.fim?'vencimento '+r.c0.fim:'sem vencimento')+').\n• O valor sai do caixa, das vendas, da meta e do livre.\n• As tarefas da consultora dessa renovação são removidas.\n\nSe a nota fiscal já foi emitida, cancele-a à parte no sistema nacional.'))return;
+ try{await undoApply(r)}catch(e){return alert(e.message)}toast('Desfeito ✔');lanc()});
+function undoHtml(){const U=(S.und||[]).slice().reverse().slice(0,10);if(!U.length)return '';return `<div class="lb" style="margin-top:8px">↩ Renovações recentes — desfazer devolve o cliente à planilha e tira do caixa</div>`+U.map(r=>`<div class="card" style="display:flex;align-items:center;gap:8px;margin:6px 0;padding:10px 12px"><div style="flex:1"><b>${esc(r.cli)}</b><div style="color:#777;font-size:13px">${esc(r.tipo)} · ${new Date(r.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}${r.v?' · '+brl(r.v):''}</div></div><button class="bt" style="height:32px" onclick="undoRec('${r.id}')">↩ DESFAZER</button></div>`).join('')}
+
 const undoFp=()=>[(S.ent||[]).length,(S.nf||[]).length,(S.nfMes||[]).length,(S.vars||[]).length,Object.keys(S.hist||{}).length,(S.renovados||[]).length,(S.retornados||[]).length,(S.novos||[]).length,(S.pausados||[]).length].join('|');
 function snapUndo(c){window.tfRefs=[];window.tfTx=[];return{c0:JSON.parse(JSON.stringify(c)),S0:JSON.parse(JSON.stringify(S)),ts:Date.now(),refs:[],tx:[]}}
 async function tfDelRefs(refs){if(!refs||!refs.length)return;try{tfQs(tfQ().filter(x=>!refs.includes(x.ref)))}catch(e){}try{TF=await tfx('delref',{refs})}catch(e){}}
-const desfaz=run(async()=>{const u=UND;if(!u)return alert('Nada para desfazer.');if(Date.now()-u.ts>300000){UND=null;return alert('Passaram mais de 5 minutos. Corrija pelo Lançamentos.')}
- if(undoFp()!==u.n1)return alert('Houve outra operação depois. Para não bagunçar o caixa, corrija pelo Lançamentos.');
+const desfaz=run(async()=>{const u=UND;if(!u)return alert('Nada para desfazer.');const rr=u.rid&&(S.und||[]).find(x=>x.id===u.rid);
+ if(Date.now()-u.ts>300000||undoFp()!==u.n1){if(rr){try{await undoApply(rr);UND=null;toast('Desfeito ✔');tela('v1');lista()}catch(e){alert(e.message)}return}UND=null;return alert('Não dá para desfazer automaticamente. Corrija pelo Lançamentos.')}
  const c0=u.c0,c=C.find(x=>x.cliente===c0.cliente);if(!c)return alert('Não achei o cliente para desfazer.');
  await post('AlteraPlanilha.php',{cliente:c0.cliente,plano:lp(c0.plano),situacao:c0.situacao||'',ativo:c0.ativo||'',inicio:c0.inicio||'',fim:c0.fim||'',datapg:c0.datapg||'',pg:c0.pg||''},true);
  Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,JSON.parse(JSON.stringify(u.S0)));Object.assign(c,c0);
@@ -728,7 +754,7 @@ const KN={N:'✨ Cliente novo (entrada)',R:'🔄 Renovação paga',P:'💵 Pend�
 function lanc(){const V=S.vars||[],E=S.ent||[],mt=S.manTs||0,btn2=(f,i,t)=>`<button class="bt" style="height:32px" onclick="${f}(${i})">${t}</button>`;
  const vr=V.map((x,i)=>({x,i})).reverse().map(({x,i})=>`<div class="card" style="display:flex;align-items:center;gap:8px;margin:6px 0;padding:10px 12px"><div style="flex:1"><b>${SCI[x.sc||'P']} ${esc(x.d)}</b>${x.fx?' 📌':''}<div style="color:#777;font-size:13px">${esc(x.dt)}</div></div><b style="color:#c00">${brl(x.v)}</b>${btn2('varEd',i,'✏️')}${btn2('varDel',i,'🗑️')}</div>`).join('')||'<p style="color:#999">Nenhuma variável neste mês.</p>';
  const en=E.map((x,i)=>({x,i})).reverse().slice(0,40).map(({x,i})=>`<div class="card" style="display:flex;align-items:center;gap:8px;margin:6px 0;padding:10px 12px"><div style="flex:1"><b>${esc(x.cli)}</b><div style="color:#777;font-size:13px">${esc(x.dt)} · ${KN[x.k]||''}${x.ts<=mt?' · já na atualização manual':''}</div></div><b style="color:#1B5E20">+ ${brl(x.v)}</b>${btn2('entDel',i,'🗑️')}</div>`).join('')||'<p style="color:#999">Nenhuma entrada automática ainda.</p>';
- $('#v6').innerHTML=`<h2>LANÇAMENTOS</h2><div class="lb">Variáveis do mês — ✏️ muda o valor e 🗑️ apaga, desfazendo o efeito no cartão e nos fixos</div>${vr}<div class="lb" style="margin-top:16px">Entradas automáticas na conta da Empresa — 🗑️ remove só o crédito no saldo</div>${en}${btn('VOLTAR','#9E9E9E','fp()')}`;tela('v6')}
+ $('#v6').innerHTML=`<h2>LANÇAMENTOS</h2>${undoHtml()}<div class="lb">Variáveis do mês — ✏️ muda o valor e 🗑️ apaga, desfazendo o efeito no cartão e nos fixos</div>${vr}<div class="lb" style="margin-top:16px">Entradas automáticas na conta da Empresa — 🗑️ remove só o crédito no saldo</div>${en}${btn('VOLTAR','#9E9E9E','fp()')}`;tela('v6')}
 const varEd=run(async i=>{const x=S.vars[i];if(!x)return;const r=await pm('Novo valor de '+x.d+' ('+x.dt+'):',x.v.toLocaleString('pt-BR',{minimumFractionDigits:2}));if(r===null)return;const v=r2(num(r));if(v<=0)return alert('Valor inválido. Para remover use 🗑️.');aplicaVar(x,r2(v-x.v));x.v=v;await save();lanc()});
 const varDel=run(async i=>{const x=S.vars[i];if(!x||!confirm('Apagar '+x.d+' '+brl(x.v)+'?'))return;aplicaVar(x,-x.v);S.vars.splice(i,1);await save();lanc()});
 const entDel=run(async i=>{const x=S.ent[i];if(!x||!confirm('Remover o crédito de '+brl(x.v)+' ('+x.cli+') do saldo automático?'))return;if(x.ts>(S.manTs||0))S.saldoEA=r2(Math.max(0,(S.saldoEA||0)-x.v));if(x.lc!=null){const h=(S.hist||{})[mkI(x.dt)];if(h){h.cx=r2(Math.max(0,(h.cx||0)-x.v));aplicaL(h,{lc:x.lc,cu:x.cu||0,imp:x.imp||0},-1)}else S.custo=r2((S.custo||0)-(x.cu||0))}S.ent.splice(i,1);await save();lanc()});
@@ -1551,7 +1577,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=74;
+const VERSAO=75;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1969,6 +1995,13 @@ async function dMetaMes(t){if(diario())await save();const m=metaCalc(),a=m.dif>=
  const R=M.filter(x=>x[0].test(t));
  if(R.length)return R.slice(0,3).map(x=>x[1]()).join(' ');
  return metaGeral()}
+
+function acDesfazRen(t){const U=S.und||[];if(!U.length)return false;
+ const nz2=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');let r=null,citou=false;
+ for(const x of U.slice().reverse()){const cod=(String(x.cli).match(/\d{3,}/)||[])[0],nome=nz2(String(x.cli).replace(/\d+/g,'')).split(/\s+/).filter(w=>w.length>2);if((cod&&t.includes(cod))||(nome.length&&nome.every(w=>t.includes(w)))){r=x;citou=true;break}}
+ if(!r)r=U[U.length-1];
+ const q=new Date(r.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),nm=String(r.cli).replace(/\s*\d{4,}\s*$/,'').trim();
+ ask(`Desfazer a ${r.tipo.toLowerCase()} de ${nm}${r.v?', '+brl(r.v):''}, feita em ${q}? O cliente volta na planilha ao que era antes e o valor sai do caixa, das vendas, da meta e do livre. Se a nota fiscal já foi emitida, é preciso cancelá-la à parte. Confirma?`,async()=>{try{await undoApply(r)}catch(e){return e.message}try{lista()}catch(e){}return `Desfeito. ${nm} voltou ao que era antes.`});return true}
 function acMeta(t){if(!/\b(alter\w*|mude|muda|mudar|troqu\w*|ajust\w*|defin\w*|coloc\w*|atualiz\w*|aument\w*|diminu\w*|suba|subir|eleve|reduz\w*)\b/.test(t)||!/\bmeta\b/.test(t)||/campanha|conversas|orcamento|\bads\b|facebook|instagram/.test(t))return false;
  const go=nv=>ask(`Alterar a meta do mês de ${brl(metaV())} para ${brl(nv)}. Confirma?`,async()=>{S.meta={v:nv};await save();return `Meta do mês agora é ${brl(nv)}.`});
  const v=valOf(w2n(t));if(v>0){go(v);return true}
@@ -1994,7 +2027,7 @@ async function consulta(t){
   if(dd>=0){const d0=new Date();d0.setDate(d0.getDate()-dd);const K=fm(d0),rot=dd?'ontem':'hoje';const L0=(ent?E:V).filter(x=>String(x.dt)===K);if(!L0.length){say(ent?`Nenhuma entrada ${rot}.`:`Nenhum lançamento de variável ${rot}.`);return true}if(ent)E=L0;else V=L0}
   if(ent){const L=E.slice(-n).reverse();say(L.length?L.map(x=>`${x.cli.replace(/\s*\d{4,}\s*$/,'').trim()}, ${brl(x.v)}, ${String(x.dt).replace(/\/\d{4}$/,'')}`).join('. ')+'.':'Nenhuma entrada automática ainda.');return true}
   const L=V.slice(-n).reverse();say(L.length?(n>1?'Últimos lançamentos: ':'Último lançamento: ')+L.map(x=>`${x.d}, ${brl(x.v)}, ${String(x.dt).replace(/\/\d{4}$/,'')}, ${x.sc=='E'?'empresa':'pessoal'}`).join('. ')+'.':'Nenhum lançamento de variável neste mês.');return true}
- if(/relatorio|resum(o|ir)|como foi (o )?dia|balanco do dia/.test(t)&&!/geral/.test(t))return await RELAT();
+ if(/relatorio|resum(o|ir)|como foi (o )?dia|balanco do dia|analis\w* (o |do |de )?dia|analise do dia/.test(t)&&!/geral/.test(t)&&!/\bmeta\b/.test(t))return await RELAT();
  if(invNome(t))return await dInv(t);
  if(nmFixo(t).length||nmCat(t).length)return await dFin(t);
  for(const [rx,f,ex] of DOMS)if(rx.test(t)&&!(ex&&ex.test(t)))return await f()(t);
@@ -2329,7 +2362,8 @@ async function route(t){if(STOPLV.test(t)){stopLivre();return true}
  if(STARTLV.test(t)&&!/\b(desativ|deslig)/.test(t)){startLivre();return true}
  t=canon(t);
  if(/\b(renov\w*|reativ\w*|ativar|ative)\b/.test(t)){const k=t.search(/\b(colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\b/);if(k>0)t=t.slice(0,k).trim()}
- if(/^(?:\w+ ){0,3}(desfazer|desfaz|desfaca|errei|foi errado)(?: \w+){0,2}$/.test(t)){if(typeof UND==='undefined'||!UND){say('Nada para desfazer.');return true}const m=await withAlert(()=>desfaz());say(m.length?m.join(' '):'Desfeito.');return true}
+ if(/\b(desfaz\w*|desfaca|cancel\w*|estorn\w*)\b/.test(t)&&/\b(renov\w*|reativ\w*)\b/.test(t)&&!/\bfixo/.test(t)&&acDesfazRen(t))return true;
+ if(/^(?:\w+ ){0,3}(desfazer|desfaz|desfaca|errei|foi errado)(?: \w+){0,2}$/.test(t)){if(typeof UND==='undefined'||!UND){if(acDesfazRen(t))return true;say('Nada para desfazer.');return true}const m=await withAlert(()=>desfaz());say(m.length?m.join(' '):'Desfeito.');return true}
  if(/\b(qual (e )?(o )?seu nome|como (voce )?(se )?chama|quem (e )?voce)\b/.test(t)){say('Meu nome é Layla, sou a assistente do KFLMULTI.');return true}
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
 if(/\b(suporte|erros da voz|o que (voce )?nao entendeu|erros? do (app|aplicativo)|mensagens? de erro|registro de erros)\b/.test(t)){suporte();say('Abri o suporte e os erros do app.');return true}
