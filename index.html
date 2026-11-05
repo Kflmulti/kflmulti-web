@@ -896,7 +896,7 @@ const pgS=()=>{S.pg=S.pg||{lan:{},reb:{},vinc:{},cache:[]};return S.pg};
 const pgL=()=>PG||(S&&S.pg&&S.pg.cache)||[];
 const pgFone=t=>{t=String(t||'').replace(/\D/g,'');return t.length==11?'('+t.slice(0,2)+') '+t.slice(2,7)+'-'+t.slice(7):t};
 const pgNome=r=>(r.nome?r.nome+' ':'Cliente ')+pgFone(r.tel),pg8=t=>String(t||'').replace(/\D/g,'').slice(-8);
-const PGST={and:'Em andamento',aguard:'Aguardando cliente',conc:'Concluído',desist:'Desistência',exp:'Expirado'},PGC={and:'#1565C0',aguard:'#F57C00',conc:'#2E7D32',desist:'#C62828',exp:'#607D8B'};
+const PGST={and:'Em andamento',aguard:'Aguardando cliente',espera:'Em espera',conc:'Concluído',desist:'Desistência',exp:'Expirado'},PGC={and:'#1565C0',aguard:'#F57C00',espera:'#6D4C41',conc:'#2E7D32',desist:'#C62828',exp:'#607D8B'};
 function pgSet(j){if(!j||!Array.isArray(j.pg))return;PG=j.pg;try{pgSync()}catch(e){}}
 function pgSync(){if(!S||!S.mes||!PG)return;const g=pgS();let ch=0;
  PG.forEach(r=>{
@@ -913,10 +913,10 @@ function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter
  if(r.st!=='conc')tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
  toast('Vinculado ao cadastro '+pgFone(r.tel)+' (R$ 50 já contado) ✔');return true}catch(e){return false}}
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
-const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length;if(!a&&!g)return'';const p=pgParados().length;
- return '<div class="lb" style="margin-top:14px">👤 Clientes pagos ainda sem anúncio</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #1565C0" onclick="pgTela()"><b>'+a+' em andamento · '+g+' aguardando o cliente</b><div style="color:#777;font-size:13px">'+(p?p+' parado'+(p>1?'s':'')+' há mais de 24h · ':'')+'toque para abrir</div></div>'};
-function pgRel(ref){try{const L=pgL();if(!L.length)return'';const d0=ref?fm(fromIso(ref)):fm(new Date()),dh=ts=>fm(new Date(ts*1000)),en=L.filter(r=>dh(r.ts)===d0),cn=L.filter(r=>r.st==='conc'&&r.cts&&dh(r.cts)===d0),an=L.filter(r=>r.st==='and'),ag=L.filter(r=>r.st==='aguard');
- return '*👤 CLIENTES PAGOS (AINDA SEM PLANILHA):*\nCadastrados hoje: '+en.length+'\nConcluídos hoje: '+cn.length+'\nEm andamento: '+an.length+an.map(r=>'\n⏳ '+pgFone(r.tel)).join('')+'\nAguardando o cliente: '+ag.length+ag.map(r=>'\n💤 '+pgFone(r.tel)+(r.mot?' — '+r.mot:'')).join('')+'\n\n'}catch(e){return''}}
+const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length,es=L.filter(r=>r.st==='espera').length;if(!a&&!g&&!es)return'';const p=pgParados().length;
+ return '<div class="lb" style="margin-top:14px">👤 Clientes pagos ainda sem anúncio</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #1565C0" onclick="pgTela()"><b>'+a+' em andamento · '+g+' aguardando o cliente'+(es?' · '+es+' em espera':'')+'</b><div style="color:#777;font-size:13px">'+(p?p+' parado'+(p>1?'s':'')+' há mais de 24h · ':'')+'toque para abrir</div></div>'};
+function pgRel(ref){try{const L=pgL();if(!L.length)return'';const d0=ref?fm(fromIso(ref)):fm(new Date()),dh=ts=>fm(new Date(ts*1000)),en=L.filter(r=>dh(r.ts)===d0),cn=L.filter(r=>r.st==='conc'&&r.cts&&dh(r.cts)===d0),an=L.filter(r=>r.st==='and'),ag=L.filter(r=>r.st==='aguard'),es=L.filter(r=>r.st==='espera');
+ return '*👤 CLIENTES PAGOS (AINDA SEM PLANILHA):*\nCadastrados hoje: '+en.length+'\nConcluídos hoje: '+cn.length+'\nEm andamento: '+an.length+an.map(r=>'\n⏳ '+pgFone(r.tel)).join('')+'\nAguardando o cliente: '+ag.length+ag.map(r=>'\n💤 '+pgFone(r.tel)+(r.mot?' — '+r.mot:'')).join('')+'\nEm espera (fora da tela da consultora): '+es.length+'\n\n'}catch(e){return''}}
 const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;const d={id,st};
  if(st==='aguard'){const m=await pm('Motivo (ex.: sem WhatsApp comercial):','','text');if(m===null||!String(m).trim())return;d.mot=String(m).trim()}
  if(st==='desist'){if(!confirm('Registrar DESISTÊNCIA de '+pgFone(r.tel)+'?'))return;d.mot='desistência';d.reemb=confirm('Os R$ 50 foram devolvidos ao cliente?\n\nOK = SIM, devolvido (o valor sai do caixa).\nCancelar = NÃO devolvido.')}
@@ -925,18 +925,18 @@ const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;con
 const pgNovo=run(async()=>{const t=await pm('Telefone do cliente que pagou (com DDD):','','numeric');if(t===null||!String(t).trim())return;const n=await pm('Nome do negócio (opcional):','','text');
  try{pgSet(await tfx('pago_add',{tel:String(t),nome:n===null?'':String(n)}));toast('Cadastrado ✔ (R$ 50 lançados)')}catch(e){alert(e.message)}pgTela()});
 function pgLista(){const L=pgL(),q=pgQ.replace(/\D/g,''),qt=pgQ.trim().toLowerCase();let V;
- if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt));else V=L.filter(r=>pgF==='all'||r.st===pgF);
+ if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt)||String(r.id)===qt);else V=L.filter(r=>pgF==='all'||r.st===pgF);
  V=V.slice().sort((a,b)=>b.ts-a.ts);const hojeS=Date.now()/1000;
  $('#pgl').innerHTML=V.map(r=>{const fim=r.ts+365*86400,dl=Math.ceil((fim-hojeS)/86400),dt=fm(new Date(r.ts*1000));
-  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.ret&&r.st==='aguard'?'retorno em '+fm(fromIso(r.ret)):'',r.st==='aguard'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
+  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.ret&&r.st==='aguard'?'retorno em '+fm(fromIso(r.ret)):'',r.st==='aguard'||r.st==='espera'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
   const bt=(t,c,f)=>`<button class="bg" style="background:${c};font-size:13px;padding:8px 6px" onclick="${f}">${t}</button>`;
-  const ab=(r.st==='and'||r.st==='aguard')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
+  const ab=(r.st==='and'||r.st==='aguard'||r.st==='espera')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+(r.st==='espera'?bt('▶ REATIVAR','#1565C0',`pgAct('${r.id}','and')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
   return `<div class="card" style="margin:8px 0;border-left:5px solid ${PGC[r.st]}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(pgFone(r.tel))}${r.nome?' · '+esc(r.nome):''}</b><span style="color:${PGC[r.st]};font-weight:700;font-size:13px">${PGST[r.st]}</span></div><div style="color:#777;font-size:13px">pagou em ${dt} · cadastrado por ${r.por==='dono'?'você':'consultora'}${info?' · '+info:''}</div><div class="g2" style="margin-top:8px">${ab}</div></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhum cliente nesta lista.</p>'}
 function pgTela(nf){if(!nf)window.pgBack=0;if(!nf)tfLoad().then(()=>{if(cur==='v6'&&$('#pgl')&&!pgQ)pgTela(1)});const L=pgL(),n=s=>L.filter(r=>r.st===s).length;
  const chip=(k,t)=>`<button class="bg" style="background:${pgF===k&&!pgQ?'#1565C0':'#78909C'};font-size:13px;padding:8px 6px" onclick="pgQ='';pgF='${k}';pgTela()">${t}</button>`;
  $('#v6').innerHTML=`<h2>👤 CLIENTES PAGOS</h2><div class="lb" style="text-align:center;line-height:1.5">Pagaram os R$ 50 e ainda não estão na planilha. O valor já entra no caixa; na desistência com reembolso ele sai. Guardados por 12 meses.</div>
- <input id="pgq" placeholder="🔎 Buscar por telefone ou nome" value="${esc(pgQ)}" oninput="pgQ=this.value;pgLista()" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin:8px 0">
- <div class="g3">${chip('and','Andamento ('+n('and')+')')}${chip('aguard','Aguardando ('+n('aguard')+')')}${chip('conc','Concluídos ('+n('conc')+')')}${chip('desist','Desist. ('+n('desist')+')')}${chip('exp','Expirados ('+n('exp')+')')}${chip('all','Todos ('+L.length+')')}</div>
+ <input id="pgq" placeholder="🔎 Buscar por telefone (com ou sem DDD), nome ou código" value="${esc(pgQ)}" oninput="pgQ=this.value;pgLista()" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin:8px 0">
+ <div class="g3">${chip('and','Andamento ('+n('and')+')')}${chip('aguard','Aguardando ('+n('aguard')+')')}${chip('espera','⏳ Em espera ('+n('espera')+')')}${chip('conc','Concluídos ('+n('conc')+')')}${chip('desist','Desist. ('+n('desist')+')')}${chip('exp','Expirados ('+n('exp')+')')}${chip('all','Todos ('+L.length+')')}</div>
  <div id="pgl"></div>${btn('🔄 ATUALIZAR','#1565C0','pgTela()')}${btn('➕ CADASTRAR CLIENTE PAGO','#2E7D32','pgNovo()')}${btn('VOLTAR','#9E9E9E','menu()')}`;pgLista();tela('v6');scrollTo(0,0)}
 /* ---- AMR: lançamentos que não vêm das NFs ---- */
 const MESN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -1577,7 +1577,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=76;
+const VERSAO=77;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -1968,10 +1968,24 @@ async function dAlertas(){const o=[];
  const fx=(S.fixos||[]).filter(f=>!f.incluso&&f.dia==new Date().getDate());if(fx.length)o.push('fixos vencendo hoje: '+fx.map(f=>f.nome).join(', '));
  return o.length?'Pendências: '+o.join('; ')+'.':'Nenhuma pendência no momento.'}
 
+const ESPRX=/em espera|na espera|lista de espera|lista fria|(whats\w*|zap\w*)( do| da| de)? ?(comercial|business)|clientes? (parad\w+|esfriad\w+|frios?|sumid\w+)|nao (resolveu|resolveram|criou|criaram|tem|tinham|conseguiu|conseguiram) (o |a )?(whats\w*|zap\w*)/;
+async function acEspera(t){const rea=/\b(reativ\w*|tir\w* da espera)\b/.test(t);if(!ESPRX.test(t)&&!rea)return false;
+ if(ESPRX.test(t))try{await tfLoad()}catch(e){}const L=pgL(),E=L.filter(r=>r.st==='espera'),nz2=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const d=t.replace(/\D/g,''),nome=r=>pgFone(r.tel)+(r.nome?', '+r.nome:'');
+ const ach=()=>{let r=null;if(d.length>=8)r=E.find(x=>String(x.tel).slice(-8)===d.slice(-8));if(!r&&d.length>=4)r=E.find(x=>String(x.tel).includes(d)||String(x.id)===d);
+  if(!r)r=E.find(x=>{const w=nz2(x.nome||'').split(/\s+/).filter(z=>z.length>2);return w.length&&w.every(z=>t.includes(z))});return r};
+ if(rea){const r=ach();if(!r){if(!ESPRX.test(t))return false;say(E.length?'Qual cliente em espera você quer reativar? Diga o telefone ou o nome.':'Não há nenhum cliente em espera.');return true}
+  ask(`Reativar ${nome(r)}? Ele sai da espera, volta para em andamento e aparece de novo para a consultora. Confirma?`,async()=>{try{pgSet(await tfx('pago_set',{id:r.id,st:'and'}))}catch(e){return e.message}return `Pronto, ${r.nome||pgFone(r.tel)} voltou para em andamento.`});return true}
+ if(d.length>=8||/\b(procur\w*|busc\w*|ach\w*|esta|tem)\b/.test(t)&&d.length>=4){const r=ach();if(r){say(`Sim, ${nome(r)} está em espera${r.mot?', '+r.mot:''}. Pagou em ${fm(new Date(r.ts*1000)).slice(0,5)} e fica guardado até ${fm(new Date((r.ts+365*86400)*1000))}.`);return true}
+  const o=L.find(x=>String(x.tel).slice(-8)===d.slice(-8));say(o?`Esse telefone existe, mas está como ${PGST[o.st].toLowerCase()}, não em espera.`:'Não achei esse telefone entre os clientes pagos.');return true}
+ if(/\b(list\w*|quais|mostr\w*|ler|le|fal\w*|diga|diz)\b/.test(t)){if(!E.length){say('Não há nenhum cliente em espera.');return true}
+  const m=E.slice().sort((a,b)=>b.ts-a.ts).slice(0,8);say(`${E.length} cliente${E.length>1?'s':''} em espera. ${m.map(r=>nome(r)+(r.mot?', '+r.mot:'')).join('. ')}.${E.length>8?' E mais '+(E.length-8)+'. Abri a lista na tela.':''}`);
+  if(E.length>3||true){pgF='espera';pgQ='';try{pgTela()}catch(e){}}return true}
+ const ag=L.filter(r=>r.st==='aguard').length;say(`${E.length} cliente${E.length==1?'':'s'} em espera${ag?', e '+ag+' aguardando retorno marcado':''}.`);return true}
 async function dPagos(t){const L=pgL(),n=s=>L.filter(r=>r.st===s).length,d=String(t).replace(/\D/g,'');
  if(d.length>=8){const r=L.find(x=>String(x.tel).slice(-8)===d.slice(-8));return r?`Sim, esse telefone pagou no dia ${fm(new Date(r.ts*1000)).slice(0,5)}. Situação: ${PGST[r.st].toLowerCase()}${r.mot?', '+r.mot:''}${r.reemb?', reembolsado':''}.`:'Não achei esse telefone entre os clientes pagos.'}
  if(!L.length)return 'Nenhum cliente pago cadastrado ainda.';
- const p=pgParados().length;return `Clientes pagos sem planilha: ${n('and')} em andamento${p?', '+p+' parado'+(p>1?'s':'')+' há mais de 24 horas':''}, ${n('aguard')} aguardando o cliente, ${n('conc')} concluído${n('conc')==1?'':'s'}, ${n('desist')} desistência${n('desist')==1?'':'s'}.`}
+ const p=pgParados().length;return `Clientes pagos sem planilha: ${n('and')} em andamento${p?', '+p+' parado'+(p>1?'s':'')+' há mais de 24 horas':''}, ${n('aguard')} aguardando o cliente, ${n('espera')} em espera, ${n('conc')} concluído${n('conc')==1?'':'s'}, ${n('desist')} desistência${n('desist')==1?'':'s'}.`}
 
 /* ===== roteamento das consultas ===== */
 
@@ -2347,7 +2361,7 @@ async function tarefasVoz(t){
  if(cons||/\b(quantas|quais|pendentes?|como (esta|estao)|situacao|status|falta|faltam)\b/.test(t)){
   const j=await tfLoad();if(!j){say('Não consegui falar com o servidor das tarefas agora.');return true}
   if(/\bclientes? (novos?|pagos?)\b|\bnovos clientes\b/.test(t)){const L=pgL(),n=s=>L.filter(r=>r.st===s).length,h0=new Date().toDateString(),ch=L.filter(r=>r.st==='conc'&&r.cts&&new Date(r.cts*1000).toDateString()===h0).length,tr=tfPg().length;
-   say(`Clientes pagos: ${ch} concluído${ch==1?'':'s'} hoje, ${n('and')} em andamento, ${n('aguard')} aguardando e ${tr} a tratar.`);return true}
+   say(`Clientes pagos: ${ch} concluído${ch==1?'':'s'} hoje, ${n('and')} em andamento, ${n('aguard')} aguardando, ${n('espera')} em espera e ${tr} a tratar.`);return true}
   const P=j.t.filter(x=>!x.feito),H=j.t.filter(x=>x.dia===j.hoje),fe=!!(j.f&&j.f[j.hoje]),fh=H.filter(x=>x.feito).length,at=P.filter(x=>x.dia<j.hoje).length,ur=P.filter(x=>x.urg).length;
   const fin=/\b(finaliz\w*|fechou|fechar|termin\w*|conclu\w*|acab\w*|encerr\w*)\b/.test(t),pl=(n,a,b)=>n+' '+(n==1?a:b);
   let m=fin?(fe?'Sim, a consultora já fechou o dia.':'Ainda não. A consultora não fechou o dia.'):(fe?'A consultora já fechou o dia.':'A consultora ainda não fechou o dia.');
@@ -2363,6 +2377,7 @@ async function route(t){if(STOPLV.test(t)){stopLivre();return true}
  t=canon(t);
  if(/\b(renov\w*|reativ\w*|ativar|ative)\b/.test(t)){const k=t.search(/\b(colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\b/);if(k>0)t=t.slice(0,k).trim()}
  if(/\b(desfaz\w*|desfaca|cancel\w*|estorn\w*)\b/.test(t)&&/\b(renov\w*|reativ\w*)\b/.test(t)&&!/\bfixo/.test(t)&&acDesfazRen(t))return true;
+ if(await acEspera(t))return true;
  if(/^(?:\w+ ){0,3}(desfazer|desfaz|desfaca|errei|foi errado)(?: \w+){0,2}$/.test(t)){if(typeof UND==='undefined'||!UND){if(acDesfazRen(t))return true;say('Nada para desfazer.');return true}const m=await withAlert(()=>desfaz());say(m.length?m.join(' '):'Desfeito.');return true}
  if(/\b(qual (e )?(o )?seu nome|como (voce )?(se )?chama|quem (e )?voce)\b/.test(t)){say('Meu nome é Layla, sou a assistente do KFLMULTI.');return true}
  if(/^(qual|quanto)( e| foi| seria)?( o)?( valor)?( total| no total)$|^total$/.test(t)){say('Total de quê? Diga, por exemplo, saldo total, gasto total do mês ou total a receber hoje.',listen);return true}
