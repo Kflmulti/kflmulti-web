@@ -152,8 +152,8 @@ function oper(){const v=vence().length,P=S.pausados.length,ent=r2(((S.hist||{})[
 const cpId=async i=>{const t=String((C[i]||{}).cliente||'').trim();if(!t)return;let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();ok=document.execCommand('copy');a.remove()}catch(e2){}}toast(ok?'Copiado: '+t:'Não consegui copiar')};
 function ficha(i){const c=C[i],p=pend(c),dv=pd(c.datapg)||new Date(Date.now()+864e5);
  $('#v3').innerHTML=`<h2 style="margin-top:0;cursor:pointer" onclick="cpId(${i})">${esc(c.cliente.toUpperCase())} <span style="font-size:16px">📋</span></h2><div class="card" style="padding:12px">
- <p class="ln">Plano Atual: ${esc(c.plano)}</p><p class="ln">Ativação: ${esc(c.inicio)}</p><p class="ln">Vencimento: ${esc(c.fim)}</p><p class="ln">Ativo: ${esc(c.ativo)}</p><p class="ln">Situação: ${esc(c.situacao)}</p><p class="ln">Celular: ${esc(tel(c.cel))}</p><p class="ln" style="color:#006400;font-weight:600">Comercial: ${esc(tel(c.celcon))}</p><p class="ln" style="color:#00008b">Renovações: ${S.cont[c.cliente]||0}</p></div>
- ${indFicha(c,i)} ${btn('EDITAR CADASTRO','#1976D2',`edit(${i})`)}
+ <p class="ln">Plano Atual: ${esc(c.plano)}</p><p class="ln">Ativação: ${esc(c.inicio)}</p><p class="ln">Vencimento: ${esc(c.fim)}</p><p class="ln">Ativo: ${esc(c.ativo)}</p><p class="ln">Situação: ${esc(c.situacao)}</p><p class="ln">Celular: ${esc(tel(c.cel))}</p><p class="ln" style="color:#006400;font-weight:600">Comercial: ${esc(tel(c.celcon))}</p><p class="ln" style="color:#00008b">Renovações: ${S.cont[c.cliente]||0}</p>${pfLn(c,i)}</div>
+ ${pfFicha(c,i)}${indFicha(c,i)} ${btn('EDITAR CADASTRO','#1976D2',`edit(${i})`)}
  <div class="lb" style="font-weight:700;color:#555;font-size:16px">ESCOLHA O PLANO PARA RENOVAR</div><select class="in" id="pl"><option value="">Clique para selecionar</option>${PL.map(x=>`<option>${x[0]}</option>`).join('')}</select>
  <div class="lb" style="margin-top:8px">Desconto nesta renovação (R$) — opcional</div><input class="in" id="ds" inputmode="decimal" placeholder="0,00">
  ${indBox(c)}
@@ -691,7 +691,7 @@ const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catc
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
-async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);return j}catch(e){return null}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j)}catch(e){}return j}catch(e){return null}}
 const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&r.ret&&r.ret<=hj))}catch(e){return[]}};
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length+tfPg().length:null;
 const tfPl=c=>(c&&c.plano?lp(c.plano):'');
@@ -1108,6 +1108,24 @@ const mtCor=c=>{const M=mtS();return c==null||!isFinite(c)?'#777':c<=M.max?'#2E7
 const mtYest=()=>mtIso(mtDn(mtT())-1);
 const mtNk=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const mtKey=n=>String(n||'').trim().toLowerCase();
+/* PERFIL DO CLIENTE (gênero e idade) */
+const PF_G=[['H','Homem'],['M','Mulher'],['?','Não sei']],PF_I=['18-24','25-34','35-44','45-54','55-64','65+','?'],PF_IN=PF_I.slice(0,6);
+const pfGet=n=>{S.perfil=S.perfil||{};return S.perfil[mtKey(n)]||null};
+const pfOk=n=>{const p=pfGet(n);return !!(p&&p.g&&p.i)};
+const pfGx=g=>g==='H'?'Homem':g==='M'?'Mulher':g==='?'?'Não sei':'';
+const pfIx=i=>i==='?'?'Não sei':i||'';
+function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
+let PFED=-1;
+const pfPick=run(async(i,k,v)=>{const c=C[i];if(!c)return;S.perfil=S.perfil||{};const key=mtKey(c.cliente),o=S.perfil[key]||{g:'',i:''};o[k]=v;o.ts=Math.floor(Date.now()/1000);o.por='dono';S.perfil[key]=o;if(o.g&&o.i&&PFED===i)PFED=-1;await save();ficha(i)});
+const pfEd=i=>{PFED=i;ficha(i)};
+const pfPesq=run(async i=>{const c=C[i];if(!c)return;const t=String(c.celcon||c.cel||'').replace(/\D/g,'');if(!t)return alert('Este cliente não tem celular cadastrado.');
+ const msg='Olá! Aqui é da KFLMULTI. Estamos fazendo uma pesquisa para melhorar o atendimento e gostaríamos de saber o *gênero* e a *idade* do responsável pelo anúncio. Pode nos informar? Muito obrigado!';
+ S.pesq=S.pesq||{};S.pesq[mtKey(c.cliente)]=Date.now();await save();go('https://wa.me/'+(t.length<=11?'55':'')+t+'?text='+encodeURIComponent(msg));ficha(i)});
+function pfFicha(c,i){const p=pfGet(c.cliente)||{},ok=!!(p.g&&p.i);if(ok&&PFED!==i)return '';
+ const ch=(k,v,tx)=>`<button class="bt" style="${p[k]===v?'background:#1565C0;color:#fff;':'background:#ECEFF1;color:#333;'}height:40px;padding:0 12px;border-radius:20px;font-size:15px;margin:3px 4px 3px 0" onclick="pfPick(${i},'${k}','${v}')">${tx}</button>`,ps=(S.pesq||{})[mtKey(c.cliente)];
+ return `<div class="card" style="margin:10px 0;padding:12px"><b>👤 Perfil do cliente</b><div style="color:#777;font-size:13px;margin:2px 0 6px">Gênero e idade do responsável pelo anúncio.</div><div>${PF_G.map(x=>ch('g',x[0],x[1])).join('')}</div><div style="margin-top:4px">${PF_I.map(v=>ch('i',v,pfIx(v))).join('')}</div>
+ ${ok?btn('OK','#2E7D32','PFED=-1;ficha('+i+')'):btn('📲 SOLICITAR DADOS (PESQUISA)','#25D366','pfPesq('+i+')')}${!ok&&ps?`<div style="color:#777;font-size:12px;text-align:center">pesquisa enviada em ${fm(new Date(ps))}</div>`:''}</div>`}
+const pfLn=(c,i)=>{const p=pfGet(c.cliente);return p&&(p.g||p.i)?`<p class="ln" style="color:#6A1B9A">Perfil: ${esc([pfGx(p.g),pfIx(p.i)].filter(Boolean).join(' · '))} <span style="cursor:pointer" onclick="pfEd(${i})">✏️</span></p>`:''}
 let mtIdx2=null,mtErr2='',mtD=null,mtErr='',mtTs=0,mtRC=null,mtIB=null,mtSgX=[];
 const MTIBK='kfl_ibge2';let mtIBm=null,mtIdx=null;
 const mtSerie=j=>{const o={};try{(j[0].resultados[0].series||[]).forEach(s=>{const id=String(s.localidade.id),v=Object.values(s.serie||{}),x=v[v.length-1];if(x!=null&&isFinite(+x))o[id]=+x})}catch(e){}return o};
@@ -1218,13 +1236,53 @@ function mtAnt(){const M=mtS(),T=mtT(),de=mtIso(mtDn(T)-13),av=mtAviso();
   <div style="font-size:14px;margin-top:4px">Últimos 14 dias: gasto ${mtM(j.s)} · ${j.n} entrada(s) · ${j.c} concluída(s)${j.a?' ('+j.a+' em andamento)':''} · <b style="color:${mtCor(j.cps)}">${mtM(j.cps)}/venda</b></div>
   <div style="font-size:14px">Renovação: <b>${mtP(rr.t)}</b> <small style="color:#777">(${rr.r} renovaram · ${rr.n} não · ${rr.w} no plano)</small></div>${ql?`<div style="font-size:12px;color:#C62828;margin-top:2px">${esc(ql)}</div>`:''}
   ${dc?`<div style="font-size:12px;color:${dc.c==='r'?'#C62828':dc.c==='g'?'#2E7D32':'#B8860B'};margin-top:4px">${esc(dc.t)}</div>`:''}</div>`}).join('')}
- ${btn('COMPARAR CAMPANHAS','#1976D2','mtCmp()')}${btn('🗺️ MAPA DE VENDAS (ESTADOS E CIDADES)','#2E7D32','mtMapa()')}${btn('🏙️ SUGERIR PRÓXIMAS 10 CIDADES','#6A1B9A','mtSug()')}${btn('ATUALIZAR TOTAIS DA META','#E65100','mtMeta()')}${btn('ORIGEM DOS CLIENTES','#455A64','mtOrg()')}${btn('＋ NOVA CAMPANHA','#455A64','mtCForm()')}${btn('LIMITES E ALERTAS','#455A64','mtLim()')}${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6');scrollTo(0,0)}
+ ${btn('COMPARAR CAMPANHAS','#1976D2','mtCmp()')}${btn('🗺️ MAPA DE VENDAS (ESTADOS E CIDADES)','#2E7D32','mtMapa()')}${btn('🏙️ SUGERIR PRÓXIMAS 10 CIDADES','#6A1B9A','mtSug()')}${btn('ATUALIZAR TOTAIS DA META','#E65100','mtMeta()')}${btn('👥 PERFIL DE QUEM CONVERTE','#6A1B9A','mtPerf()')}${btn('ORIGEM DOS CLIENTES','#455A64','mtOrg()')}${btn('＋ NOVA CAMPANHA','#455A64','mtCForm()')}${btn('LIMITES E ALERTAS','#455A64','mtLim()')}${btn('VOLTAR','#9E9E9E','menu()')}`;tela('v6');scrollTo(0,0)}
+/* ===== PERFIL DE QUEM CONVERTE ===== */
+let PFF={c:'',s:''};
+const pfEst=rs=>{const c=rs.filter(r=>r.st==='C').length,d=rs.filter(r=>r.st==='D').length,R=rs.filter(r=>r.rn==='R').length,N=rs.filter(r=>r.rn==='N').length;return{n:rs.length,c,d,R,N,f:rs.filter(r=>r.nren>=4).length,tc:(c+d)?c/(c+d):null,tr:(R+N)?R/(R+N):null}};
+const pfPf=r=>(S.perfil&&S.perfil[mtKey(r.n)])||{};
+const pfRs=()=>{const M=mtS();let rs=mtRecs();if(PFF.c){rs=rs.filter(r=>mtOrig(r)===PFF.c);const c=M.cmp.find(x=>x.id===PFF.c);if(c&&PFF.s!==''){const st=mtSteps(c)[+PFF.s];if(st)rs=rs.filter(r=>r.ent>=st.de&&r.ent<=st.ate)}}return rs};
+function pfCor(L,k){const el=L.filter(x=>x.id!=='-'&&x.e.n>=10&&x.e[k]!=null);if(el.length<2)return{};const v=el.map(x=>x.e[k]),mx=Math.max(...v),mn=Math.min(...v);if(mx===mn)return{};const o={};el.forEach(x=>{if(x.e[k]===mx)o[x.id]='#2E7D32';else if(x.e[k]===mn)o[x.id]='#C62828'});return o}
+function pfTab(tit,L,tot){const cc=pfCor(L,'tc'),cr=pfCor(L,'tr'),st=(c)=>c?`;color:${c};font-weight:700`:'';
+ return `<div class="lb" style="font-weight:700;margin-top:14px">${tit}</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:#777;text-align:right"><th style="text-align:left">&nbsp;</th><th>Entr.</th><th>%</th><th>Concl.</th><th>Desist.</th><th>Renov.</th><th>Fiéis</th></tr>${L.map(x=>{const e=x.e,few=e.n<10&&x.id!=='-';return `<tr style="border-top:1px solid #eee;text-align:right${x.id==='-'?';color:#999':''}"><td style="text-align:left;padding:5px 0">${x.l}${few?' <small style="color:#B8860B">poucos dados</small>':''}</td><td>${e.n}</td><td>${tot?mtP(e.n/tot):'—'}</td><td style="${st(cc[x.id])}">${e.c} (${mtP(e.tc)})</td><td>${e.n?mtP(e.d/e.n):'—'}</td><td style="${st(cr[x.id])}">${e.R} (${mtP(e.tr)})</td><td>${e.f}</td></tr>`}).join('')}</table></div>`}
+function pfDemoHtml(d){const M=mtS(),c=M.cmp.find(x=>x.id===d.c);if(!c)return '';const RS=mtRecs().filter(r=>mtOrig(r)===d.c&&r.ent>=d.de&&r.ent<=d.ate),sp=mtJan(c,d.de,d.ate).s,K=Object.keys(d.cells||{}),tcv=K.reduce((t,k)=>t+(d.cells[k].cv||0),0),sem=RS.filter(r=>{const p=pfPf(r);return !(p.g&&p.i)||p.g==='?'||p.i==='?'}).length;
+ const rows=K.map(k=>{const [g,i]=k.split('|'),x=d.cells[k],n=RS.filter(r=>{const p=pfPf(r);return p.g===g&&p.i===i}).length,gs=x.g>0?x.g:(tcv?sp*(x.cv||0)/tcv:null),est=!(x.g>0);return `<tr style="border-top:1px solid #eee;text-align:right"><td style="text-align:left;padding:5px 0">${pfGx(g)} ${pfIx(i)}</td><td>${x.cv||0}</td><td>${n}</td><td>${x.cv?mtP(n/x.cv):'—'}</td><td>${n&&gs!=null?(est?'~':'')+mtM(gs/n):'—'}</td></tr>`}).join('');
+ return `<div class="card" style="margin:8px 0;padding:10px 12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(c.nome)} · ${mtDM(d.de)} a ${mtDM(d.ate)}</b><button class="bt" style="height:28px" onclick="mtDemoDel('${d.id}')">✕</button></div>
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:#777;text-align:right"><th style="text-align:left">&nbsp;</th><th>Conv.</th><th>Entr.</th><th>Conv→Entr.</th><th>Custo/entr.</th></tr>${rows}</table></div>
+ <div style="font-size:12px;color:#777;margin-top:4px">${sem?sem+' entrada(s) do período sem perfil completo não entram na conta, então a % real é um pouco maior. ':''}${K.some(k=>!(d.cells[k].g>0))?'“~” = custo estimado (gasto dividido pelas conversas da faixa).':''}</div></div>`}
+const mtPerf=run(async()=>{await mtDados();const M=mtS(),rs=pfRs(),sem=rs.filter(r=>{const p=pfPf(r);return !(p.g&&p.i)}).length,tot=rs.length;
+ const gL=PF_G.map(x=>({id:x[0],l:x[1],e:pfEst(rs.filter(r=>pfPf(r).g===x[0]))})).concat([{id:'-',l:'Sem gênero',e:pfEst(rs.filter(r=>!pfPf(r).g))}]);
+ const iL=PF_I.map(v=>({id:v,l:pfIx(v),e:pfEst(rs.filter(r=>pfPf(r).i===v))})).concat([{id:'-',l:'Sem idade',e:pfEst(rs.filter(r=>!pfPf(r).i))}]);
+ const X=[];['H','M'].forEach(g=>PF_IN.forEach(i=>X.push({id:g+'|'+i,g,i,e:pfEst(rs.filter(r=>{const p=pfPf(r);return p.g===g&&p.i===i}))})));const xc=pfCor(X,'tc');
+ const cross=`<div class="lb" style="font-weight:700;margin-top:14px">Gênero × idade <small style="font-weight:400;color:#777">(entradas · % concluídas; abaixo de 5 entradas "—"; cor só com 10+)</small></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center"><tr style="color:#777"><th></th>${PF_IN.map(i=>'<th>'+i+'</th>').join('')}</tr>${['H','M'].map(g=>`<tr style="border-top:1px solid #eee"><td style="text-align:left;padding:6px 0">${pfGx(g)}</td>${PF_IN.map(i=>{const x=X.find(z=>z.id===g+'|'+i),e=x.e;return e.n<5?'<td style="color:#bbb">—</td>':`<td style="${xc[x.id]?'color:'+xc[x.id]+';font-weight:700':''}">${e.n} · ${mtP(e.tc)}</td>`}).join('')}</tr>`).join('')}</table></div>`;
+ const cmp=M.cmp,stp=PFF.c?(mtSteps(cmp.find(x=>x.id===PFF.c)||{orc:[]})||[]):[],demos=(M.demo||[]).filter(d=>!PFF.c||d.c===PFF.c);
+ $('#v6').innerHTML=`<h2>👥 PERFIL DE QUEM CONVERTE</h2>
+ <div class="card" style="margin:8px 0;padding:10px 12px"><div class="lb">Campanha</div><select class="in" onchange="PFF.c=this.value;PFF.s='';mtPerf()"><option value="">Todas as campanhas</option>${cmp.map(c=>`<option value="${c.id}" ${PFF.c===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+ ${PFF.c?`<div class="lb">Período (degrau de orçamento)</div><select class="in" onchange="PFF.s=this.value;mtPerf()"><option value="">Todo o período da campanha</option>${stp.map((x,k)=>`<option value="${k}" ${String(PFF.s)===String(k)?'selected':''}>${mtDM(x.de)} a ${mtDM(x.ate)} · ${brl(x.v)}/dia</option>`).join('')}</select>`:''}</div>
+ <div class="card" style="margin:8px 0;padding:10px 12px;border-left:5px solid ${tot&&sem/tot>0.3?'#B8860B':'#2E7D32'}"><b>${tot} cliente(s) no filtro</b> · <b>${sem}</b> sem perfil (${tot?mtP(sem/tot):'—'})<div style="font-size:12px;color:#777">${tot&&sem/tot>0.3?'Muita gente sem perfil: leia os números com cautela. Preencha na ficha de cada cliente (botão Solicitar dados).':'Boa cobertura de perfil.'}</div></div>
+ <div style="font-size:12px;color:#777">Concl. = concluídas ÷ (concluídas + desistências). Renov. = renovaram ÷ (renovaram + não renovaram), sem contar quem ainda está no plano. Fiéis = 4 renovações ou mais. Verde = melhor, vermelho = pior (só com 10+ clientes).</div>
+ ${pfTab('Por gênero',gL,tot)}${pfTab('Por faixa de idade',iL,tot)}${cross}
+ <div class="lb" style="font-weight:700;margin-top:18px">📊 Conversas da Meta por perfil</div>${demos.length?demos.map(pfDemoHtml).join(''):'<div class="card" style="font-size:13px;color:#777">Nenhum lançamento. Lance as conversas por gênero e idade que a Meta mostra em Dados demográficos para ver conversa → entrada e custo por entrada.</div>'}
+ ${btn('＋ LANÇAR DADOS DEMOGRÁFICOS DA META','#6A1B9A','mtDemo()')}${btn('VOLTAR','#9E9E9E','mtMain()')}`;tela('v6');scrollTo(0,0)});
+const mtDemo=run(async()=>{const M=mtS(),h=mtYest(),cs=M.cmp,c0=PFF.c||(cs[cs.length-1]||{}).id;
+ const row=(g,i)=>`<div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;align-items:center;margin:3px 0"><span style="font-size:13px">${pfGx(g)} ${i}</span><input class="in dmv" data-k="${g}|${i}" inputmode="numeric" placeholder="conversas" style="margin:0"><input class="in dmg" data-k="${g}|${i}" inputmode="decimal" placeholder="gasto R$ (opc.)" style="margin:0"></div>`;
+ $('#v6').innerHTML=`<h2>📊 DADOS DEMOGRÁFICOS DA META</h2><div class="lb" style="text-align:center;line-height:1.5">Copie da Meta (Dados demográficos → Idade e gênero) as conversas iniciadas de cada faixa no período. O gasto por faixa é opcional.</div>
+ <div class="lb">Campanha</div><select class="in" id="dmc">${cs.map(c=>`<option value="${c.id}" ${c.id===c0?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+ <div class="lb">De</div><input class="in" id="dmd" type="date"><div class="lb">Até (no máximo ontem)</div><input class="in" id="dma" type="date" value="${h}">
+ ${['H','M'].map(g=>'<div class="lb" style="font-weight:700;margin-top:10px">'+pfGx(g)+'</div>'+PF_IN.map(i=>row(g,i)).join('')).join('')}
+ ${btn('SALVAR','#2E7D32','mtDemoSv()')}${btn('VOLTAR','#9E9E9E','mtPerf()')}`;tela('v6');scrollTo(0,0)});
+const mtDemoSv=run(async()=>{const M=mtS(),c=$('#dmc').value,de=$('#dmd').value,ate=$('#dma').value;if(!c)return alert('Escolha a campanha.');if(!de||!ate)return alert('Informe o período.');if(de>ate)return alert('A data inicial é depois da final.');if(ate>mtYest())return alert('Use no máximo ontem.');
+ const cells={};document.querySelectorAll('.dmv').forEach(e=>{const k=e.dataset.k,v=Math.round(num(e.value||0));const g=document.querySelector('.dmg[data-k="'+k+'"]').value.trim(),gv=g?r2(num(g)):0;if(v>0||gv>0)cells[k]={cv:v>0?v:0,g:gv>0?gv:0}});
+ if(!Object.keys(cells).length)return alert('Informe as conversas de pelo menos uma faixa.');
+ M.demo=M.demo||[];M.demo.push({id:'d'+Date.now().toString(36),c,de,ate,cells});PFF.c=c;await save();toast('Dados salvos ✔');mtPerf()});
+const mtDemoDel=run(async id=>{if(!confirm('Remover este lançamento?'))return;const M=mtS();M.demo=(M.demo||[]).filter(d=>d.id!==id);await save();mtPerf()});
 const mtLim=run(async()=>{const M=mtS();const m=await pm('Custo máximo aceitável por venda (R$):',String(M.max));if(m===null)return;if(!(num(m)>0))return alert('Valor inválido.');M.max=num(m);await save();toast('Limite salvo ✔');mtAnt()});
 /* ---- campanha: detalhe ---- */
 const mtC=run(async(id,todas)=>{await mtDados();const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const k=M.cmp.indexOf(c),T=mtT(),W=mtWeeks(c),st=mtSteps(c),dc=mtDica(c),rs=mtRecs().filter(r=>mtOrig(r)===c.id),ws=todas?W:W.slice(-12);
  const tot=mtJan(c,c.ini,T),rr=mtRen(rs),ql=mtQual(c,tot,rr);
  $('#v6').innerHTML=`<h2 style="color:${MTC[k%MTC.length]}">${esc(c.nome)}</h2>
  <div class="lb" style="text-align:center">${c.tp==='R'?'Regional':'Brasil todo'} · ${mtAtiva(c)?'🟢 ativa':'⏸ pausada'} · desde ${mtDMY(c.ini)}</div>
+ ${btn('📝 ATUALIZAR GASTO E CONVERSAS DESTA CAMPANHA','#E65100',`mtTot('${c.id}',1)`)}
  ${c.tp==='R'?`<div class="card" style="margin:8px 0"><b>Cidades</b> — ${mtBadge(c)}<div style="font-size:13px;margin-top:4px">${c.cid.map(x=>`<span style="color:${x.ok?'#111':'#C62828'}">${x.ok?'✔':'✖'} ${esc(x.n)}/${esc(x.u||'?')}</span>${!x.ok&&x.sug&&x.sug.length?` <i>(será que é ${esc(x.sug.join(' ou '))}?)</i>`:''}`).join('<br>')||'Nenhuma cidade.'}</div>${c.cid.length!==10?`<div style="color:#C62828;font-size:13px;margin-top:4px">⚠ A campanha tem ${c.cid.length} cidade(s); o esperado são 10.</div>`:''}${(c.cid_h||[]).length?`<div style="font-size:12px;color:#777;margin-top:6px">Saíram: ${c.cid_h.map(x=>esc(x.n)+'/'+esc(x.u||'?')+' (até '+mtDM(mtIso(mtDn(x.ate)-1))+')').join(' · ')}</div>`:''}${btn('🔁 TROCAR CIDADES','#6A1B9A',`mtTroca('${c.id}')`)}${btn('VALIDAR CIDADES (IBGE)','#1976D2',`mtVal('${c.id}')`)}</div>`:''}
  ${dc?`<div class="card" style="margin:8px 0;background:${dc.c==='r'?'#FDECEA':dc.c==='g'?'#E8F5E9':'#FFF8E1'};font-size:13px"><b>Sugestão:</b> ${esc(dc.t)}</div>`:''}
  <div class="card" style="margin:8px 0"><b>Totais desde o início</b><div style="font-size:14px;line-height:1.6">Gasto ${mtM(tot.s)} · ${tot.n} entradas · ${tot.c} concluídas · ${tot.d} desistências${tot.x?' · '+tot.x+' vencidas (sem NF)':''}${tot.a?' · '+tot.a+' em andamento':''}<br>Taxa de conclusão <b>${mtP(tot.tx)}</b> · Custo por entrada ${mtM(tot.cpe)} · <b style="color:${mtCor(tot.cps)}">Custo por venda ${mtM(tot.cps)}</b>${tot.cv?`<br>Conversas ${tot.cv} · custo por conversa ${mtM(tot.cpc)} · conversão (venda ÷ conversa) ${mtP(tot.cv2)}`:''}<br>Bruto (pago pelos clientes): <b>${mtM(tot.br)}</b><br>Líquido após imposto e anúncio dos clientes: ${mtM(tot.lq)} · gasto Meta ${mtM(tot.s)}<br>Lucro estimado: <b style="color:${tot.lu>=0?'#2E7D32':'#C62828'}">${mtM(tot.lu)}</b>${tot.rbr?`<br><span style="font-size:13px;color:#555">Renovações (à parte): ${mtM(tot.rbr)} bruto · ${mtM(tot.rlq)} líquido</span>`:''}<br>Lucro total (com renovações): <b style="color:${tot.lu+tot.rlq>=0?'#2E7D32':'#C62828'}">${mtM(r2(tot.lu+tot.rlq))}</b>${tot.x?`<br><span style="font-size:13px;color:#B45309">⏰ ${tot.x} entrada(s) de R$ 50 vencida(s), sem NF lançada. Já entram com a entrada paga; ao lançar a NF, desconta ≈ ${mtM(tot.ximp)} de imposto.</span>`:''}</div></div>
@@ -1361,15 +1419,15 @@ const mtMeta=run(async()=>{const M=mtS();
  $('#v6').innerHTML=`<h2>DADOS DA META</h2><div class="lb" style="text-align:center;line-height:1.5">Informe só o total gasto e o total de conversas iniciadas desde o início de cada campanha. O app calcula o resto.</div>
  ${M.cmp.map(c=>{const P=mtPts(c),u=P[P.length-1];return `<div class="card" style="margin:8px 0;padding:10px 12px"><b>${esc(c.nome)}</b>${mtAtiva(c)?'':' (pausada)'}<div style="font-size:13px;margin:4px 0;line-height:1.5">Início ${mtDMY(c.ini)}${u?`<br>Último total (até ${mtDMY(u.d)}): ${brl(u.g)} · ${u.cv} conv.${u.cv?` · ${brl(u.g/u.cv)} por conversa`:''}`:'<br>Sem total lançado: usando o orçamento como estimativa.'}</div>${btn('ATUALIZAR TOTAIS','#E65100',"mtTot('"+c.id+"')")}</div>`}).join('')}
  ${btn('VOLTAR','#9E9E9E','mtMain()')}`;tela('v6');scrollTo(0,0)});
-const mtTot=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return mtMeta();const P=mtPts(c),u=P[P.length-1],f=mtFim(c),dd=f<c.ini?c.ini:f,lb=t=>`<div class="lb">${t}</div>`;
+const mtTot=run(async(id,fc)=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return mtMeta();const P=mtPts(c),u=P[P.length-1],f=mtFim(c),dd=f<c.ini?c.ini:f,lb=t=>`<div class="lb">${t}</div>`;
  $('#v6').innerHTML=`<h2>${esc(c.nome)}</h2><div class="lb" style="text-align:center;line-height:1.5">Início em ${mtDMY(c.ini)}.${u?' Último total: '+brl(u.g)+' e '+u.cv+' conversas, até '+mtDMY(u.d)+'.':''}</div>
  ${lb('Total gasto desde o início (R$)')}<input class="in" id="mtg" inputmode="decimal" value="${u?String(u.g).replace('.',','):''}">
  ${lb('Total de conversas iniciadas desde o início')}<input class="in" id="mtv" inputmode="numeric" value="${u?u.cv:''}">
  ${lb('Contado até (último dia, no máximo ontem)')}<input class="in" id="mtd" type="date" value="${dd}">
- ${btn('SALVAR','#2E7D32',"mtTotSv('"+id+"')")}
- ${P.length?`<div class="lb">Totais lançados</div>${P.slice().reverse().map(p=>`<div class="card" style="margin:5px 0;padding:8px 10px;font-size:13px;display:flex;justify-content:space-between;gap:8px"><span>até ${mtDM(p.d)} · ${brl(p.g)} · ${p.cv} conv.</span><button class="bt" style="height:28px" onclick="mtTotDel('${p.c}','${p.d}')">✕</button></div>`).join('')}`:''}
- ${btn('VOLTAR','#9E9E9E','mtMeta()')}`;tela('v6');scrollTo(0,0)});
-const mtTotSv=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const g=$('#mtg').value.trim(),v=$('#mtv').value.trim(),d=$('#mtd').value;
+ ${btn('SALVAR','#2E7D32',"mtTotSv('"+id+"',"+(fc?1:0)+")")}
+ ${P.length?`<div class="lb">Totais lançados</div>${P.slice().reverse().map(p=>`<div class="card" style="margin:5px 0;padding:8px 10px;font-size:13px;display:flex;justify-content:space-between;gap:8px"><span>até ${mtDM(p.d)} · ${brl(p.g)} · ${p.cv} conv.</span><button class="bt" style="height:28px" onclick="mtTotDel('${p.c}','${p.d}',${fc?1:0})">✕</button></div>`).join('')}`:''}
+ ${btn('VOLTAR','#9E9E9E',fc?"mtC('"+id+"')":'mtMeta()')}`;tela('v6');scrollTo(0,0)});
+const mtTotSv=run(async(id,fc)=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return;const g=$('#mtg').value.trim(),v=$('#mtv').value.trim(),d=$('#mtd').value;
  if(g===''||v==='')return alert('Informe o total gasto e o total de conversas.');const G=r2(num(g)),V=Math.round(num(v));if(!isFinite(G)||!isFinite(V)||G<0||V<0)return alert('Valores inválidos.');
  if(!d)return alert('Escolha a data.');if(d<c.ini)return alert('A data é anterior ao início da campanha ('+mtDMY(c.ini)+').');if(d>mtYest())return alert('Use no máximo ontem ('+mtDMY(mtYest())+'): o gasto de hoje ainda está incompleto.');if(c.fim&&d>=c.fim)return alert('A campanha foi pausada em '+mtDMY(c.fim)+'. Use no máximo '+mtDMY(mtFim(c))+'.');
  const P=mtPts(c).filter(p=>p.d!==d),a=P.filter(p=>p.d<d).pop(),b=P.find(p=>p.d>d);
@@ -1379,8 +1437,8 @@ const mtTotSv=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)retu
  let m='Desde '+(a?mtDMY(a.d):'o início ('+mtDMY(c.ini)+')')+': '+brl(dg)+' e '+dv+' conversas em '+n+' dia(s) (≈ '+brl(dg/n)+' por dia'+(dv>0?', '+brl(dg/dv)+' por conversa':'')+').';
  if(bud&&dg/n>3*bud)m='ATENÇÃO: a média de '+brl(dg/n)+' por dia é mais de 3× o orçamento ('+brl(bud)+'). Confira se digitou o total certo.\n\n'+m;
  if(!confirm(m+'\n\nSalvar?'))return;
- M.pt=(M.pt||[]).filter(p=>!(p.c===c.id&&p.d===d));M.pt.push({c:c.id,d,g:G,cv:V});mtRC=null;await save();toast('Totais salvos ✔');mtMeta()});
-const mtTotDel=run(async(id,d)=>{if(!confirm('Remover este total?'))return;const M=mtS();M.pt=(M.pt||[]).filter(p=>!(p.c===id&&p.d===d));mtRC=null;await save();mtTot(id)});
+ M.pt=(M.pt||[]).filter(p=>!(p.c===c.id&&p.d===d));M.pt.push({c:c.id,d,g:G,cv:V});mtRC=null;await save();toast('Totais salvos ✔');fc?mtC(id):mtMeta()});
+const mtTotDel=run(async(id,d,fc)=>{if(!confirm('Remover este total?'))return;const M=mtS();M.pt=(M.pt||[]).filter(p=>!(p.c===id&&p.d===d));mtRC=null;await save();mtTot(id,fc)});
 /* ---- origem dos clientes ---- */
 const mtOrg=run(async()=>{await mtDados();const M=mtS(),RS=mtRecs().slice(0,40);
  $('#v6').innerHTML=`<h2>ORIGEM DOS CLIENTES</h2><div class="lb" style="text-align:center;line-height:1.5">As 40 entradas mais recentes. “Automática” usa a cidade (campanha regional ativa) ou a campanha Brasil do dia. Troque aqui quando souber a origem real.</div>
@@ -1602,7 +1660,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=80;
+const VERSAO=81;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
