@@ -1166,7 +1166,7 @@ let PFED=-1;
 const pfPick=run(async(i,k,v)=>{const c=C[i];if(!c)return;S.perfil=S.perfil||{};const key=mtKey(c.cliente),o=S.perfil[key]||{g:'',i:''};o[k]=v;o.ts=Math.floor(Date.now()/1000);o.por='dono';S.perfil[key]=o;if(o.g&&o.i&&PFED===i)PFED=-1;await save();ficha(i)});
 const pfEd=i=>{PFED=i;ficha(i)};
 const pfPesq=run(async(i,back)=>{const c=C[i];if(!c)return;const t=String(c.cel||c.celcon||'').replace(/\D/g,'');if(!t)return alert('Este cliente não tem celular cadastrado.');
- const msg='Olá! Aqui é da KFLMULTI. Estamos fazendo uma pesquisa para melhorar o atendimento e gostaríamos de saber o *gênero* e a *idade* do responsável pelo anúncio. Pode nos informar? Muito obrigado!';
+ const msg='Olá! Aqui é da KFLMULTI. Estamos fazendo uma pesquisa para melhorar o atendimento e gostaríamos de saber o *nome* e a *idade* do responsável pelo anúncio. Pode nos informar? Muito obrigado!';
  S.pesq=S.pesq||{};S.pesq[mtKey(c.cliente)]=Date.now();await save();go('https://wa.me/'+(t.length<=11?'55':'')+t+'?text='+encodeURIComponent(msg));back?mtPerfPend():ficha(i)});
 function pfFicha(c,i){const p=pfGet(c.cliente)||{},ok=!!(p.g&&p.i);if(ok&&PFED!==i)return '';
  const ch=(k,v,tx)=>`<button class="bt" style="${p[k]===v?'background:#1565C0;color:#fff;':'background:#ECEFF1;color:#333;'}height:40px;padding:0 12px;border-radius:20px;font-size:15px;margin:3px 4px 3px 0" onclick="pfPick(${i},'${k}','${v}')">${tx}</button>`,ps=(S.pesq||{})[mtKey(c.cliente)];
@@ -1740,7 +1740,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=92;
+const VERSAO=93;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
