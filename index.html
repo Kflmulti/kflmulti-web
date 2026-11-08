@@ -987,8 +987,8 @@ function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter
  let r=L.find(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&ph.includes(pg8(x.tel)));
  if(!r){const k5=pgCod5(c);if(k5)r=L.filter(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&pgT5(x.tel)===k5).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]}
  if(!r)return false;const x=pr(r.id);g.vinc[r.id]=c.cliente;x.cli=c.cliente;delete x.pg;
- if(r.st!=='conc')tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
- toast('Vinculado ao cadastro '+pgFone(r.tel)+' (R$ 50 já contado) ✔');return true}catch(e){return false}}
+ const pf=r.perf||{},cheio=!!(pf.g&&pf.i);if(r.st!=='conc'&&cheio)tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
+ toast('Vinculado ao cadastro '+pgFone(r.tel)+' (R$ 50 já contado) ✔'+(r.st!=='conc'&&!cheio?' — aguardando perfil para concluir':''));return true}catch(e){return false}}
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
 const rbCentral=()=>rbDue()?'<div class="lb" style="margin-top:14px">💸 Reembolso da Meta</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A" onclick="rbReemb()"><b>Exportar a Meta e fazer o reembolso</b><div style="color:#777;font-size:13px">estimativa do app '+brl(S.reembEst||0)+' · toque para registrar o valor real</div></div>':'';
 const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length,es=L.filter(r=>r.st==='espera').length;if(!a&&!g&&!es)return'';const p=pgParados().length;
@@ -1757,7 +1757,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=96;
+const VERSAO=97;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
