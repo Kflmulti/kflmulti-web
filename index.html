@@ -49,6 +49,7 @@ html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#E53935" i
 html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#00897B" i]{background:#00796B!important}
 html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#FF9800" i],html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#FFB300" i],html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#F57C00" i],html[data-t=d] :is(.bg,.bt,.tb button,#fab button)[style*="background:#25D366" i]{color:#000!important}
 html[data-t=d] .bg[style*="background:#9E9E9E" i],html[data-t=d] .bg[style*="background:#757575" i],html[data-t=d] .bg[style*="background:#607D8B" i],html[data-t=d] .bg[style*="background:#78909C" i]{background:#3A3A3C!important;color:#fff!important;border-color:#6A6A6E!important}
+html[data-t=d] #wab{background:#1C1C1E!important;color:#F2F2F2!important}html[data-t=d] #wab #wabg{color:#000!important}html[data-t=d] #wab #wabx{color:#C7C7CC!important}
 html[data-t=d] #vzp{background:#1C1C1E!important;color:#F2F2F2!important;border-color:#9E86FF!important}html[data-t=d] #vzp .vzb{background:#6C4CE6;color:#fff}html[data-t=d] #vzp .vzb.n{background:#3A3A3C;color:#fff}html[data-t=d] #vzp b{color:#C3A6FF!important}
 html[data-t=d] [style*="color:#546e7a" i],html[data-t=d] [style*="color:#607d8b" i],html[data-t=d] [style*="color:#37474f" i],html[data-t=d] [style*="color:#78909c" i]{color:#B0BEC5!important}
 html[data-t=d] .dg{background:#C62828!important;color:#fff!important;border-color:#FF6B6B!important}
@@ -1831,7 +1832,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=104;
+const VERSAO=105;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
