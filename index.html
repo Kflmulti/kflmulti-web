@@ -581,13 +581,23 @@ bd();flush();addEventListener('online',flush);setInterval(flush,60000);
 /* ===== base: caixa automático da empresa, histórico diário, ajustes ===== */
 const hk=()=>window.HDAY||iso(new Date()),saldoEf=()=>r2((S.saldoE||0)+(S.saldoEA||0)),FAT=()=>r2((S.totmes||0)+(S.fatAj||0)),CUS=()=>r2((S.custo||0)+(S.custoAj||0));
 function hd(){S.hist=S.hist||{};const k=hk();return S.hist[k]=S.hist[k]||{ent:0,cx:0,ren:0,pau:0,ret:0,nov:0,ven:0,atv:0,cd:r2(cdOf('GOLD')),ip:IP(),ma:S.meuAtivo?MD():0,lc:0,cu:0,imp:0}}
-function credita(cli,v,k,c){if(!(v>0))return;S.saldoEA=r2((S.saldoEA||0)+v);const e=S.ent=S.ent||[],x={ts:Date.now(),dt:fm(new Date()),cli,v,k};if(c){x.lc=c.lc;x.cu=c.cu;x.imp=c.imp}e.push(x);if(e.length>3000)e.splice(0,e.length-3000);const h=hd();h.cx=r2((h.cx||0)+v);if(c)aplicaL(h,c,1);try{if(!window.__bulk&&S.lvOk&&c&&k!=='N'){const m=metaCalc(),pt=r2(Math.min(v,Math.max(0,m.M-Math.max(0,m.br-v)))*m.rate);toast('Venda '+brl(v)+': imposto '+brl(c.imp)+' · anúncio '+brl(c.cu)+' · custos '+brl(pt)+' · livre '+brl(r2(c.lc-pt)))}}catch(e){}}
+function credita(cli,v,k,c){if(!(v>0))return;S.saldoEA=r2((S.saldoEA||0)+v);const e=S.ent=S.ent||[],x={ts:Date.now(),dt:fm(new Date()),cli,v,k};if(c){x.lc=c.lc;x.cu=c.cu;x.imp=c.imp;if(c.pl)x.pl=c.pl}e.push(x);if(e.length>3000)e.splice(0,e.length-3000);const h=hd();h.cx=r2((h.cx||0)+v);if(c)aplicaL(h,c,1);if(c&&(k==='N'||k==='P'))try{orcAplica(cli)}catch(er){}try{if(!window.__bulk&&S.lvOk&&c&&k!=='N'){const m=metaCalc(),pt=r2(Math.min(v,Math.max(0,m.M-Math.max(0,m.br-v)))*m.rate);toast('Venda '+brl(v)+': imposto '+brl(c.imp)+' · anúncio '+brl(c.cu)+' · custos '+brl(pt)+' · livre '+brl(r2(c.lc-pt)))}}catch(e){}}
 /* ===== lucro por venda: cada venda carrega imposto + custo de anúncio ===== */
 /* v111: custo de anúncio por linha de plano (mídia/dia: Gold 7 · Mega 20 · Plus 40; cliente novo Gold 1ª semana 5,90) + imposto da Meta POR DENTRO (12,15% => total = mídia ÷ 0,8785) */
 const IMM=()=>S.impMeta!=null?S.impMeta:12.15,FM=()=>1/(1-IMM()/100),C_G=()=>S.custoDia>0?S.custoDia:7,C_N1=5.9,linha=p=>/PLUS/i.test(p||'')?'P':/MEGA/i.test(p||'')?'M':'G',cdM=p=>{const l=linha(p);return l==='P'?40:l==='M'?20:C_G()},
-cN=()=>r2(2*C_N1*FM()),custoPl=(p,novo)=>{const d=dias(p),l=linha(p);return r2((novo&&l==='G'?Math.min(d,7)*C_N1+Math.max(0,d-7)*C_G():d*cdM(p))*FM())},
+cN2=v=>r2(2*v*FM()),cN=()=>cN2(C_N1),custoGN=(d,v)=>r2((Math.min(d,7)*v+Math.max(0,d-7)*C_G())*FM()),custoPl=(p,novo,v)=>{const d=dias(p),l=linha(p);return r2((novo&&l==='G'?Math.min(d,7)*(v||C_N1)+Math.max(0,d-7)*C_G():d*cdM(p))*FM())},
 cdOf=p=>cdM(p)*FM(),nmEq=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase(),mkI=dt=>String(dt).split('/').reverse().join('-');
-function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=cN();return{cu,imp:0,lc:r2(cash-cu)}}const cu=r2(Math.max(0,custoPl(pl,k==='P')-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu)}}
+/* v117: orçamento/dia do cliente novo Gold definido pela consultora (vale a 1ª semana toda, entrada incluída) */
+function orcAplica(cli,pid){const o=(S.orc||{})[mtKey(cli)];if(!o)return 0;const v=o.v>0?o.v:C_N1,ym=(S.mes||'').split('/').reverse().join('-');
+ const E=(S.ent||[]).filter(x=>x.cu!=null&&(nmEq(x.cli,cli)||(pid&&x.pid===pid))).sort((a,b)=>(a.ts||0)-(b.ts||0));let iN=-1;E.forEach((x,i)=>{if(x.k==='N')iN=i});if(iN<0)return 0;const N=E[iN];if((o.ts||0)<(N.ts||0)-60000)return 0;
+ let ch=0;const ap=(x,nc)=>{x.o=v;const dl=r2(nc-x.cu);if(!dl)return;x.cu=nc;if(x.lc!=null)x.lc=r2(x.lc-dl);const h=(S.hist||{})[mkI(x.dt)];if(h){h.cu=r2((h.cu||0)+dl);h.lc=r2((h.lc||0)-dl)}if(ym&&mkI(x.dt).startsWith(ym))S.custo=r2((S.custo||0)+dl);ch=1};
+ ap(N,cN2(v));
+ const P=E.slice(iN+1).find(x=>x.k==='P'&&(!x.pl||linha(x.pl)==='G'));
+ if(P){const r0=P.o||C_N1;let d=null,pri=false;if(P.pl){d=dias(P.pl);pri=Math.abs(P.cu-Math.max(0,custoGN(d,r0)-cN2(r0)))<.02}else for(const dd of[7,15,30]){if(Math.abs(P.cu-Math.max(0,custoGN(dd,r0)-cN2(r0)))<.02){d=dd;pri=true;break}if(Math.abs(P.cu-custoGN(dd,r0))<.02){d=dd;break}}
+  if(d)ap(P,r2(Math.max(0,custoGN(d,v)-(pri?cN2(v):0))))}
+ return ch}
+const orcSet=(cli,q,pid)=>{const k=mtKey(cli);S.orc=S.orc||{};const o=S.orc[k],ts=(q.ts||0)*1000,v=+q.v||0;if(o&&(o.ts||0)>=ts)return 0;S.orc[k]={v,ts,por:q.por||'consultora',cli};orcAplica(cli,pid);return 1};
+function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=cN();return{cu,imp:0,lc:r2(cash-cu)}}const cu=r2(Math.max(0,custoPl(pl,k==='P')-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu),pl}}
 function aplicaL(h,c,sg){h.lc=r2((h.lc||0)+sg*c.lc);h.cu=r2((h.cu||0)+sg*c.cu);h.imp=r2((h.imp||0)+sg*c.imp);S.custo=r2((S.custo||0)+sg*c.cu)}
 const pendN=()=>{const ym=(S.mes||'').split('/').reverse().join('-');return r2((S.ent||[]).filter(x=>x.k==='N'&&!x.done&&mkI(x.dt).startsWith(ym)).reduce((t,x)=>t+x.v,0))};
 const lucroMes=()=>r2(FAT()+pendN()-r2(FAT()*IP()/100)-CUS()-(S.meuTotal||0));
@@ -1325,7 +1335,7 @@ const pfGet=n=>{S.perfil=S.perfil||{};return S.perfil[mtKey(n)]||null};
 const pfOk=n=>{const p=pfGet(n);return !!(p&&p.g&&p.i)};
 const pfGx=g=>g==='H'?'Homem':g==='M'?'Mulher':g==='?'?'Não sei':'';
 const pfIx=i=>i==='?'?'Não sei':i||'';
-function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo==='ativacao'&&t.dtc&&t.cli&&chSet(t.cli,t.dtc))ch=1});(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
+function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo==='ativacao'&&t.dtc&&t.cli&&chSet(t.cli,t.dtc))ch=1;if(t.tipo==='ativacao'&&t.orc&&t.cli&&orcSet(t.cli,t.orc))ch=1});(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
 function pgRep(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const g=pgS(),av=[],sem=[];let ch=0;
  (S.ent||[]).forEach(x=>{if(!x.pid||!x.pg||x.done)return;const r=PG.find(q=>q.id===x.pid);if(!r||r.st==='desist'||r.reemb)return;
   const t8=pg8(r.tel),t5=pgT5(r.tel),c=C.find(c=>[c.cel,c.celcon].some(p=>pg8(p)===t8))||C.find(c=>pgCod5(c)===t5);
@@ -1336,7 +1346,7 @@ function pgRep(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(
  const key=av.concat(sem).join('|');
  if(key&&S.pgAv!==key){S.pgAv=key;ch=1;setTimeout(()=>{try{alert((av.length?'⚠ R$ 50 contado DUAS vezes no caixa (mesmo cliente):\n'+av.join('\n')+'\nApague a entrada com o nome sem código em Lançamentos.\n\n':'')+(sem.length?'⚠ Entrada de R$ 50 sem cliente na planilha (conferir o cadastro/telefone):\n'+sem.join('\n'):''))}catch(e){}},700)}
  if(ch)save()}catch(e){}}
-function pfSyncPg(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const nd=x=>String(x||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'').slice(-8);S.perfil=S.perfil||{};let ch=0;PG.forEach(r=>{const q=r.dtc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(c&&chSet(c.cliente,q))ch=1});PG.forEach(r=>{const q=r.perf;if(!q||!(q.g||q.i))return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(!c)return;const k=mtKey(c.cliente),o=S.perfil[k];if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}catch(e){}}
+function pfSyncPg(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const nd=x=>String(x||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'').slice(-8);S.perfil=S.perfil||{};let ch=0;PG.forEach(r=>{const q=r.dtc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(c&&chSet(c.cliente,q))ch=1});PG.forEach(r=>{const q=r.orc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(orcSet(c?c.cliente:pgNome(r),q,r.id))ch=1});PG.forEach(r=>{const q=r.perf;if(!q||!(q.g||q.i))return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(!c)return;const k=mtKey(c.cliente),o=S.perfil[k];if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}catch(e){}}
 let PFED=-1;
 const pfPick=run(async(i,k,v)=>{const c=C[i];if(!c)return;S.perfil=S.perfil||{};const key=mtKey(c.cliente),o=S.perfil[key]||{g:'',i:''};o[k]=v;o.ts=Math.floor(Date.now()/1000);o.por='dono';S.perfil[key]=o;if(o.g&&o.i&&PFED===i)PFED=-1;await save();ficha(i)});
 const pfEd=i=>{PFED=i;ficha(i)};
@@ -1945,7 +1955,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=116;
+const VERSAO=117;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
