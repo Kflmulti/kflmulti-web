@@ -180,7 +180,7 @@ function norm(){window.S_OK=1;const h=fm(hoje()),m=h.slice(3);S=Object.assign({n
  if(S.mes!==m){if(S.mes){(S.rel=S.rel||{})[S.mes.replace('/','_')]=gerarMes(S.mes);try{if(S.lvOk){S.lvC=r2((S.lvC||0)+(S.lvAj||0)+metaCalc(S.mes).res);S.lvAj=0}}catch(e){}try{amrFecha(S.mes)}catch(e){}S.vars=[];S.varsRed=[];S.cartaoPA=0;S.cartaoEA=0;S.cartaoCl=0;(S.fixos||[]).forEach(f=>{['pgTs','pgV','pgC','pgS','pgP','pgT'].forEach(k=>delete f[k]);f.incluso=false;if(f.var){f.ult=f.valor;f.valor=0}});
   const imp=r2((S.nfMes||[]).reduce((t,n)=>t+num(n.valor),0)*IP()/100);
   if(S.fisc)(S.fisc.m=S.fisc.m||{})[S.mes]={v:r2((S.nfMes||[]).reduce((t,n)=>t+num(n.valor),0)),r:1};
-  if(imp>0){S.fixos=(S.fixos||[]).filter(f=>!/^Imposto \d\d\/\d{4}$/.test((f.nome||'').trim()));S.fixos.push({nome:'Imposto '+S.mes,dia:20,valor:imp,incluso:new Date().getDate()>=20,sc:'E'})}}S.renmes=[];S.novmes=[];S.primmes=[];S.nfMes=[];S.totmes=0;S.custo=0;S.fatAj=0;S.custoAj=0;S.meuTotal=0;S.fundoMes=0;S.mes=m;ch=1}(S.fixos||[]).forEach(f=>{if(f.var&&f.ult==null){f.ult=f.valor||0;ch=1}});S.custoDia=S.custoDia||9;if(mig2())ch=1;if(mig3())ch=1;if(S.imp!==IP()){S.imp=IP();ch=1}return ch}
+  if(imp>0){S.fixos=(S.fixos||[]).filter(f=>!/^Imposto \d\d\/\d{4}$/.test((f.nome||'').trim()));S.fixos.push({nome:'Imposto '+S.mes,dia:20,valor:imp,incluso:new Date().getDate()>=20,sc:'E'})}}S.renmes=[];S.novmes=[];S.primmes=[];S.nfMes=[];S.totmes=0;S.custo=0;S.fatAj=0;S.custoAj=0;S.meuTotal=0;S.fundoMes=0;S.mes=m;ch=1}(S.fixos||[]).forEach(f=>{if(f.var&&f.ult==null){f.ult=f.valor||0;ch=1}});S.custoDia=S.custoDia||9;if(mig4())ch=1;if(mig2())ch=1;if(mig3())ch=1;if(S.imp!==IP()){S.imp=IP();ch=1}return ch}
 const CK='kfl_cli',mapC=J=>J.map(o=>{const r={cliente:'',plano:'',inicio:'',fim:'',situacao:'',cel:'',celcon:'',ativo:'',datapg:'',pg:''};for(const k in o)r[k.toLowerCase()]=o[k]==null?'':String(o[k]);return r});
 const dupC=L=>{const m=new Map();let d=0;L.forEach(c=>{const k=String(c.cliente).trim().toLowerCase();if(m.has(k)){d++;const o=m.get(k),x=pd(o.fim),y=pd(c.fim);if(y&&(!x||y>x))m.set(k,c)}else m.set(k,c)});return{L:[...m.values()],d}};
 async function buscaC(n){const t0=await(await fetch(API+'BuscaClientes.php?_='+Date.now(),{cache:'no-store'})).text();let t=t0.slice(Math.max(0,t0.indexOf('['))),J;
@@ -300,12 +300,12 @@ async function rbDo(V){const est=r2(S.reembEst||0),dif=r2(V-est);
  if(dif){S.cartaoPA=r2((S.cartaoPA||0)+dif);S.custoAj=r2((S.custoAj||0)+dif)}
  (S.reembLog=S.reembLog||[]).push({ts:Date.now(),dt:fm(new Date()),v:V,est,dif});S.rbAv=null;S.rbDone=iso(hoje());await save()}
 const fin=run(async()=>{window.vcur='fp';if(diario())await save();const FP=fpHtml();if(S.lvMsg){S.lvMsg=0;await save();toast('Livre recalculado com a fórmula corrigida: '+brl(livreAtual()))}
- const cd=S.custoDia||9,sd=saldoPf()+saldoEf(),ct=cartP()+cartEf(),fat=FAT(),imp=r2(fat*IP()/100),an=CUS(),ma=S.meuTotal||0,pn=pendN(),lucro=r2(fat+pn-imp-an-ma),cl=lucro>=0?'#1B5E20':'#B71C1C';
+ const cd=r2(cdOf('GOLD')),sd=saldoPf()+saldoEf(),ct=cartP()+cartEf(),fat=FAT(),imp=r2(fat*IP()/100),an=CUS(),ma=S.meuTotal||0,pn=pendN(),lucro=r2(fat+pn-imp-an-ma),cl=lucro>=0?'#1B5E20':'#B71C1C';
  $('#v5').innerHTML=`<h2>GESTÃO FINANCEIRA</h2><div style="display:flex;gap:10px"><button class="bg" style="background:#1976D2;margin:0 0 6px;border-radius:14px;height:60px" onclick="hist()">📢 RELATÓRIO</button><button class="bg" style="background:#455A64;margin:0 0 6px;border-radius:14px;height:60px" onclick="hist()">📂 HISTÓRICO</button></div>
  <div style="text-align:center;color:#777;font-size:20px;margin:14px 0 6px">RESUMO DO MÊS</div>
  <div class="card st" style="background:#FFFDF0;border-color:#FFFDF0"><span style="color:${cl}">LUCRO LÍQUIDO (MÊS)</span><strong style="color:${cl};font-size:34px;font-weight:700">${brl(lucro)}</strong></div>
  <div class="card" style="margin:12px 0;color:#c00;line-height:1.9"><div style="color:#1B5E20">💰 Faturamento: ${brl(fat)} <span onclick="edFat()" style="cursor:pointer">✏️</span>${S.fatAj?` <small style="color:#777">(ajuste ${brl(S.fatAj)})</small>`:''}</div>${pn>0?`<div style="color:#1B5E20">🆕 Entradas de novos clientes (aguardando NF): ${brl(pn)}</div>`:''}<div>💸 Imposto (${PP()}%): ${brl(imp)} <span onclick="edImp()" style="cursor:pointer">✏️</span></div><div>📢 Anúncios: ${brl(an)} <span onclick="edCus()" style="cursor:pointer">✏️</span>${S.custoAj?` <small style="color:#777">(ajuste ${brl(S.custoAj)})</small>`:''}</div><div>📣 Meu Anúncio (mês acumulado): ${brl(ma)}</div></div>
- ${cardF('🏦','SALDO ATUAL EM CONTA',sd,'#2E7D32','edSaldos()')}${(S.saldoEA||S.saldoPA)?`<div style="color:#777;font-size:13px;margin:-2px 12px 8px">ajustes automáticos desde a última atualização — Empresa ${sgn(S.saldoEA||0)} (clientes e fixos pagos) · Pessoal ${sgn(S.saldoPA||0)} (fixos pagos)</div>`:''}${cardF('💳','GASTOS CARTÃO (MÊS)',ct,'#C62828')}${(S.cartaoPA||S.cartaoEA)?`<div style="color:#777;font-size:13px;margin:-2px 12px 8px">lançamentos automáticos desde a última atualização — Empresa ${sgn(S.cartaoEA||0)} (anúncios dos clientes, Meu Anúncio e fixos no cartão) · Pessoal ${sgn(S.cartaoPA||0)} (variáveis e fixos no cartão)</div>`:''}${cardF('📊','CUSTO POR DIA (GOLD)',cd,'#FF4500','edCusto()')}
+ ${cardF('🏦','SALDO ATUAL EM CONTA',sd,'#2E7D32','edSaldos()')}${(S.saldoEA||S.saldoPA)?`<div style="color:#777;font-size:13px;margin:-2px 12px 8px">ajustes automáticos desde a última atualização — Empresa ${sgn(S.saldoEA||0)} (clientes e fixos pagos) · Pessoal ${sgn(S.saldoPA||0)} (fixos pagos)</div>`:''}${cardF('💳','GASTOS CARTÃO (MÊS)',ct,'#C62828')}${(S.cartaoPA||S.cartaoEA)?`<div style="color:#777;font-size:13px;margin:-2px 12px 8px">lançamentos automáticos desde a última atualização — Empresa ${sgn(S.cartaoEA||0)} (anúncios dos clientes, Meu Anúncio e fixos no cartão) · Pessoal ${sgn(S.cartaoPA||0)} (variáveis e fixos no cartão)</div>`:''}${cardF('📊','CUSTO POR DIA GOLD (COM IMPOSTO META)',cd,'#FF4500','edCusto()')}<div style="color:#777;font-size:13px;margin:-2px 12px 6px">Mídia Gold ${brl(C_G())}/dia (cliente novo 1ª semana ${brl(C_N1)}) · Mega ${brl(20)} · Plus ${brl(40)} · imposto Meta por dentro</div>${btn('📣 IMPOSTO DA META: '+String(IMM()).replace('.',',')+'%','#FF4500','edImpM()')}
  ${rbCard()}${FP.E}${FP.P}${FP.T}${FP.L}<details ${window.dFx?'open':''} ontoggle="window.dFx=this.open" style="margin:12px 0"><summary style="font-size:20px;color:#455A64;padding:10px 0;cursor:pointer">📋 GASTOS FIXOS</summary>${FP.lE}${FP.lP}</details>
  <details ${window.dMa?'open':''} ontoggle="window.dMa=this.open" style="margin:12px 0"><summary style="font-size:20px;color:#455A64;padding:10px 0;cursor:pointer">📣 MEU ANÚNCIO</summary><label style="display:flex;align-items:center;gap:12px;margin:10px 0;color:#666;font-size:18px">ATIVAR <span id="lt" style="color:#1976D2">${S.meuAtivo?'ATIVO':'INATIVO'}</span><input type="checkbox" ${S.meuAtivo?'checked':''} style="width:26px;height:26px" onchange="meuTg(this.checked)"></label>
  <div class="card" style="margin:0 0 10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>Custo diário do meu anúncio<br><span style="color:#777;font-size:12px">vale a partir de amanhã</span></span><button class="bt" style="height:38px;padding:0 14px" onclick="meuDia()">${brl(MD())} ✏️</button></div></details>
@@ -320,7 +320,8 @@ const edSaldos=run(async()=>{const a=await pr('Saldo Pessoal — o valor abaixo 
  const c=await pr('Saldo da Empresa — o valor abaixo já inclui as entradas automáticas (clientes) desde a última atualização. Confirme ou corrija com o valor real (ex: 1500,50):',saldoEf());if(c===null)return;const d=await pr('Gastos Empresariais no cartão — o valor abaixo já inclui '+(S.metaP?'':'o Meu Anúncio e ')+'fixos pagos no cartão desde a última atualização (ex: 150,50):',cartEf());if(d===null)return;
  const cxAnt=r2(saldoPf()+saldoEf()-cartP()-cartEf()),cxNov=r2(num(a)+num(c)-num(b)-num(d)),dlt=r2(cxNov-cxAnt);let lvMsg='';if(S.lvOk&&Math.abs(dlt)>=0.01){S.lvAj=r2((S.lvAj||0)+dlt);lvMsg='\nLivre ajustado em '+(dlt>0?'+':'−')+brl(Math.abs(dlt))+' (diferença entre o valor real e o esperado pelo app)'}
  Object.assign(S,{saldoP:num(a),saldoPA:0,cartaoP:num(b),cartaoPA:0,saldoE:num(c),saldoEA:0,cartaoE:num(d),cartaoEA:0,cartaoCl:0,manTs:Date.now(),saldoAt:hk()});await save();rmUpd();alert('Saldo atualizado: '+brl(S.saldoP+S.saldoE)+'\nGastos do cartão atualizados: '+brl(S.cartaoP+S.cartaoE)+' (lançamentos automáticos zerados)'+lvMsg);fin()});
-const edCusto=run(async()=>{const r=await pm('Insira o novo valor (Ex: 1500,50):','0,00');if(!r)return;S.custoDia=num(r);await save();fin()});
+const edCusto=run(async()=>{const r=await pm('Orçamento por dia da renovação Gold, valor de mídia sem o imposto da Meta (hoje '+brl(C_G())+'). Mega e Plus ficam em R$ 20 e R$ 40; cliente novo Gold na 1ª semana R$ 5,90:',String(C_G()).replace('.',','));if(!r)return;const v=num(r);if(!(v>0))return;S.custoDia=v;await save();fin()}),
+edImpM=run(async()=>{const r=await pm('Imposto da Meta sobre o gasto em anúncios, % POR DENTRO (hoje '+String(IMM()).replace('.',',')+'%). Total cobrado = mídia ÷ (1 − %):',String(IMM()).replace('.',','));if(r===null)return;const v=num(r);if(!(v>=0&&v<40))return alert('Use um valor entre 0 e 40.');S.impMeta=v;mtRC=null;await save();fin()});
 $('#bG').onclick=menu;$('#bM').onclick=()=>inc('v1');
 
 const MD=()=>{const v=S.meuDia;return v==null||!(v>=0)?100:v};
@@ -353,7 +354,7 @@ const vAdd=run(async()=>{const n=$('#vnm').value.trim(),v=r2(num($('#vvl').value
  const fx=$('#vfx').checked,sc=$('#vsc').value;const w=addVarEntry(n,v,fx,sc);await save();w?alert(w):toast('Adicionado: '+SCI[sc]+' '+n+' '+brl(v)+(fx?' (nos gastos fixos)':''));inc()});
 const scTg=run(async i=>{const f=S.fixos[i],pago=f.incluso&&fxAtivo(f);if(pago)fxEf(f,-1);f.sc=(f.sc||'P')==='P'?'E':'P';if(pago)fxEf(f,1);amrFx(f,!!f.incluso);await save();fp()});
 const limItens=()=>{const m=new Map();(S.fixos||[]).filter(x=>x.var).forEach(x=>{m.set((x.nome||'').trim().toLowerCase(),{n:(x.nome||'').trim(),sc:x.sc||'P'})});Object.keys(S.lim||{}).forEach(n=>{const k=n.trim().toLowerCase();if(!m.has(k))m.set(k,{n:n.trim(),sc:'P'})});return[...m.values()].map(x=>({n:x.n,sc:x.sc,L:limOf(x.n)})).filter(x=>x.L>0)};
-function fpCalc(){const fx=S.fixos=S.fixos||[],vr=S.vars||[],cd=S.custoDia||9,sv=S.fundo||0,imp=r2(FAT()*IP()/100);
+function fpCalc(){const fx=S.fixos=S.fixos||[],vr=S.vars||[],cd=r2(cdOf('GOLD')),sv=S.fundo||0,imp=r2(FAT()*IP()/100);
  let cr=0;const t=hoje(),aguard=new Map();(S.ent||[]).forEach(x=>{if(x.k==='N'&&!x.done)aguard.set(String(x.cli||'').trim().toLowerCase(),x)});ativos().forEach(c=>{const d=pd(c.fim);if(d){const n=Math.round((d-t)/864e5);let rem=S.anuUlt===iso(t)?n-1:n;const nn=aguard.get(String(c.cliente||'').trim().toLowerCase());if(nn&&nn.dt){const e0=fromIso(mkI(nn.dt));if(!isNaN(e0))rem=Math.min(rem,Math.max(0,2-Math.round((t-e0)/864e5)))}if(rem>0)cr+=rem*cdOf(c.plano)}});cr=r2(cr);
  const fr=(()=>{const t=hoje();return t.getDate()/new Date(t.getFullYear(),t.getMonth()+1,0).getDate()})();
  const D=(k,Ex)=>{const f=fx.filter(x=>(x.sc||'P')===k),fn=f.filter(x=>!x.var),v=vr.filter(x=>(x.sc||'P')===k),sal=k=='E'?saldoEf():saldoPf(),car=k=='E'?cartEf():cartP(),rb=r2(S.reemb||0),tot=r2(sm(fn,'valor')),pg=r2(sm(fn.filter(x=>x.incluso),'valor')),pe=r2(tot-pg),peT=k=='E'?r2(sm(fn.filter(x=>!x.incluso&&x.tp),'valor')):0,vt=r2(sm(v,'v')),vnf=r2(sm(v.filter(x=>!x.fx),'v')),rec=r2(k=='E'?sal-car-rb:sal-car+rb),
@@ -504,7 +505,7 @@ const salvaEd=run(async i=>{const c=C[i],b={cliente_original:c.cliente};['client
  await post('AlteraPlanilha.php',b,true);const old=c.cliente,nn=(b.cliente||'').trim();if(nn&&nn.toLowerCase()!==old.trim().toLowerCase()){const eq=x=>String(x).trim().toLowerCase()===old.trim().toLowerCase();['cache','novos','renovados','retornados','pausados','pagos','primeira','renmes'].forEach(k=>{if(Array.isArray(S[k]))S[k]=S[k].map(x=>typeof x==='string'&&eq(x)?nn:x)});if(S.vistos&&Array.isArray(S.vistos.n))S.vistos.n=S.vistos.n.map(x=>eq(x)?nn:x);(S.ent||[]).forEach(x=>{if(eq(x.cli))x.cli=nn});['nf','nfMes'].forEach(k=>(S[k]||[]).forEach(x=>{if(eq(x.cliente))x.cliente=nn}));if(S.dsc)Object.keys(S.dsc).forEach(k=>{if(eq(k)){S.dsc[nn.toLowerCase()]=S.dsc[k];delete S.dsc[k]}});if(S.rc&&S.rc.t)Object.keys(S.rc.t).forEach(k=>{if(k===rcN(old)){S.rc.t[rcN(nn)]=S.rc.t[k];delete S.rc.t[k]}});c.cliente=nn;save()}alert('Cadastro atualizado.');await carregar();tela('v1')});
 
 const vp=p=>{p=(p||'').toUpperCase();return p.includes('GOLD ADVANCED')?600:p.includes('GOLD SMART')?300:p.includes('GOLD')?150:p.includes('MEGA ADVANCED')?1200:p.includes('MEGA SMART')?600:p.includes('MEGA')?300:p.includes('PLUS ADVANCED')?2400:p.includes('PLUS SMART')?1200:p.includes('PLUS')?600:0},lp=p=>(p||'').split('-')[0].replace('Plano','').replace('Combo','').trim();
-const voltarF=run(async i=>{const c=C[i];let nov=null;if(pend(c)&&$('#pe')&&!$('#pe').checked){await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''});const dk=c.cliente.trim().toLowerCase(),dsc=(S.dsc||{})[dk]||0,v0=vp(c.plano)-dsc,h=fm(new Date()),pgv=num(c.pg);Object.assign(c,{datapg:'',pg:''});const nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)),nE=nN?null:(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&x.done&&x.exp&&!x.cmp&&nmEq(x.cli,c.cliente)&&pgv<=r2(v0-x.v)+.01),v=nE?r2(v0-nE.v):v0,pri=nN?(nN.cu||0):nE?(nE.cu||0):(pgv<v?r2(2*(S.custoDia||9)):0);if(nN)nN.done=true;if(nE)nE.cmp=1;credita(c.cliente,pgv,'P',calcV('P',pgv,v,c.plano,pri));if(nN){const le=S.ent[S.ent.length-1];if(le&&le.k==='P')le.n=1}
+const voltarF=run(async i=>{const c=C[i];let nov=null;if(pend(c)&&$('#pe')&&!$('#pe').checked){await post('AlteraPlanilha.php',{cliente:c.cliente,datapg:'',pg:''});const dk=c.cliente.trim().toLowerCase(),dsc=(S.dsc||{})[dk]||0,v0=vp(c.plano)-dsc,h=fm(new Date()),pgv=num(c.pg);Object.assign(c,{datapg:'',pg:''});const nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)),nE=nN?null:(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&x.done&&x.exp&&!x.cmp&&nmEq(x.cli,c.cliente)&&pgv<=r2(v0-x.v)+.01),v=nE?r2(v0-nE.v):v0,pri=nN?(nN.cu||0):nE?(nE.cu||0):(pgv<v?cN():0);if(nN)nN.done=true;if(nE)nE.cmp=1;credita(c.cliente,pgv,'P',calcV('P',pgv,v,c.plano,pri));if(nN){const le=S.ent[S.ent.length-1];if(le&&le.k==='P')le.n=1}
  if(v>0&&!S.nf.some(n=>n.cliente.trim().toLowerCase()===c.cliente.trim().toLowerCase()&&n.data===h&&n.valor===brl(v))){const nf={data:h,cliente:c.cliente,valor:brl(v),plano:c.plano,dias:dias(c.plano)};S.nf.push(nf);(S.nfMes=S.nfMes||[]).push(nf);S.totmes=r2((S.totmes||0)+v);hd().ent=r2(hd().ent+v);if(!(S.pagos=S.pagos||[]).includes(c.cliente))S.pagos.push(c.cliente)}
  if(S.dsc)delete S.dsc[dk];await save();if(nN)nov=c}tela('v1');lista();if(nov)await nfPedeDados(nov)});
 /* ===== recuperar vendas de hoje (clientes com início hoje) ===== */
@@ -524,7 +525,7 @@ const recGo=run(async()=>{const h=fm(new Date());let n=0;
   if(tp==='R'){hd().ren++;if(!S.renovados.includes(c.cliente))S.renovados.push(c.cliente);S.cont[c.cliente]=antes+1}else{hd().ret++;addU(S.retornados,c.cliente);S.renovados=S.renovados.filter(x=>x.trim().toLowerCase()!==c.cliente.trim().toLowerCase())}
   if(Math.max(antes,ja0)==0&&!S.primeira.includes(c.cliente)){S.primeira.push(c.cliente);addU(S.primmes=S.primmes||[],c.cliente)}n++}
  await save();alert(n+' venda(s) recuperada(s). Já aparecem no relatório do dia.');recHoje()});
-function gerarMes(mes){const nf=S.nfMes||[],tot=r2(nf.reduce((t,n)=>t+num(n.valor),0)+(S.fatAj||0)),cd=S.custoDia||9,ca=CUS(),pn=pendN(),ll=r2(tot+pn-r2(tot*IP()/100)-ca-(S.meuTotal||0));
+function gerarMes(mes){const nf=S.nfMes||[],tot=r2(nf.reduce((t,n)=>t+num(n.valor),0)+(S.fatAj||0)),cd=r2(cdOf('GOLD')),ca=CUS(),pn=pendN(),ll=r2(tot+pn-r2(tot*IP()/100)-ca-(S.meuTotal||0));
  return `📊 *RELATÓRIO FINANCEIRO KFLMULTI* - ${mes}\n\n\n💰 *Entrada por NFs (mês):* ${brl(tot)}\n💸 *Imposto (${PP()}% sobre receita bruta):* ${brl(r2(tot*IP()/100))}\n📣 *Custo Meu Anúncio (mês):* ${brl(S.meuTotal||0)}\n📢 *Custo Anúncios Renovados (mês):* ${brl(ca)}\n\n🆕 *Entradas de novos clientes (aguardando NF):* ${brl(pn)}\n🏁 *LUCRO LÍQUIDO DO MÊS:* ${brl(ll)}\n${(()=>{try{const m=metaCalc(mes);return `\n🎯 *Meta do mês:* ${brl(m.M)} · faturado ${brl(m.br)} (${m.pct.toLocaleString('pt-BR')}%) · ${m.dif>=0?'adiantado':'atrasado'} ${brl(Math.abs(m.dif))}\n📈 *Projeção:* ${brl(m.proj)} · falta ${brl(m.falta)}\n🏆 *Saldo a cobrir:* ${brl(Math.max(0,-m.res))} · *Lucro após os custos:* ${brl(Math.max(0,m.res))}${S.lvOk?' · livre conquistado '+brl(livreAtual()):''}\n`}catch(e){return ''}})()}\n🔄 *Planos Renovados (Mês):* ${nf.length}\n${nf.length?nf.map(n=>`${n.data} - ✅ ${n.cliente} (${lp(n.plano)})`).join('\n'):'Nenhum renovado.'}\n\n_Desenvolvedor do App Erick Lopes_`}
 function txt(t,tit,vol,extra='',sw=false){window.vtx=t;$('#v6').innerHTML=`<h2>${tit}</h2><div class="card" style="white-space:pre-wrap;line-height:1.7">${esc(t).replace(/\*/g,'').replace(/^_|_$/gm,'')}</div><div class="np">${extra}${sw?'':btn('ENVIAR PARA WHATSAPP','#25D366','envWa()')}${btn('IMPRIMIR / SALVAR PDF','#1976D2','window.print()')}${btn('VOLTAR','#9E9E9E',vol)}</div>`;tela('v6');scrollTo(0,0)}
 function hist(){const ms=[['🕒 PARCIAL DO MÊS','P']];for(let i=0;i<12;i++){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);const k=String(d.getMonth()+1).padStart(2,'0')+'_'+d.getFullYear();if((S.rel||{})[k])ms.push([d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toUpperCase(),k])}
@@ -579,11 +580,14 @@ bd();flush();addEventListener('online',flush);setInterval(flush,60000);
 
 /* ===== base: caixa automático da empresa, histórico diário, ajustes ===== */
 const hk=()=>window.HDAY||iso(new Date()),saldoEf=()=>r2((S.saldoE||0)+(S.saldoEA||0)),FAT=()=>r2((S.totmes||0)+(S.fatAj||0)),CUS=()=>r2((S.custo||0)+(S.custoAj||0));
-function hd(){S.hist=S.hist||{};const k=hk();return S.hist[k]=S.hist[k]||{ent:0,cx:0,ren:0,pau:0,ret:0,nov:0,ven:0,atv:0,cd:S.custoDia||9,ip:IP(),ma:S.meuAtivo?MD():0,lc:0,cu:0,imp:0}}
+function hd(){S.hist=S.hist||{};const k=hk();return S.hist[k]=S.hist[k]||{ent:0,cx:0,ren:0,pau:0,ret:0,nov:0,ven:0,atv:0,cd:r2(cdOf('GOLD')),ip:IP(),ma:S.meuAtivo?MD():0,lc:0,cu:0,imp:0}}
 function credita(cli,v,k,c){if(!(v>0))return;S.saldoEA=r2((S.saldoEA||0)+v);const e=S.ent=S.ent||[],x={ts:Date.now(),dt:fm(new Date()),cli,v,k};if(c){x.lc=c.lc;x.cu=c.cu;x.imp=c.imp}e.push(x);if(e.length>3000)e.splice(0,e.length-3000);const h=hd();h.cx=r2((h.cx||0)+v);if(c)aplicaL(h,c,1);try{if(!window.__bulk&&S.lvOk&&c&&k!=='N'){const m=metaCalc(),pt=r2(Math.min(v,Math.max(0,m.M-Math.max(0,m.br-v)))*m.rate);toast('Venda '+brl(v)+': imposto '+brl(c.imp)+' · anúncio '+brl(c.cu)+' · custos '+brl(pt)+' · livre '+brl(r2(c.lc-pt)))}}catch(e){}}
 /* ===== lucro por venda: cada venda carrega imposto + custo de anúncio ===== */
-const cdOf=p=>/PLUS/i.test(p||'')?40:/MEGA/i.test(p||'')?20:(S.custoDia||9),nmEq=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase(),mkI=dt=>String(dt).split('/').reverse().join('-');
-function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=r2(2*(S.custoDia||9));return{cu,imp:0,lc:r2(cash-cu)}}const cu=r2(Math.max(0,dias(pl)*cdOf(pl)-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu)}}
+/* v111: custo de anúncio por linha de plano (mídia/dia: Gold 7 · Mega 20 · Plus 40; cliente novo Gold 1ª semana 5,90) + imposto da Meta POR DENTRO (12,15% => total = mídia ÷ 0,8785) */
+const IMM=()=>S.impMeta!=null?S.impMeta:12.15,FM=()=>1/(1-IMM()/100),C_G=()=>S.custoDia>0?S.custoDia:7,C_N1=5.9,linha=p=>/PLUS/i.test(p||'')?'P':/MEGA/i.test(p||'')?'M':'G',cdM=p=>{const l=linha(p);return l==='P'?40:l==='M'?20:C_G()},
+cN=()=>r2(2*C_N1*FM()),custoPl=(p,novo)=>{const d=dias(p),l=linha(p);return r2((novo&&l==='G'?Math.min(d,7)*C_N1+Math.max(0,d-7)*C_G():d*cdM(p))*FM())},
+cdOf=p=>cdM(p)*FM(),nmEq=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase(),mkI=dt=>String(dt).split('/').reverse().join('-');
+function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=cN();return{cu,imp:0,lc:r2(cash-cu)}}const cu=r2(Math.max(0,custoPl(pl,k==='P')-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu)}}
 function aplicaL(h,c,sg){h.lc=r2((h.lc||0)+sg*c.lc);h.cu=r2((h.cu||0)+sg*c.cu);h.imp=r2((h.imp||0)+sg*c.imp);S.custo=r2((S.custo||0)+sg*c.cu)}
 const pendN=()=>{const ym=(S.mes||'').split('/').reverse().join('-');return r2((S.ent||[]).filter(x=>x.k==='N'&&!x.done&&mkI(x.dt).startsWith(ym)).reduce((t,x)=>t+x.v,0))};
 const lucroMes=()=>r2(FAT()+pendN()-r2(FAT()*IP()/100)-CUS()-(S.meuTotal||0));
@@ -1027,6 +1031,20 @@ function xlsxAmr(mes,L){
   ['xl/styles.xml',styles],['xl/worksheets/sheet1.xml',sheet]])}
 
 /* ===== v6: Meu anúncio (carga do dia), R$ 50 vencido, AMR (contabilidade) ===== */
+/* ===== v111: recalcula todo o histórico (S.ent desde 17/10, dias em S.hist e custo do mês) com o custo por linha + imposto da Meta ===== */
+function mig4(){if(S.v111)return 0;
+ S.pre4={t:Date.now(),custo:S.custo||0,custoDia:S.custoDia,hist:JSON.parse(JSON.stringify(S.hist||{})),ent:JSON.parse(JSON.stringify(S.ent||[]))};
+ const og=S.custoDia||9,T=[];[7,15,30].forEach(d=>{T.push([d*og,'G',d]);T.push([d*20,'M',d]);T.push([d*40,'P',d])});S.custoDia=7;
+ const ach=b=>T.find(t=>Math.abs(t[0]-b)<.02),mid=(l,d,novo)=>r2((novo&&l==='G'?Math.min(d,7)*C_N1+Math.max(0,d-7)*C_G():d*(l==='P'?40:l==='M'?20:C_G()))*FM()),ym=(S.mes||'').split('/').reverse().join('-'),nN=cN();let dm=0,un=0,n=0;
+ (S.ent||[]).forEach(x=>{if(x.cu==null)return;let nc=null;
+  if(x.k==='N')nc=nN;
+  else if(x.k==='P'){let t=ach(r2(x.cu+2*og));if(t)nc=r2(Math.max(0,mid(t[1],t[2],true)-nN));else{t=ach(x.cu);if(t)nc=mid(t[1],t[2],true)}}
+  else{const t=ach(x.cu);if(t)nc=mid(t[1],t[2],false)}
+  if(nc==null){un++;return}
+  const dl=r2(nc-x.cu);n++;if(!dl)return;x.cu=nc;if(x.lc!=null)x.lc=r2(x.lc-dl);
+  const h=(S.hist||{})[mkI(x.dt)];if(h){h.cu=r2((h.cu||0)+dl);h.lc=r2((h.lc||0)-dl)}
+  if(ym&&mkI(x.dt).startsWith(ym))dm=r2(dm+dl)});
+ S.custo=r2((S.custo||0)+dm);if(S.impMeta==null)S.impMeta=12.15;S.v111=1;S.v111i={n,un,dm};return 1}
 function mig3(){let c=0;
  if(!S.tpFix){S.tpFix=1;c=1;(S.fixos||[]).forEach(f=>{if((f.sc||'P')==='E'&&/folha/i.test(String(f.nome)))f.tp=true})}
  if(!S.cpFix){S.cpFix=1;c=1;(S.fixos||[]).forEach(f=>{if((f.sc||'P')==='E'&&/^(luz|bot|linha)/i.test(String(f.nome).trim())){f.cart=true;f.cp=true}})}
@@ -1238,7 +1256,7 @@ const mtDn=i=>Math.floor(Date.parse(i+'T00:00:00Z')/864e5),mtIso=n=>new Date(n*8
 const mtWk=i=>{const n=mtDn(i);return mtIso(n-((n+3)%7))};
 const mtDM=i=>i?i.slice(8,10)+'/'+i.slice(5,7):'',mtDMY=i=>i?i.slice(8,10)+'/'+i.slice(5,7)+'/'+i.slice(0,4):'';
 const mtM2=n=>n==null||!isFinite(n)?'—':'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),mtM=n=>n==null||!isFinite(n)?'—':'R$ '+Math.round(n).toLocaleString('pt-BR'),mtP=n=>n==null||!isFinite(n)?'—':(Math.round(n*1000)/10).toLocaleString('pt-BR')+'%';
-const mtLiq=()=>r2(150-150*IP()/100-7*(S.custoDia||9));
+const mtLiq=()=>r2(150-150*IP()/100-custoPl(PL[0][0],false));
 const mtCor=c=>{const M=mtS();return c==null||!isFinite(c)?'#777':c<=M.max?'#2E7D32':c<=mtLiq()?'#B8860B':'#C62828'};
 const mtYest=()=>mtIso(mtDn(mtT())-1);
 const mtNk=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -1304,17 +1322,17 @@ async function mtCid(l){try{const I=await mtIbge();if(!mtIdx){mtIdx={};I.m.forEa
 const mtOrcOn=(c,d)=>{if(d<c.ini||(c.fim&&d>=c.fim))return 0;let v=0;[...c.orc].sort((a,b)=>a.d<b.d?-1:1).forEach(o=>{if(o.d<=d)v=o.v});return v};
 const mtPts=c=>(mtS().pt||[]).filter(p=>p.c===c.id).sort((a,b)=>a.d<b.d?-1:1);
 const mtPt=(c,d)=>{let pv={d:mtIso(mtDn(c.ini)-1),g:0,cv:0};for(const p of mtPts(c)){if(d<=p.d){if(d<=pv.d)return null;const n=mtDn(p.d)-mtDn(pv.d);return{g:(p.g-pv.g)/n,cv:(p.cv-pv.cv)/n}}pv=p}return null};
-const mtGasto=(c,d)=>{const q=mtPt(c,d);if(q)return q.g;const g=mtS().mg[c.id+'|'+d];if(g&&g.g!==''&&g.g!=null&&isFinite(+g.g))return +g.g;return mtOrcOn(c,d)};
+const mtGasto0=(c,d)=>{const q=mtPt(c,d);if(q)return q.g;const g=mtS().mg[c.id+'|'+d];if(g&&g.g!==''&&g.g!=null&&isFinite(+g.g))return +g.g;return mtOrcOn(c,d)},mtGasto=(c,d)=>mtGasto0(c,d)*FM();
 const mtConv=(c,d)=>{const q=mtPt(c,d);if(q)return q.cv;const m=mtS().mg[c.id+'|'+d];return m&&m.c?+m.c:0};
 const mtFim=c=>{const y=mtYest();return c.fim&&mtIso(mtDn(c.fim)-1)<y?mtIso(mtDn(c.fim)-1):y};
 const mtOrcAtual=c=>c.fim&&c.fim<=mtT()?0:mtOrcOn(c,mtT());
-const mtLqf=(v,d)=>r2(v-v*IP()/100-d*(S.custoDia||9));
+const mtLqf=(v,d)=>r2(v-v*IP()/100-(d===2?cN():d*cdOf('GOLD')));
 function mtAct(r,A0){const x=r.x,ent=mkI(x.dt);if(!ent||ent.length!==10)return null;
  const A=A0.filter(a=>(a.k==='P'||a.k==='R')&&a.ts>=x.ts).sort((a,b)=>a.ts-b.ts),p1=A.find(a=>a.k==='P'),o={venc:0,dev:0,vv:x.v||50};let st='A';
  if(x.dev){st='D';o.dev=1}else if(x.exp)st='D';else if(p1||x.done)st='C';else if(mtDn(mtT())-mtDn(ent)>=7)o.venc=1;
  const rest=A.filter(a=>st!=='C'||a!==p1),lc=(a,d)=>a.lc!=null?a.lc:mtLqf(a.v,d);let br=0,lq=0;
  if(st==='C'){br=x.v+(p1?p1.v:100);lq=lc(x,2)+(p1&&p1.lc!=null?p1.lc:mtLqf(150,7)-mtLqf(50,2))}
- else if(st==='D'){if(o.dev){lq=-(x.cu!=null?x.cu:2*(S.custoDia||9))}else{br=x.v;lq=lc(x,2)}}
+ else if(st==='D'){if(o.dev){lq=-(x.cu!=null?x.cu:cN())}else{br=x.v;lq=lc(x,2)}}
  else{br=x.v;lq=lc(x,2)}
  const conc=st==='C'?(p1?mkI(p1.dt):ent):'',ren=rest.map(a=>mkI(a.dt)).filter(d=>d>=(conc||ent)),last=[ent].concat(A.map(a=>mkI(a.dt))).sort().pop();
  let rn='';if(st==='C'){if(ren.length>0)rn='R';else{const cl=typeof cliBy==='function'?cliBy(r.n):null;let w=false;if(cl){const f=pd(cl.fim);w=!!f&&f>=hoje()&&String(cl.ativo||'').trim().toLowerCase()==='ok'}else w=mtDn(last)+7>=mtDn(mtT());rn=w?'W':'N'}}
@@ -1337,7 +1355,7 @@ function mtRecs(){const key=mtTs+'|'+(S.ent||[]).length+'|'+(S.ent||[]).reduce((
     else{w=mtDn(big[big.length-1][0])+7>=mtDn(mtT())}
     rn=w?'W':'N'}}
   const cl0=typeof cliBy==='function'?cliBy(r.n):null,ue=(!r.cn&&!r.u&&cl0)?(mtUfDdd(cl0.cel)||mtUfDdd(cl0.celcon)):'';
-  const ip=IP(),cd=S.custoDia||9,lqf=(v,d)=>r2(v-v*ip/100-d*cd);let br=0,lq=0,rbr=0,rlq=0;
+  const ip=IP(),lqf=(v,d)=>r2(v-v*ip/100-(d===2?cN():d*cdOf('GOLD')));let br=0,lq=0,rbr=0,rlq=0;
   if(st==='C'){br=big[0][1];lq=lqf(br,7);big.slice(1).forEach(a=>{if(a[0]>conc){rbr+=a[1];rlq+=lqf(a[1],7)}})}else if(st==='D'){const v=(r.x&&r.x.v)||50;br=v;lq=lqf(v,2)}
   out.push(Object.assign({br,lq,rbr:r2(rbr),rlq:r2(rlq),ue,n:r.n,key:r.key,cn:r.cn,u:r.u,i:r.i,ent,st,conc,ren,rn,pago,nren,motivo:r.cn?'':(!r.nf?'ainda sem NF na planilha':(!r.bd?'nome não encontrado na BdNfs':'cidade vazia na BdNfs'))},AP||{}));const q0=out[out.length-1],cq=(S.chamada||{})[q0.key];q0.ent0=q0.ent;if(cq&&cq.d&&cq.d<q0.ent&&cq.d>=mtIso(mtDn(q0.ent)-30)){q0.ent=cq.d;q0.mc=1}});
  out.sort((a,b)=>a.ent<b.ent?1:-1);if(mtIBm){if(!mtIdx2){mtIdx2={};mtIBm.m.forEach(x=>{mtIdx2[mtNk(x[1])+'|'+x[2]]=x})}
@@ -1386,6 +1404,7 @@ function mtAnt(){const M=mtS(),T=mtT(),de=mtIso(mtDn(T)-13),av=mtAviso();
  ${mtErr2?`<div class="card" style="background:#FFF8E1;font-size:13px;margin:8px 0">⚠ ${esc(mtErr2)} As cidades seguem por nome e UF.</div>`:''}
  ${mtErr?`<div class="card" style="background:#FFF8E1;font-size:13px;margin:8px 0">⚠ Não consegui ler as NFs/cidades agora (${esc(mtErr)}). Os números usam só as entradas guardadas no app.</div>`:''}
  ${av?`<div class="card" style="background:#FFF8E1;font-size:13px;margin:8px 0">⏳ Último aumento de orçamento foi há menos de 3 dias. Aguarde ${av} dia(s) antes de mexer de novo (máx. +20% a cada 3–4 dias).</div>`:''}
+ <div style="font-size:12px;color:#777;margin:4px 12px">Gastos e custos incluem o imposto da Meta (${String(IMM()).replace('.',',')}% por dentro).</div>
  ${mtTf()}
  ${M.cmp.map((c,k)=>{const j=mtJan(c,de,T),a=mtAtiva(c),dc=mtDica(c),rr=mtRen(mtRecs().filter(r=>mtOrig(r)===c.id)),ql=mtQual(c,mtJan(c,c.ini,T),rr);return `<div class="card" style="margin:8px 0;${a?'':'opacity:.7'}" onclick="mtC('${c.id}')"><div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${MTC[k%MTC.length]}">${esc(c.nome)}</b><span>${a?'🟢 ativa':'⏸ pausada'}</span></div>
   <div class="lb" style="margin-top:2px">${c.tp==='R'?'Regional':'Brasil todo'} · desde ${mtDMY(c.ini)}${c.fim?' · até '+mtDMY(mtIso(mtDn(c.fim)-1)):''} · ${a?brl(mtOrcAtual(c))+'/dia':''}</div>
@@ -1868,7 +1887,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=110;
+const VERSAO=111;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -2121,8 +2140,8 @@ const CLI0={s:'cliente',p:'clientes',z:'Nenhum',
   {g:'fone',rx:/sem comercial/,a:['sem número comercial','sem número comercial'],p:i=>!i.com}],
  resumo(its){const A=its.filter(i=>i.a),P=A.filter(i=>i.pe),at=P.filter(i=>i.dp&&i.dp<hj0()),v=A.filter(i=>i.df&&i.df<=hj0());
   return `${its.length} clientes cadastrados: ${A.length} ativos e ${its.length-A.length} pausado${its.length-A.length==1?'':'s'}. Pendentes: ${P.length}${P.length?`, ${brl(somaV(P.map(i=>({v:i.pg}))))}`:''}${at.length?`, ${at.length} atrasado${at.length>1?'s':''}`:''}. Para renovar hoje ou atrasado: ${v.length}. Hoje: ${S.renovados.length} renovado${S.renovados.length==1?'':'s'}, ${S.retornados.length} retornado${S.retornados.length==1?'':'s'}, ${S.novos.length} novo${S.novos.length==1?'':'s'}, ${S.pausados.length} pausado${S.pausados.length==1?'':'s'}.`}};
-function dReceberHoje(t){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&i.dp&&i.dp<=h0),Ro=R.filter(i=>!P.includes(i)),sv=(a,f)=>r2(a.reduce((s,i)=>s+(f(i)||0),0)),cd=S.custoDia||9;
- let liq=0,okl=true;try{R.forEach(i=>{liq+=calcV('R',i.vp,i.vp,i.c.plano,0).lc});P.forEach(i=>{const dk=i.n.toLowerCase(),dsc=(S.dsc||{})[dk]||0,v=i.vp-dsc,nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,i.c.cliente)),pri=nN?(nN.cu||0):(i.pg<v?r2(2*cd):0);liq+=calcV('P',i.pg,v,i.c.plano,pri).lc})}catch(e){okl=false}
+function dReceberHoje(t){const I=itCli(),h0=hj0(),R=I.filter(i=>i.a&&i.df&&i.df<=h0),P=I.filter(i=>i.pe&&i.dp&&i.dp<=h0),Ro=R.filter(i=>!P.includes(i)),sv=(a,f)=>r2(a.reduce((s,i)=>s+(f(i)||0),0)),cd=r2(cdOf('GOLD'));
+ let liq=0,okl=true;try{R.forEach(i=>{liq+=calcV('R',i.vp,i.vp,i.c.plano,0).lc});P.forEach(i=>{const dk=i.n.toLowerCase(),dsc=(S.dsc||{})[dk]||0,v=i.vp-dsc,nN=(S.ent||[]).slice().reverse().find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,i.c.cliente)),pri=nN?(nN.cu||0):(i.pg<v?cN():0);liq+=calcV('P',i.pg,v,i.c.plano,pri).lc})}catch(e){okl=false}
  const vR=sv(R,i=>i.vp),vP=sv(P,i=>i.pg),U=[...new Set(R.concat(P))];
  let m=`Para receber hoje ou atrasados: renovações ${R.length}${R.length?', '+brl(vR):''}; pagamentos pendentes ${P.length}${P.length?', '+brl(vP):''}. Total ${brl(r2(vR+vP))}.${okl?` Líquido estimado, depois de imposto e anúncio: ${brl(r2(liq))}.`:''}`;
  if(LISTA.test(t)&&U.length)m+=` Clientes: ${nomes(U.map(i=>i.n),12)}.`;return m}
@@ -2185,7 +2204,7 @@ async function dFin(t){if(diario())await save();const X=fpCalc(),ent=/empresa/.t
   [/meu anuncio/,()=>`Meu anúncio acumulado no mês: ${brl(S.meuTotal||0)}. Custo diário: ${brl(MD())}, ${S.meuAtivo?'ativo':'inativo'}.`],
   [/restante|ainda a gastar|a gastar/,()=>`Anúncios restantes dos clientes ativos (empresa): ${brl(X.cr)}.`],
   [/anuncios?/,()=>`Anúncios dos clientes no mês: ${brl(CUS())}. Restantes dos planos ativos: ${brl(X.cr)}.`,/meu anuncio|restante|a gastar/],
-  [/custo (por|do) dia/,()=>`Custo por dia do plano Gold: ${brl(S.custoDia||9)}.`],
+  [/custo (por|do) dia/,()=>`Custo por dia do plano Gold: ${brl(C_G())} de mídia, ${brl(r2(cdOf('GOLD')))} com o imposto da Meta de ${String(IMM()).replace('.',',')}%.`],
   [/receita.*(disponivel|livre)|(disponivel|livre).*receita|dinheiro livre|saldo livre|\blivre\b|quanto (me )?sobra|\bsobra\b/,()=>livreFala()],
   [/disponivel|apos despesas/,()=>livreFala(),/receita|livre|sobra/],
   [/cartao|\bfatura\b/,()=>ln('Cartão (mês)',d=>d.car)],
