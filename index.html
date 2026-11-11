@@ -1660,13 +1660,15 @@ const mtCForm=run(async id=>{const M=mtS(),c=id?M.cmp.find(x=>x.id===id):null,lb
  ${c?'':lb('Tipo')+'<select class="in" id="mct" onchange="$(\'#mcb\').hidden=this.value!==\'R\'"><option value="B">Brasil todo</option><option value="R">Regional (10 cidades)</option></select>'}
  ${lb('Data de início')}<input class="in" id="mci" type="date" value="${c?c.ini:mtT()}">
  ${c?'':lb('Orçamento diário inicial (R$)')+'<input class="in" id="mco" inputmode="decimal" placeholder="ex: 50">'}
+ ${c?lb('Último dia da campanha (vazio = ativa)')+'<input class="in" id="mcf" type="date" value="'+(c.fim?mtIso(mtDn(c.fim)-1):'')+'"><div style="font-size:11px;color:#777;margin-top:4px">Os clientes que entraram depois desse dia passam para a campanha seguinte.</div>':''}
  <div id="mcb" ${(c&&c.tp==='R')?'':'hidden'}>${lb('Cidades — uma por linha, no formato Cidade/UF (para trocar cidades guardando o histórico, use TROCAR CIDADES)')}<textarea class="in" id="mcc" rows="11" style="height:auto;border:1px solid #ccc;border-radius:8px;padding:8px">${esc(c?c.cid.map(x=>x.n+'/'+(x.u||'')).join('\n'):'')}</textarea></div>
  ${btn('SALVAR','#2E7D32',`mtSv('${id||''}')`)}${btn('VOLTAR','#9E9E9E',id?`mtC('${id}')`:'mtMain()')}`;tela('v6');scrollTo(0,0)});
 const mtParse=t=>String(t||'').split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.split(/[\/\-–,;]\s*(?=[A-Za-z]{2}\s*$)/);return{n:(m[0]||'').trim(),u:(m[1]||'').trim().toUpperCase(),i:'',ok:0}});
 const mtSv=run(async id=>{const M=mtS(),n=$('#mcn').value.trim(),ini=$('#mci').value;if(!n)return alert('Informe o nome.');if(!ini)return alert('Escolha a data de início.');
  let c=id?M.cmp.find(x=>x.id===id):null;const tp=c?c.tp:$('#mct').value;
  if(!c){const v=num($('#mco').value);if(!(v>0))return alert('Informe o orçamento diário.');c={id:'c'+Date.now().toString(36),nome:n,tp,ini,fim:'',orc:[{d:ini,v}],cid:[]};M.cmp.push(c)}
- else{c.nome=n;if(ini!==c.ini){const sh=c.orc.find(o=>o.d===c.ini);c.ini=ini;if(sh)sh.d=ini}}
+ else{c.nome=n;if(ini!==c.ini){const sh=c.orc.find(o=>o.d===c.ini);c.ini=ini;if(sh)sh.d=ini}
+  const fe=$('#mcf');if(fe){const f0=c.fim?mtIso(mtDn(c.fim)-1):'',f1=fe.value;if(f1!==f0){if(f1){if(f1<c.ini)return alert('O último dia não pode ser antes do início ('+mtDMY(c.ini)+').');c.fim=mtIso(mtDn(f1)+1)}else{if(!confirm('Deixar "'+c.nome+'" ativa de novo, sem data final?'))return;c.fim=''}}}}
  if(tp==='R'){const novo=mtParse($('#mcc').value);novo.forEach(x=>{const o=c.cid.find(y=>mtKey(y.n)===mtKey(x.n)&&y.u===x.u);if(o){x.i=o.i;x.ok=o.ok;x.sug=o.sug;if(o.de)x.de=o.de}});c.cid=novo}
  mtRC=null;await save();toast('Campanha salva ✔');if(tp==='R')mtVal(c.id);else mtC(c.id)});
 const mtTroca=run(async id=>{const M=mtS(),c=M.cmp.find(x=>x.id===id);if(!c)return mtMain();
@@ -1955,7 +1957,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=117;
+const VERSAO=118;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
