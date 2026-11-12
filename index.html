@@ -790,7 +790,7 @@ const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catc
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
-async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}return j}catch(e){return null}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();return j}catch(e){return null}}
 const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&r.ret&&r.ret<=hj))}catch(e){return[]}};
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito).length+tfPg().length:null;
 const tfPl=c=>(c&&c.plano?lp(c.plano):'');
@@ -1335,7 +1335,13 @@ const pfGet=n=>{S.perfil=S.perfil||{};return S.perfil[mtKey(n)]||null};
 const pfOk=n=>{const p=pfGet(n);return !!(p&&p.g&&p.i)};
 const pfGx=g=>g==='H'?'Homem':g==='M'?'Mulher':g==='?'?'Não sei':'';
 const pfIx=i=>i==='?'?'Não sei':i||'';
-function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo==='ativacao'&&t.dtc&&t.cli&&chSet(t.cli,t.dtc))ch=1;if(t.tipo==='ativacao'&&t.orc&&t.cli&&orcSet(t.cli,t.orc))ch=1});(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
+/* campanha de origem marcada pela consultora (consultora.html -> tarefas.php camp_set). O dono (tela ORIGEM DOS CLIENTES) sempre vence. */
+const campSet=(cli,q)=>{try{if(!q||!cli)return 0;const M=mtS(),k=mtKey(cli);M.orgBy=M.orgBy||{};const o=M.orgBy[k],ts=q.ts||0,c=q.c||'';
+ if(o&&o.por==='dono')return 0;if(M.org[k]&&!o)return 0;if(o&&(o.ts||0)>=ts)return 0;
+ if(!c){if(o){delete M.org[k];delete M.orgBy[k];mtRC=null;return 1}return 0}
+ if(!M.cmp.some(x=>x.id===c))return 0;if(M.org[k]===c&&o)return 0;M.org[k]=c;M.orgBy[k]={por:'consultora',ts};mtRC=null;return 1}catch(e){return 0}};
+let campH='';async function campPush(){try{if(typeof S==='undefined'||!S||!S.mes)return;const l=mtS().cmp.map(c=>({id:c.id,n:c.nome,at:mtAtiva(c)?1:0})),h=JSON.stringify(l);if(h===campH)return;await tfx('camps_set',{l});campH=h}catch(e){}}
+function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo==='ativacao'&&t.dtc&&t.cli&&chSet(t.cli,t.dtc))ch=1;if(t.tipo==='ativacao'&&t.orc&&t.cli&&orcSet(t.cli,t.orc))ch=1;if(t.tipo==='ativacao'&&t.camp&&t.cli&&campSet(t.cli,t.camp))ch=1});(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
 function pgRep(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const g=pgS(),av=[],sem=[];let ch=0;
  (S.ent||[]).forEach(x=>{if(!x.pid||!x.pg||x.done)return;const r=PG.find(q=>q.id===x.pid);if(!r||r.st==='desist'||r.reemb)return;
   const t8=pg8(r.tel),t5=pgT5(r.tel),c=C.find(c=>[c.cel,c.celcon].some(p=>pg8(p)===t8))||C.find(c=>pgCod5(c)===t5);
@@ -1346,7 +1352,7 @@ function pgRep(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(
  const key=av.concat(sem).join('|');
  if(key&&S.pgAv!==key){S.pgAv=key;ch=1;setTimeout(()=>{try{alert((av.length?'⚠ R$ 50 contado DUAS vezes no caixa (mesmo cliente):\n'+av.join('\n')+'\nApague a entrada com o nome sem código em Lançamentos.\n\n':'')+(sem.length?'⚠ Entrada de R$ 50 sem cliente na planilha (conferir o cadastro/telefone):\n'+sem.join('\n'):''))}catch(e){}},700)}
  if(ch)save()}catch(e){}}
-function pfSyncPg(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const nd=x=>String(x||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'').slice(-8);S.perfil=S.perfil||{};let ch=0;PG.forEach(r=>{const q=r.dtc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(c&&chSet(c.cliente,q))ch=1});PG.forEach(r=>{const q=r.orc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(orcSet(c?c.cliente:pgNome(r),q,r.id))ch=1});PG.forEach(r=>{const q=r.perf;if(!q||!(q.g||q.i))return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(!c)return;const k=mtKey(c.cliente),o=S.perfil[k];if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}catch(e){}}
+function pfSyncPg(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const nd=x=>String(x||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'').slice(-8);S.perfil=S.perfil||{};let ch=0;PG.forEach(r=>{const q=r.dtc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(c&&chSet(c.cliente,q))ch=1});PG.forEach(r=>{const q=r.orc;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(orcSet(c?c.cliente:pgNome(r),q,r.id))ch=1});PG.forEach(r=>{const q=r.camp;if(!q)return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(campSet(c?c.cliente:pgNome(r),q))ch=1});PG.forEach(r=>{const q=r.perf;if(!q||!(q.g||q.i))return;const t=nd(r.tel),nm=mtKey(r.nome||''),c=C.find(c=>(t.length>=8&&(nd(c.cel)===t||nd(c.celcon)===t))||(nm&&mtKey(c.cliente)===nm));if(!c)return;const k=mtKey(c.cliente),o=S.perfil[k];if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}catch(e){}}
 let PFED=-1;
 const pfPick=run(async(i,k,v)=>{const c=C[i];if(!c)return;S.perfil=S.perfil||{};const key=mtKey(c.cliente),o=S.perfil[key]||{g:'',i:''};o[k]=v;o.ts=Math.floor(Date.now()/1000);o.por='dono';S.perfil[key]=o;if(o.g&&o.i&&PFED===i)PFED=-1;await save();ficha(i)});
 const pfEd=i=>{PFED=i;ficha(i)};
@@ -1725,7 +1731,7 @@ const mtOrg=run(async()=>{await mtDados();const M=mtS(),RS=mtRecs().slice(0,40);
   <div style="font-size:12px;color:#777">${mtDMY(r.ent)} · ${r.cn?esc(r.cn)+'/'+esc(r.u):'cidade ainda não cadastrada'}</div>
   <select class="in" style="height:36px;font-size:14px" onchange="mtOrgSet('${encodeURIComponent(r.key).replace(/'/g,'%27')}',this.value)"><option value="">Automática (${esc(mtNome(au))})</option>${M.cmp.map(c=>`<option value="${c.id}" ${m===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}${Object.keys(MTN).map(k=>`<option value="${k}" ${m===k?'selected':''}>${MTN[k]}</option>`).join('')}</select></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhuma entrada encontrada.</p>'}
  ${btn('VOLTAR','#9E9E9E','mtMain()')}`;tela('v6');scrollTo(0,0)});
-const mtOrgSet=run(async(k,v)=>{k=decodeURIComponent(k);const M=mtS();if(v)M.org[k]=v;else delete M.org[k];mtRC=null;await save();toast('Origem salva ✔')});
+const mtOrgSet=run(async(k,v)=>{k=decodeURIComponent(k);const M=mtS();M.orgBy=M.orgBy||{};if(v){M.org[k]=v;M.orgBy[k]={por:'dono',ts:Math.floor(Date.now()/1000)}}else{delete M.org[k];delete M.orgBy[k]}mtRC=null;await save();toast('Origem salva ✔')});
 /* ---- comparação lado a lado + gráficos ---- */
 function mtChart(L,lab,refs,fmt,mn,cap){const w=330,h=150,pl=36,pb=18,pt=8,pr=8,vals=[].concat(...L.map(l=>l.p.filter(v=>v!=null)),refs.map(r=>r.y)),mx=Math.max(mn||1,Math.min(Math.max(1,...vals),cap||1e12))*1.1,n=lab.length;
  const X=i=>pl+(n<2?0:i*(w-pl-pr)/(n-1)),Y=v=>pt+(h-pt-pb)*(1-Math.min(v,mx)/mx);
@@ -1957,7 +1963,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=120;
+const VERSAO=121;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
