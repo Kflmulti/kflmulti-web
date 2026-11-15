@@ -198,28 +198,39 @@ function refrescar(skipS){if(rf0)return rf0;soft(1);cl=true;const t0=Date.now();
   cl=false;lastRf=Date.now();aplicaC(L,t0);pfSyncPg();pgRep();try{if(mig125())save()}catch(e2){}try{if(meuMig()|meuSync())save()}catch(e3){}}catch(e){cl=false;if(e.message!='login'&&isNet(e))setOff(true);if(e.message!='login')toast('Não foi possível atualizar os clientes: '+String(e.message).slice(0,90));lista()}finally{soft(-1);rf0=0}})();return rf0}
 /* ===== v129: contas de anúncios (coluna R da planilha): SIM = Conta Rotativa, ESPECIAL = Conta Fidelidade, NÃO = fora ===== */
 const CTN={SIM:'Conta Rotativa',ESPECIAL:'Conta Fidelidade'};let CTA=null,CTAt=0;
-async function ctGet(f){if(!f&&CTA&&Date.now()-CTAt<120000)return CTA;const j=await tfx('contas',f?{forca:1}:{});const m={};j.L.forEach(x=>{m[rcN(x.c)]=x});CTA={...j,m};CTAt=Date.now();return CTA}
+async function ctGet(f){if(!f&&CTA&&Date.now()-CTAt<120000)return CTA;const j=await tfx('contas',f?{forca:1}:{});const m={};j.L.forEach(x=>{const k=rcN(x.c);if(!m[k]||CTN[x.r]||!CTN[m[k].r])m[k]=x});CTA={...j,m};CTAt=Date.now();return CTA}
 async function ctFicha(cli){const el=$('#ctf');if(!el)return;el.innerHTML='<div class="card" style="color:#777;margin:8px 0">📇 Conferindo a conta de anúncios…</div>';
- try{const j=await ctGet();if($('#ctf')!==el)return;const x=j.m[rcN(cli)];el.innerHTML=`<div class="card" style="margin:8px 0;${x?'border-left:5px solid #00695C':''}"><b>📇 ${x?CTN[x.r]:'Fora das contas de anúncios'}</b>${x?'<div style="color:#777;font-size:13px">O número do cliente está cadastrado nesta conta.</div>':''}</div>`}
+ try{const j=await ctGet();if($('#ctf')!==el)return;let x=j.m[rcN(cli)];if(x&&!CTN[x.r])x=null;el.innerHTML=`<div class="card" style="margin:8px 0;${x?'border-left:5px solid #00695C':''}"><b>📇 ${x?CTN[x.r]:'Fora das contas de anúncios'}</b>${x?'<div style="color:#777;font-size:13px">O número do cliente está cadastrado nesta conta.'+(x.cc?' WhatsApp comercial: '+esc(ccF(x.cc)):'')+'</div>':''}</div>`}
  catch(e){el.innerHTML='<div class="card" style="color:#777;margin:8px 0">📇 Não consegui ler a conta de anúncios ('+esc(String(e.message||e).slice(0,80))+').</div>'}}
-function ctLimpa(j){const [y,mo,d]=j.hoje.split('-'),h=Date.UTC(+y,+mo-1,+d)/864e5,de=s=>{const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s||'').trim());return m?Date.UTC(+m[3],+m[2]-1,+m[1])/864e5:null},o={SIM:{L:[],T:[]},ESPECIAL:{L:[],T:[]}};
- j.L.forEach(x=>{const g=o[x.r];if(!g)return;g.T.push(x);const f=de(x.f),dd=f==null?null:h-f,pv=num(x.pg||'');
-  if(x.r==='SIM'){if(f!=null&&dd>0&&pv>0)g.L.push({x,p:1,dd,t:'Não concluiu o pagamento ('+x.pg+') e o plano terminou há '+dd+' dia'+(dd>1?'s':'')});else if(dd!=null&&dd>=7)g.L.push({x,p:2,dd,t:'Desligado há '+dd+' dias'})}
-  else if(dd!=null&&dd>=60)g.L.push({x,p:2,dd,t:'Desligado há '+dd+' dias'})});
- Object.values(o).forEach(g=>{g.L.sort((a,b)=>a.p-b.p||b.dd-a.dd);g.T.sort((a,b)=>(de(a.f)||0)-(de(b.f)||0))});return o}
+/* v132: a vaga é do NÚMERO (DDD + 8 últimos dígitos): o mesmo número em vários anúncios conta uma vez; só sai se nenhum anúncio com ele estiver ativo */
+const ctNk=t=>{const d=String(t||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');return d.length>=10?d.slice(0,2)+d.slice(-8):''};
+function ctLimpa(j){const [y,mo,d]=j.hoje.split('-'),h=Date.UTC(+y,+mo-1,+d)/864e5,de=s=>{const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s||'').trim());return m?Date.UTC(+m[3],+m[2]-1,+m[1])/864e5:null},o={SIM:{L:[],T:[]},ESPECIAL:{L:[],T:[]}},A={};
+ j.L.forEach(x=>{const k=ctNk(x.cc);if(k)(A[k]=A[k]||[]).push(x)});
+ ['SIM','ESPECIAL'].forEach(c=>{const G={};j.L.forEach(x=>{if(x.r!==c)return;const k=ctNk(x.cc)||('c:'+rcN(x.c));(G[k]=G[k]||{k,c,R:[]}).R.push(x)});
+  Object.values(G).forEach(g=>{g.all=g.k.startsWith('c:')?g.R:(A[g.k]||g.R);g.cc=(g.R.find(x=>x.cc)||{}).cc||'';let mx=null,ul=null;
+   g.all.forEach(x=>{const f=de(x.f);if(f!=null&&(mx==null||f>mx)){mx=f;ul=x}});g.ul=ul||g.R[0];g.dd=mx==null?null:h-mx;g.at=g.all.filter(x=>{const f=de(x.f);return f!=null&&f>=h});o[c].T.push(g);
+   if(g.at.length||g.dd==null)return;const dd=g.dd,pv=num(g.ul.pg||'');
+   if(c==='SIM'){if(dd>0&&pv>0)o[c].L.push({...g,p:1,t:'Não concluiu o pagamento ('+g.ul.pg+') e o plano terminou há '+dd+' dia'+(dd>1?'s':'')});else if(dd>=7)o[c].L.push({...g,p:2,t:'Desligado há '+dd+' dias'})}
+   else if(dd>=60)o[c].L.push({...g,p:2,t:'Desligado há '+dd+' dias'})})});
+ Object.values(o).forEach(g=>{g.L.sort((a,b)=>a.p-b.p||b.dd-a.dd);g.T.sort((a,b)=>(b.dd==null?-1e9:b.dd)-(a.dd==null?-1e9:a.dd))});return o}
+const ctAn=g=>`<div style="color:#777;font-size:12px;margin-top:4px">Anúncios com este número:</div>`+g.all.map(x=>`<div style="color:#555;font-size:12px;margin-left:8px">• ${esc(x.c)} · ${CTN[x.r]||'fora das contas'} · fim ${esc(x.f||'—')}</div>`).join('');
 let CTV='SIM';
 const ctTela=run(async f=>{$('#v6').innerHTML='<h2>🧹 LIMPEZA DAS CONTAS</h2><div class="card" style="color:#777">Lendo a planilha…</div>';tela('v6');let j;
  try{j=await ctGet(f!==0)}catch(e){$('#v6').innerHTML='<h2>🧹 LIMPEZA DAS CONTAS</h2><div class="card" style="color:#C62828">Não consegui ler a planilha: '+esc(e.message||String(e))+'<br>Confira se o tarefas.php novo foi enviado ao servidor.</div>'+btn('VOLTAR','#9E9E9E','menu()');return}
  const o=ctLimpa(j),g=o[CTV],oc=g.T.length,vg=49-oc;
  $('#v6').innerHTML=`<h2>🧹 LIMPEZA DAS CONTAS</h2><div class="g2">${['SIM','ESPECIAL'].map(k=>`<button class="bg" style="background:${k===CTV?'#00695C':'#90A4AE'};font-size:13px;padding:10px 6px" onclick="CTV='${k}';ctTela(0)">${CTN[k]} (${o[k].L.length})</button>`).join('')}</div>
- <div class="card" style="margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>Ocupação</b><b style="white-space:nowrap;color:${vg<=3?'#C62828':'#2E7D32'}">${oc} de 49 · ${vg>0?vg+' vaga'+(vg>1?'s':''):'sem vagas'}</b></div><div style="color:#777;font-size:12px;margin-top:4px">${CTV==='SIM'?'Limpar primeiro quem não pagou os R$ 100 com o plano já terminado; depois quem está desligado há 7 dias ou mais (o mais antigo primeiro).':'Clientes desligados há 60 dias ou mais (o mais antigo primeiro).'}</div></div>
- ${g.L.length?g.L.map((r,n)=>`<div class="card" style="margin:6px 0;padding:10px 12px;border-left:5px solid ${r.p===1?'#C62828':'#F57C00'}"><b>${n+1}. ${esc(r.x.c)}</b><div style="color:${r.p===1?'#C62828':'#777'};font-size:13px">${esc(r.t)}${r.x.f?' · fim do plano '+esc(r.x.f):''}</div>${r.x.cc?`<div style="display:flex;gap:8px;align-items:center;margin-top:6px"><b style="flex:1;font-size:16px">📞 ${esc(ccF(r.x.cc))}</b><button class="bt" style="height:36px;padding:0 12px" onclick="ctCp(${n})">📋 Copiar</button></div>`:'<div style="color:#C62828;font-size:12px">WhatsApp comercial não preenchido na planilha</div>'}<button class="bg" style="background:#B71C1C;font-size:13px;padding:8px 6px;margin-top:6px" onclick="ctTira(${n})">✔ REMOVIDO DA CONTA</button></div>`).join(''):'<div class="card" style="color:#2E7D32">Nada para limpar nesta conta. 🎉</div>'}
- <details style="margin:12px 0"><summary style="cursor:pointer;font-weight:700;padding:6px 0">📋 Todos na ${CTN[CTV]} (${oc})</summary>${g.T.map(x=>`<div style="font-size:13px;padding:3px 0;border-bottom:1px solid #eee">${esc(x.c)} <span style="color:#777">· fim ${esc(x.f||'—')}</span></div>`).join('')}</details>
+ <div class="card" style="margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>Ocupação (números)</b><b style="white-space:nowrap;color:${vg<=3?'#C62828':'#2E7D32'}">${oc} de 49 · ${vg>0?vg+' vaga'+(vg>1?'s':''):'sem vagas'}</b></div><div style="color:#777;font-size:12px;margin-top:4px">${CTV==='SIM'?'Limpar primeiro quem não pagou os R$ 100 com o plano já terminado; depois quem está desligado há 7 dias ou mais (o mais antigo primeiro).':'Clientes desligados há 60 dias ou mais (o mais antigo primeiro).'}</div></div>
+ ${g.L.length?g.L.map((r,n)=>`<div class="card" style="margin:6px 0;padding:10px 12px;border-left:5px solid ${r.p===1?'#C62828':'#F57C00'}"><b>${n+1}. ${esc(r.ul.c)}</b><div style="color:${r.p===1?'#C62828':'#777'};font-size:13px">${esc(r.t)}${r.ul.f?' · fim do plano '+esc(r.ul.f):''}</div>${ctAn(r)}${r.cc?`<div style="display:flex;gap:8px;align-items:center;margin-top:6px"><b style="flex:1;font-size:16px">📞 ${esc(ccF(r.cc))}</b><button class="bt" style="height:36px;padding:0 12px" onclick="ctCp(${n})">📋 Copiar</button></div>`:'<div style="color:#C62828;font-size:12px">WhatsApp comercial não preenchido na planilha</div>'}<button class="bg" style="background:#B71C1C;font-size:13px;padding:8px 6px;margin-top:6px" onclick="ctTira(${n})">✔ REMOVIDO DA CONTA</button></div>`).join(''):'<div class="card" style="color:#2E7D32">Nada para limpar nesta conta. 🎉</div>'}
+ <details style="margin:12px 0"><summary style="cursor:pointer;font-weight:700;padding:6px 0">📋 Todos na ${CTN[CTV]} (${oc})</summary>${g.T.map(x=>`<div style="font-size:13px;padding:3px 0;border-bottom:1px solid #eee">${x.cc?'📞 '+esc(ccF(x.cc))+' · ':''}${x.R.map(y=>esc(y.c)).join(', ')} <span style="color:#777">· ${x.at.length?'<b style="color:#2E7D32">ativo</b>':'fim '+esc((x.ul&&x.ul.f)||'—')}</span></div>`).join('')}</details>
  ${btn('ATUALIZAR','#455A64','ctTela(1)')}${btn('VOLTAR','#9E9E9E','menu()')}`;window.__ctL=g.L});
-const ctCp=async n=>{const r=(window.__ctL||[])[n];toast(r&&await cpTx(ccF(r.x.cc))?'Número copiado ✔':'Não consegui copiar')};
+const ctCp=async n=>{const r=(window.__ctL||[])[n];toast(r&&await cpTx(ccF(r.cc))?'Número copiado ✔':'Não consegui copiar')};
 const ccF=t=>String(t||'').replace(/^\((\d\d)\)\s*/,'$1 ');
-const ctTira=run(async n=>{const r=(window.__ctL||[])[n];if(!r)return;if(!confirm('Confirma que '+r.x.c+' já foi removido da '+CTN[r.x.r]+'?\nNa planilha a coluna R fica NÃO.'))return;
- try{await tfx('conta_set',{cli:r.x.c,conta:'NAO'});toast('Removido: '+r.x.c)}catch(e){alert('Não consegui gravar: '+e.message)}await ctTela(1)});
+const ctTira=run(async n=>{const r0=(window.__ctL||[])[n];if(!r0)return;const c=r0.c;let j;try{j=await ctGet(1)}catch(e){return alert('Não consegui ler a planilha: '+e.message)}
+ const g=ctLimpa(j)[c].T.find(x=>x.k===r0.k);if(!g){alert('Esse número não está mais na '+CTN[c]+'.');return ctTela(0)}
+ const nm=g.R.map(x=>x.c).join(', '),nr=g.cc?ccF(g.cc):'sem número';
+ if(g.at.length){if(!confirm('⚠️ Este número tem anúncio ATIVO ('+g.at.map(x=>x.c+', até '+String(x.f||'').slice(0,5)).join('; ')+').\n\nTirar mesmo assim da '+CTN[c]+'?'))return ctTela(0)}
+ else if(!confirm('Confirma que o número '+nr+' já foi removido da '+CTN[c]+' no Facebook?\n\nNa planilha fica NÃO em: '+nm))return;
+ try{const q=await tfx('conta_num',{de:c,cc:g.cc,cli:g.R[0].c});toast('Removido: '+nr+' ('+q.n+' linha'+(q.n>1?'s':'')+')')}catch(e){alert('Não consegui gravar: '+e.message)}await ctTela(1)});
 /* ===== v125: criativos do cliente (anexados pela consultora; histórico) + pedido de arte dentro do app ===== */
 const criUrl=(cli,f,dl)=>'tarefas.php?a=cri_img&cli='+encodeURIComponent(cli)+'&f='+encodeURIComponent(f)+(dl?'&dl=1':'');
 async function criFicha(cli){const el=$('#crf');if(!el)return;el.innerHTML='<div class="card" style="color:#777">🖼 Carregando os criativos…</div>';let j;
@@ -288,13 +299,23 @@ function ficha(i){const c=C[i],p=pend(c),dv=(p&&pd(c.datapg))||new Date(Date.now
  <div id="dvw" ${p?'':'hidden'}><div class="lb">Data de Vencimento (pagamento):</div><input class="in" type="date" id="dv" value="${iso(dv)}"></div>
  ${btn('CONFIRMAR RENOVAÇÃO','#008000',`renovar(${i})`)}
  <div style="display:flex;gap:10px"><button class="bg" style="background:#25D366" onclick="wa(${i},'cel')">WHATS PESSOAL</button><button class="bg" style="background:#128C7E" onclick="wa(${i},'celcon')">WHATS COMERCIAL</button></div>
- ${btn('🧾 NOTAS FISCAIS EMITIDAS','#B45309',`nfHist(${i})`)}<div id="nfh"></div><div id="ctf"></div><div id="crf"></div>
+ ${btn('🧾 NOTAS FISCAIS EMITIDAS','#B45309',`nfHist(${i})`)}<div id="nfh"></div>${btn('🧾 NF AVULSA','#6D4C41',`nfAvulsa(${i})`)}${btn(avu(c.cliente)?'👤 CLIENTE AVULSO ✔ (tocar para desfazer)':'👤 MARCAR COMO CLIENTE AVULSO','#607D8B',`avuTg(${i})`)}<div id="ctf"></div><div id="crf"></div>
  ${btn('PAUSAR CLIENTE','#FF0000',`pausar(${i})`)}${btn('VOLTAR','#808080',`voltarF(${i})`)}`;tela('v3');scrollTo(0,0);criFicha(c.cliente);ctFicha(c.cliente)}
 function wa(i,k){if(!String(C[i][k]||'').replace(/\D/g,''))return alert('Sem número cadastrado');
  $('#md').innerHTML=`<div class="box"><b style="font-size:20px">Notificar Renovação</b><p>Deseja notificar ou confirmar?</p><button class="bg" style="background:#25D366" onclick="waGo(${i},'${k}',1)">NOTIFICAR</button><button class="bg" style="background:#128C7E" onclick="waGo(${i},'${k}',0)">CONFIRMAR</button><button class="bg" style="background:#9E9E9E" onclick="$('#md').hidden=true">CANCELAR</button></div>`;$('#md').hidden=false}
 const T1='Olá... A renovação do seu plano é hoje, gostaria de saber se vai renovar, se vai manter o mesmo plano ou se vai alterar... O contato é feito para não deixar o anúncio pausar pois a pausa do anúncio atrapalha o aprendizado do algoritmo para melhorar cada vez mais',T2='Confirma por gentileza para eu poder fazer a configuração de renovação para seu anúncio não pausar';
 const waGo=run(async(i,k,m)=>{const c=C[i],d=String(c[k]||'').replace(/\D/g,''),t=vence().includes(c)?(m?T1:T2):'';$('#md').hidden=true;
  go('https://wa.me/55'+d+(t?'?text='+encodeURIComponent(t):''));if(!S.vistos.n.includes(c.cliente))S.vistos.n.push(c.cliente);(S.contato=S.contato||{})[c.cliente]=hk();await save();tela('v1');lista()});
+/* v132: NF avulsa (serviço fora dos planos): entra no caixa e no faturamento com imposto, sem custo de anúncio; não conta como venda/renovação */
+const nfAvulsa=run(async i=>{const c=C[i];if(!c)return;const ul=(S.nf||[]).concat(S.nfMes||[]).filter(n=>n.av&&nmEq(n.cliente,c.cliente)).pop();
+ const r=await pm('NF AVULSA de '+c.cliente+'\nValor do serviço (R$):',ul?num(ul.valor).toFixed(2).replace('.',','):'250,00');if(r===null)return;const v=r2(num(r));if(!(v>0))return alert('Valor inválido.');
+ const h=fm(new Date());if((S.nf||[]).some(n=>n.av&&nmEq(n.cliente,c.cliente)&&n.data===h&&num(n.valor)===v)&&!confirm('⚠ Já existe uma NF avulsa de '+brl(v)+' para este cliente hoje. Lançar outra?'))return;
+ if(!confirm('Lançar NF AVULSA de '+brl(v)+' para '+c.cliente+'?\n\nEntra no caixa e no faturamento (com imposto). Não ativa plano.'))return;
+ const nf={data:h,cliente:c.cliente,valor:brl(v),plano:'Serviço avulso',dias:0,av:1};S.nf.push(nf);S.totmes=r2((S.totmes||0)+v);(S.nfMes=S.nfMes||[]).push(nf);hd().ent=r2(hd().ent+v);credita(c.cliente,v,'A',calcV('A',v,v,'',0));
+ await save();toast('NF avulsa lançada: '+brl(v))});
+const avu=n=>(S.avulsos||[]).includes(rcN(n));
+const avuTg=run(async i=>{const c=C[i];if(!c)return;const k=rcN(c.cliente),L=S.avulsos=S.avulsos||[];if(L.includes(k)){if(!confirm('Desmarcar '+c.cliente+' como cliente avulso?'))return;S.avulsos=L.filter(x=>x!==k)}
+ else{if(!confirm('Marcar '+c.cliente+' como CLIENTE AVULSO?\n\nNão é plano de anúncio: fica fora da reconquista e das contas de anúncios.'))return;L.push(k)}await save();ficha(i)});
 const renovar=run(async i=>{const c=C[i],ub=undoBegin(c),pl=$('#pl').value;if(!pl)return alert('Selecione um plano!');const ds=Math.max(0,r2(num($('#ds')?$('#ds').value:'')));if(ds>=valor(pl))return alert('O desconto precisa ser menor que o valor do plano.');const ik=!!($('#ik')&&$('#ik').checked);if(ik&&pl!=='Plano GOLD - R$ 150,00')return alert('O desconto de indicação só vale no Gold 7 dias.');if(ik&&!(ds>0))return alert('Informe o valor do desconto de indicação.');
  {const kk=String(c.cliente).trim().toLowerCase(),pn=fila().filter(x=>x.f==='AlteraPlanilha.php'&&x.b&&x.b.situacao==='RENOVA'&&String(x.b.cliente||'').trim().toLowerCase()===kk);if(pn.length){if(!confirm('⚠ Já existe uma renovação deste cliente ainda NÃO enviada ao servidor ('+(pn[0].b.inicio||'?')+' → '+(pn[0].b.fim||'?')+').\n\nRenovar de novo pode duplicar. Continuar mesmo assim?'))return}else if(OFFL&&(S.renovados||[]).some(n=>String(n).trim().toLowerCase()===kk)){if(!confirm('⚠ Servidor fora do ar: no registro deste aparelho, este cliente JÁ foi renovado hoje.\n\nRenovar de novo? '))return}}
  if(!$('#di').value||($('#pe').checked&&!$('#dv').value))return alert('Preencha as datas.');const pe=$('#pe').checked,ini=fromIso($('#di').value),fim=new Date(ini);fim.setDate(fim.getDate()+dias(pl));
@@ -666,7 +687,7 @@ function orcAplica(cli,pid){const o=(S.orc||{})[mtKey(cli)];if(!o)return 0;const
   if(d)ap(P,r2(Math.max(0,custoGN(d,v)-(pri?cN2(v):0))))}
  return ch}
 const orcSet=(cli,q,pid)=>{const k=mtKey(cli);S.orc=S.orc||{};const o=S.orc[k],ts=(q.ts||0)*1000,v=+q.v||0;if(o&&(o.ts||0)>=ts)return 0;S.orc[k]={v,ts,por:q.por||'consultora',cli};orcAplica(cli,pid);return 1};
-function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=cN();return{cu,imp:0,lc:r2(cash-cu)}}const cu=r2(Math.max(0,custoPl(pl,k==='P')-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu),pl}}
+function calcV(k,cash,vNF,pl,prior,ip){ip=ip==null?IP():ip;if(k==='N'){const cu=cN();return{cu,imp:0,lc:r2(cash-cu)}}if(k==='A'){const imp=r2(vNF*ip/100);return{cu:0,imp,lc:r2(cash-imp)}}const cu=r2(Math.max(0,custoPl(pl,k==='P')-(prior||0))),imp=r2(vNF*ip/100);return{cu,imp,lc:r2(cash-imp-cu),pl}}
 function aplicaL(h,c,sg){h.lc=r2((h.lc||0)+sg*c.lc);h.cu=r2((h.cu||0)+sg*c.cu);h.imp=r2((h.imp||0)+sg*c.imp);S.custo=r2((S.custo||0)+sg*c.cu)}
 const pendN=()=>{const ym=(S.mes||'').split('/').reverse().join('-');return r2((S.ent||[]).filter(x=>x.k==='N'&&!x.done&&mkI(x.dt).startsWith(ym)).reduce((t,x)=>t+x.v,0))};
 const lucroMes=()=>r2(FAT()+pendN()-r2(FAT()*IP()/100)-CUS()-(S.meuTotal||0));
@@ -713,8 +734,8 @@ function mig2(){if(S.v2||!S.mes)return 0;
  const E=(S.ent||[]).filter(x=>mkI(x.dt).startsWith(ym));E.forEach(x=>{delete x.lc;delete x.cu;delete x.imp;delete x.done});
  let cu=0;const ap=(dt,c)=>{const h=dl(dt);h.lc=r2(h.lc+c.lc);h.cu=r2(h.cu+c.cu);h.imp=r2(h.imp+c.imp);cu=r2(cu+c.cu)},used=new Set();
  const prevDay=dt=>{const d=pd(dt);d.setDate(d.getDate()-1);return fm(d)};
- (S.nfMes||[]).forEach(n=>{const vN=num(n.valor),e=E.find(x=>(x.k==='R'||x.k==='P')&&!used.has(x)&&nmEq(x.cli,n.cliente)&&x.dt===n.data);if(e)used.add(e);
-  const k=e?e.k:'R',cash=e?e.v:vN,ip=(H[mkI(n.data)]||{}).ip,h0=H[mkI(n.data)];
+ (S.nfMes||[]).forEach(n=>{const vN=num(n.valor),e=E.find(x=>(n.av?x.k==='A':(x.k==='R'||x.k==='P'))&&!used.has(x)&&nmEq(x.cli,n.cliente)&&x.dt===n.data);if(e)used.add(e);
+  const k=e?e.k:(n.av?'A':'R'),cash=e?e.v:vN,ip=(H[mkI(n.data)]||{}).ip,h0=H[mkI(n.data)];
   let pri=0;if(k==='P'){const nN=E.find(x=>x.k==='N'&&!x.done&&nmEq(x.cli,n.cliente)&&mkI(x.dt)<=mkI(n.data));if(nN){nN.done=true;pri=r2(2*cG)}else if(cash<vN){pri=r2(2*cG);ap(prevDay(n.data),calcV('N',vN-cash,0,'GOLD',0))}}
   const c=calcV(k,cash,vN,n.plano,pri,ip);if(e){e.lc=c.lc;e.cu=c.cu;e.imp=c.imp}ap(n.data,c);
   if(!e){const h=dl(n.data);if(h.mig){h.ent=r2(h.ent+vN);h.cx=r2(h.cx+cash)}}});
@@ -860,7 +881,7 @@ async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',cr
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
 async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();return j}catch(e){return null}}
-const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&r.ret&&r.ret<=hj))}catch(e){return[]}};
+const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&(!r.ret||r.ret<=hj)))}catch(e){return[]}};
 /* v124: tarefa aguardando o cliente = dia no futuro (data de retorno ou 9999-12-31 sem data); não conta como pendente */
 const tfAgW=t=>!t.feito&&TF&&t.dia>TF.hoje;
 const tfPend=()=>TF?TF.t.filter(t=>!t.feito&&!tfAgW(t)).length+tfPg().length:null;
@@ -1179,7 +1200,7 @@ const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter
 function pgRel(ref){try{const L=pgL();if(!L.length)return'';const d0=ref?fm(fromIso(ref)):fm(new Date()),dh=ts=>fm(new Date(ts*1000)),en=L.filter(r=>dh(r.ts)===d0),cn=L.filter(r=>r.st==='conc'&&r.cts&&dh(r.cts)===d0),an=L.filter(r=>r.st==='and'),ag=L.filter(r=>r.st==='aguard'),es=L.filter(r=>r.st==='espera');
  return '*👤 CLIENTES PAGOS (AINDA SEM PLANILHA):*\nCadastrados hoje: '+en.length+'\nConcluídos hoje: '+cn.length+'\nEm andamento: '+an.length+an.map(r=>'\n⏳ '+pgFone(r.tel)).join('')+'\nAguardando o cliente: '+ag.length+ag.map(r=>'\n💤 '+pgFone(r.tel)+(r.mot?' — '+r.mot:'')).join('')+'\nEm espera (fora da tela da consultora): '+es.length+'\n\n'}catch(e){return''}}
 const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;const d={id,st};
- if(st==='aguard'){const m=await pm('Motivo (ex.: sem WhatsApp comercial):','','text');if(m===null||!String(m).trim())return;d.mot=String(m).trim()}
+ if(st==='aguard'){const m=await pm('Motivo (ex.: sem WhatsApp comercial):','','text');if(m===null||!String(m).trim())return;d.mot=String(m).trim();const d3=new Date();d3.setDate(d3.getDate()+3);const q=await pm('Voltar a falar com o cliente em (dd/mm/aaaa):',fm(d3),'text');if(q===null)return;const mm=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(q).trim());if(!mm)return alert('Data inválida. Use dd/mm/aaaa.');d.ret=mm[3]+'-'+mm[2].padStart(2,'0')+'-'+mm[1].padStart(2,'0');if(d.ret<=iso(new Date()))return alert('A data tem que ser depois de hoje.')}
  if(st==='desist'){if(!confirm('Registrar DESISTÊNCIA de '+pgFone(r.tel)+'?'))return;d.mot='desistência';d.reemb=confirm('Os R$ 50 foram devolvidos ao cliente?\n\nOK = SIM, devolvido (o valor sai do caixa).\nCancelar = NÃO devolvido.')}
  if(st==='conc'&&!confirm('Marcar como concluído?'))return;
  try{pgSet(await tfx('pago_set',d));toast('Atualizado ✔')}catch(e){alert(e.message)}window.pgBack?tfTela():pgTela()});
@@ -1189,9 +1210,9 @@ function pgLista(){const L=pgL(),q=pgQ.replace(/\D/g,''),qt=pgQ.trim().toLowerCa
  if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt)||String(r.id)===qt);else V=L.filter(r=>pgF==='all'||r.st===pgF);
  V=V.slice().sort((a,b)=>b.ts-a.ts);const hojeS=Date.now()/1000;
  $('#pgl').innerHTML=V.map(r=>{const fim=r.ts+365*86400,dl=Math.ceil((fim-hojeS)/86400),dt=fm(new Date(r.ts*1000));
-  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.ret&&r.st==='aguard'?'retorno em '+fm(fromIso(r.ret)):'',r.st==='aguard'||r.st==='espera'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
+  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.st==='aguard'?(r.ret?'retorno em '+fm(fromIso(r.ret)):'sem data (aparece para a consultora)'):'',r.st==='aguard'||r.st==='espera'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
   const bt=(t,c,f)=>`<button class="bg" style="background:${c};font-size:13px;padding:8px 6px" onclick="${f}">${t}</button>`;
-  const ab=(r.st==='and'||r.st==='aguard'||r.st==='espera')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+(r.st==='espera'?bt('▶ REATIVAR','#1565C0',`pgAct('${r.id}','and')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
+  const ab=(r.st==='and'||r.st==='aguard'||r.st==='espera')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+(r.st==='espera'?bt('▶ REATIVAR','#1565C0',`pgAct('${r.id}','and')`):'')+(r.st==='aguard'?bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
   return `<div class="card" style="margin:8px 0;border-left:5px solid ${PGC[r.st]}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(pgFone(r.tel))}${r.nome?' · '+esc(r.nome):''}</b><span style="color:${PGC[r.st]};font-weight:700;font-size:13px">${PGST[r.st]}</span></div><div style="color:#777;font-size:13px">pagou em ${dt} · cadastrado por ${r.por==='dono'?'você':'consultora'}${info?' · '+info:''}</div><div class="g2" style="margin-top:8px">${ab}</div></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhum cliente nesta lista.</p>'}
 function pgTela(nf){if(!nf)window.pgBack=0;if(!nf)tfLoad().then(()=>{if(cur==='v6'&&$('#pgl')&&!pgQ)pgTela(1)});const L=pgL(),n=s=>L.filter(r=>r.st===s).length;
  const chip=(k,t)=>`<button class="bg" style="background:${pgF===k&&!pgQ?'#1565C0':'#78909C'};font-size:13px;padding:8px 6px" onclick="pgQ='';pgF='${k}';pgTela()">${t}</button>`;
@@ -1913,7 +1934,7 @@ function rcEvs(){const M={};Object.keys(RCH).forEach(k=>M[k]=new Set(RCH[k]));
 function rcFila(){const R=S.rc=S.rc||{},T=R.t=R.t||{},sk=R.sk=R.sk||{},h=hoje(),K=iso(h),ev=rcEvs(),seen=new Set(RC0.map(rcN)),nf=[],fila=[];
  const parado=c=>{const d=pd(c.fim);return !ok(c)&&!!d&&d<h},pode=k=>{const t=T[k]||{};return !(t.last&&(t.last===K||(h-fromIso(t.last))/864e5<30))},tem=c=>String(c.cel||'').replace(/\D/g,'').length>=10;
  RC0.forEach(n=>{if(!C.some(c=>rcN(c.cliente)===rcN(n)))nf.push(n)});
- C.forEach(c=>{const k=rcN(c.cliente),ini=seen.has(k);if(!parado(c)||sk[k]===K||!pode(k)||!(tem(c)||ini))return;const d=pd(c.fim),dd=Math.round((h-d)/864e5),e=ev[k]||[],w=e.length;
+ C.forEach(c=>{const k=rcN(c.cliente),ini=seen.has(k);if(avu(c.cliente)||!parado(c)||sk[k]===K||!pode(k)||!(tem(c)||ini))return;const d=pd(c.fim),dd=Math.round((h-d)/864e5),e=ev[k]||[],w=e.length;
   if(dd<30||dd>365||(w<2&&!ini))return;
   const g=[];for(let i=1;i<e.length;i++)g.push(e[i]-e[i-1]);g.sort((x,y)=>x-y);const rit=g.length?Math.min(45,Math.max(7,g[g.length>>1])):7;
   if(dd<Math.max(30,2*rit))return;
@@ -2037,7 +2058,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=131;
+const VERSAO=132;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
