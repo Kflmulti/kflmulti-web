@@ -1194,13 +1194,28 @@ function pgSync(){if(!S||!S.mes||!PG)return;const g=pgS();let ch=0;
  if(pgTot())ch=1;
  if(ch)save()}
 /* v134: pagou o total → o resto entra no caixa na hora; quando o cliente aparece na planilha sai a NF inteira (adicional conta como renovação) */
-function pgTot(){const L=pgL();if(!L.length||!S||!S.mes)return 0;const g=pgS();g.tot=g.tot||{};g.tnf=g.tnf||{};let ch=0;
+/* v135: anúncio adicional que uma versão antiga do app tratou como cliente novo (R$ 50 de entrada, ligado ao cliente da base pelo telefone) → corrige uma vez */
+function pgAdFix(){const L=pgL();if(!L.length||!S||!S.mes)return 0;const g=pgS();g.tnf=g.tnf||{};let ch=0;
+ L.forEach(r=>{if(!r.ad||r.reemb||r.st==='desist'||r.st==='exp'||!g.lan[r.id])return;const nm=String(r.nome||'').trim();if(!nm)return;
+  const c=(typeof C!=='undefined'&&Array.isArray(C)?C:[]).find(x=>nmEq(x.cliente,nm)),old=g.vinc[r.id],v=+r.v||150,erro=old&&!nmEq(old,nm);
+  if(erro&&!c)return;/* espera o cliente aparecer na lista para corrigir tudo junto */
+  (S.ent||[]).forEach(x=>{if(x.pid!==r.id||x.dev||x.k!=='N')return;const nv=calcV('R',v,v,r.plano||'GOLD',0),d=r2(v-x.v),h=(S.hist||{})[mkI(x.dt)];
+   if(h){h.cx=r2((h.cx||0)+d);aplicaL(h,{lc:r2(nv.lc-(x.lc||0)),cu:r2(nv.cu-(x.cu||0)),imp:r2(nv.imp-(x.imp||0))},1)}else S.custo=r2((S.custo||0)+nv.cu-(x.cu||0));
+   S.saldoEA=r2((S.saldoEA||0)+d);Object.assign(x,{k:'R',v,lc:nv.lc,cu:nv.cu,imp:nv.imp,ad:1,fx135:1});if(nv.pl)x.pl=nv.pl;delete x.done;delete x.o;ch=1});
+  if(!erro)return;const nn=c.cliente;g.vinc[r.id]=nn;(S.ent||[]).forEach(x=>{if(x.pid===r.id){x.cli=nn;delete x.pg}});
+  if(g.tnf[r.id]){const dt=fm(new Date(g.tnf[r.id])),vv=brl(v);
+   if(!(S.nfMes||[]).some(q=>nmEq(q.cliente,nn)&&q.valor===vv)){const nf={data:dt,cliente:nn,valor:vv,plano:c.plano||r.plano||'GOLD',dias:dias(c.plano||r.plano||'GOLD')};S.nf.push(nf);(S.nfMes=S.nfMes||[]).push(nf);S.totmes=r2((S.totmes||0)+v);const h=(S.hist||{})[mkI(dt)];if(h)h.ent=r2((h.ent||0)+v);if(!(S.pagos=S.pagos||[]).includes(nn))S.pagos.push(nn)}
+   if(!S.renovados.includes(nn))S.renovados.push(nn);addU(S.renmes=S.renmes||[],nn);S.cont=S.cont||{};S.cont[nn]=Math.max(1,S.cont[nn]||0)}
+  ch=1;try{elog('v135: corrigido o anúncio adicional '+nn+' ('+brl(v)+'): estava como entrada de R$ 50 em '+old,'aviso')}catch(e){}
+  setTimeout(()=>{try{toast('Corrigido: '+nn+' lançado como anúncio adicional ('+brl(v)+') ✔')}catch(e){}},800)});
+ return ch}
+function pgTot(){const L=pgL();if(!L.length||!S||!S.mes)return 0;const g=pgS();g.tot=g.tot||{};g.tnf=g.tnf||{};let ch=pgAdFix();
  L.forEach(r=>{if(!r.tot&&!r.ad)return;if(r.reemb||r.st==='desist'||r.st==='exp'||!g.lan[r.id])return;
   const E=()=>(S.ent||[]).filter(e=>e.pid===r.id&&!e.dev);
   if(r.tot&&!r.ad&&!g.tot[r.id]){const e=E(),n=e.find(x=>x.k==='N'),rest=r2((+r.v||0)-r2(e.reduce((t,x)=>t+x.v,0)));
    if(rest>0.009){window.__bulk=1;credita(n?n.cli:pgNome(r),rest,'P',calcV('P',rest,+r.v,r.plano||'GOLD',n?(n.cu||0):0));window.__bulk=0;const x=S.ent[S.ent.length-1];x.pid=r.id;x.n=1;if(!g.vinc[r.id])x.pg=1}
    g.tot[r.id]=Date.now();ch=1}
-  if(!g.vinc[r.id]||g.tnf[r.id]||(!r.ad&&!g.tot[r.id]))return;
+  if(!g.vinc[r.id]||g.tnf[r.id]||(!r.ad&&!g.tot[r.id]))return;if(r.ad&&!nmEq(g.vinc[r.id],r.nome))return;
   const c=(typeof C!=='undefined'&&Array.isArray(C)?C:[]).find(x=>nmEq(x.cliente,g.vinc[r.id]));if(!c)return;
   const n=E().find(x=>x.k==='N');let v=+r.v||0;if(n){if(n.exp&&!n.cmp){v=r2(v-n.v);n.cmp=1}n.done=true}
   const h=fm(new Date()),nm=c.cliente,pl=c.plano||r.plano||'GOLD';
@@ -2088,7 +2103,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=134;
+const VERSAO=135;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
