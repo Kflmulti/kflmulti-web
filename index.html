@@ -188,7 +188,7 @@ async function buscaC(n){const t0=await(await fetch(API+'BuscaClientes.php?_='+D
 let cp=null,cur='login',pc=null,lm=0,cl=false,rf0=0,ns=0,lastRf=0,ccTm=0;
 const soft=d=>{ns=Math.max(0,ns+d);$('#so').hidden=!ns};
 function setC(L){C=L;try{localStorage.setItem(CK,JSON.stringify(L))}catch(e){}
- if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){S.novos.push(c.cliente);addU(S.novmes=S.novmes||[],c.cliente);hd().nov++;if(ok(c)&&!pgLink(c)&&!(S.ent||[]).some(e=>e.k==='N'&&!e.done&&rcN(e.cli)===rcN(c.cliente)))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd();try{bellUp()}catch(e){}}
+ if(C.length){if(S.cache&&S.cache.length){const old=new Set(S.cache);C.forEach(c=>{if(!old.has(c.cliente)&&!S.novos.includes(c.cliente)){if(pgAdC(c)){pgLink(c);return}S.novos.push(c.cliente);addU(S.novmes=S.novmes||[],c.cliente);hd().nov++;if(ok(c)&&!pgLink(c)&&!(S.ent||[]).some(e=>e.k==='N'&&!e.done&&rcN(e.cli)===rcN(c.cliente)))credita(c.cliente,50,'N',calcV('N',50,0,'GOLD',0))}})}S.cache=C.map(c=>c.cliente);const h=hd(),t=hoje().getTime();h.atv=ativos().length;h.ven=Math.max(h.ven||0,ativos().filter(c=>{const d=pd(c.fim);return d&&d.getTime()===t}).length);anuDia();save()}lista();rmUpd();try{bellUp()}catch(e){}}
 function aplicaFila(L){try{const q=fila().filter(x=>x.f==='AlteraPlanilha.php'&&x.b);if(!q.length||!Array.isArray(L))return L;const K=s=>String(s||'').trim().toLowerCase();q.forEach(it=>{const b=it.b,k=K(b.cliente_original||b.cliente),c=L.find(x=>K(x.cliente)===k);if(!c)return;['plano','situacao','ativo','inicio','fim','datapg','pg','cel','celcon'].forEach(f=>{if(b[f]!==undefined&&!(f==='plano'&&!b[f]))c[f]=b[f]});if(b.cliente_original&&b.cliente&&K(b.cliente)!==k)c.cliente=b.cliente})}catch(e){}return L}
 function aplicaC(L,t0){if(lm>t0)return refrescar(true);if(cur!=='v1'){pc={L,t0};return}setC(L)}
 function refrescar(skipS){if(rf0)return rf0;soft(1);cl=true;const t0=Date.now();
@@ -877,7 +877,7 @@ const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cli
 /* ===== tarefas da consultora (lista externa: tarefas.php + consultora.html) ===== */
 let TF=null;
 const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catch(e){return[]}},tfQs=q=>{try{localStorage.setItem('kfl_tfq',JSON.stringify(q))}catch(e){}};
-async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j}
+async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok){const e=new Error(j.erro||('erro '+r.status));e.j=j;throw e}return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
 async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();return j}catch(e){return null}}
@@ -891,7 +891,9 @@ const TFP={ativacao:c=>['Ativar o anúncio no Meta'+(tfPl(c)?' (plano '+tfPl(c)+
  renovacao:c=>['Manter/renovar o anúncio'+(tfPl(c)?' no plano '+tfPl(c):''),'Trocar a arte, se o cliente pediu'],
  dados_nf:(c,f)=>['Pedir ao cliente: '+(f||'nome ou razão social, CPF/CNPJ e CEP'),'Atualizar o cadastro com os dados recebidos']};
 const TFT={ativacao:'Ativar o cliente ',reativacao:'Reativar o cliente ',renovacao:'Renovar o cliente ',dados_nf:'Pedir dados para a nota fiscal de '};
-function tfCria(tp,nome,extra,c){try{nome=String(nome||'').trim();if(!nome||!TFT[tp])return;const cl=c||(typeof C!=='undefined'?C.find(x=>nmEq(x.cliente,nome)):null);let cs='';if(tp==='ativacao'||tp==='reativacao'){try{cs=((rcEvs()[rcN(nome)]||[]).length>=2)?'ESPECIAL':'SIM'}catch(e){cs='SIM'}}return tfAdd({tipo:tp,cli:nome,txt:TFT[tp]+nome,passos:TFP[tp](cl,extra),ref:tp+':'+nome.toLowerCase()+':'+iso(new Date()),cs})}catch(e){}}
+function tfCria(tp,nome,extra,c){try{nome=String(nome||'').trim();if(!nome||!TFT[tp])return;const cl=c||(typeof C!=='undefined'?C.find(x=>nmEq(x.cliente,nome)):null);let cs='';if(tp==='ativacao'||tp==='reativacao'){try{cs=((rcEvs()[rcN(nome)]||[]).length>=2)?'ESPECIAL':'SIM'}catch(e){cs='SIM'}}const ref=tp+':'+nome.toLowerCase()+':'+iso(new Date());if(tp==='ativacao'||tp==='reativacao')window.TFJ={n:nome.toLowerCase(),ref,ts:Date.now()};return tfAdd({tipo:tp,cli:nome,txt:TFT[tp]+nome,passos:TFP[tp](cl,extra),ref,cs})}catch(e){}}
+/* v134: pedido extra logo depois de ativar/reativar vai para dentro da mesma tarefa */
+const tfJ=nome=>{const j=window.TFJ;return j&&j.n===String(nome||'').trim().toLowerCase()&&Date.now()-j.ts<15*60000?j.ref:''};
 
 /* ===== desfazer + tela de conferência (renovar/reativar por voz) ===== */
 let UND=null;
@@ -957,7 +959,7 @@ const tfCopia=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponív
 const tfZap=run(async()=>{const u=tfUrl();if(!u)return alert('Link indisponível. Atualize a tela.');go('https://wa.me/?text='+encodeURIComponent('Lista de tarefas do dia: '+u))});
 const tfUrgRx=/criativo|\barte\b|logomarca|urg[eê]n/i;
 async function tfPergunta(nome){try{if(window.TFSKIP)return;const x=await pm('Tem algo para a consultora fazer neste cliente ('+nome+')? Ex: trocar o criativo. Deixe em branco se não tiver.','');if(x===null||!String(x).trim())return;const t=String(x).trim();let u=tfUrgRx.test(t);if(!u)u=confirm('É urgente?\n\nOK = urgente (te aviso se passar 1 hora sem a consultora fazer).\nCancelar = normal.');
- const ok=await tfAdd({tipo:'extra',cli:nome,txt:t.charAt(0).toUpperCase()+t.slice(1)+' — '+nome,passos:[],urg:u?1:0,ref:'x:'+Date.now()});toast(ok?'Tarefa enviada à consultora ✔':'Sem conexão: fica na fila')}catch(e){}}
+ const jn=tfJ(nome),ok=await tfAdd({tipo:'extra',cli:nome,txt:t.charAt(0).toUpperCase()+t.slice(1)+' — '+nome,passo:t.charAt(0).toUpperCase()+t.slice(1),junta:jn,passos:[],urg:u?1:0,ref:'x:'+Date.now()});toast(ok?(jn?'Incluído na tarefa da consultora ✔':'Tarefa enviada à consultora ✔'):'Sem conexão: fica na fila')}catch(e){}}
 const tfAck=()=>(S.tfAck=S.tfAck||{});
 function tfAlertas(){try{if(!TF||!S||!S.mes)return[];const now=Date.now()/1000,L=[],A=tfAck();
  TF.t.forEach(t=>{if(t.feito||!t.urg||tfAgW(t))return;const n=Math.floor((now-t.ts)/3600);if(n>=1&&!A['u|'+t.id+'|'+n])L.push({k:'u|'+t.id+'|'+n,tx:'🚨 '+t.txt,sub:'sem fazer há '+n+' hora'+(n>1?'s':'')+' · cobre a consultora',say:'Urgente sem fazer há '+n+' hora'+(n>1?'s':'')+': '+t.txt.replace(/\s+—\s+/g,', ')})});
@@ -1181,18 +1183,41 @@ function pgSet(j){if(!j||!Array.isArray(j.pg))return;PG=j.pg;try{pgSync()}catch(
 function pgSync(){if(!S||!S.mes||!PG)return;const g=pgS();let ch=0;
  PG.forEach(r=>{
   if(!g.lan[r.id]){g.lan[r.id]=Date.now();ch=1;
-   if(!r.reemb){window.__bulk=1;credita(pgNome(r),50,'N',calcV('N',50,0,'GOLD',0));window.__bulk=0;const x=S.ent[S.ent.length-1];x.pid=r.id;x.pg=1}}
-  if(r.reemb&&!g.reb[r.id]){g.reb[r.id]=Date.now();ch=1;const x=(S.ent||[]).find(e=>e.pid===r.id&&!e.done);
-   if(x){x.done=true;x.dev=true;S.saldoEA=r2((S.saldoEA||0)-x.v);const a=amrS();a.rows.push({id:amrId(),dt:fm(new Date()),d:'devolução',f:'entrada devolvida cliente',v:r2(x.v),t:'E',cli:x.cli});S.amrDt=Date.now()}}});
- const sl=PG.map(r=>({id:r.id,tel:r.tel,st:r.st,cts:r.cts||0,ts:r.ts,nome:r.nome||''}));if(JSON.stringify(sl)!==JSON.stringify(g.cache)){g.cache=sl;ch=1}
+   if(!r.reemb){window.__bulk=1;/* v134: anúncio adicional = plano integral, como uma renovação */
+    if(r.ad){const v=+r.v||150;credita(pgNome(r),v,'R',calcV('R',v,v,r.plano||'GOLD',0))}else credita(pgNome(r),50,'N',calcV('N',50,0,'GOLD',0));
+    window.__bulk=0;const x=S.ent[S.ent.length-1];x.pid=r.id;x.pg=1;if(r.ad)x.ad=1}}
+  if(r.reemb&&!g.reb[r.id]){g.reb[r.id]=Date.now();ch=1;/* v134: devolve tudo o que o cliente pagou (entrada ou total), se a nota ainda não saiu */
+   const L=(S.ent||[]).filter(e=>e.pid===r.id&&!e.dev&&(e.k==='N'?!e.done:!(g.tnf&&g.tnf[r.id])));let tv=0,cli='';
+   L.forEach(x=>{x.done=true;x.dev=true;tv=r2(tv+x.v);cli=x.cli});
+   if(tv>0){S.saldoEA=r2((S.saldoEA||0)-tv);const a=amrS();a.rows.push({id:amrId(),dt:fm(new Date()),d:'devolução',f:'entrada devolvida cliente',v:tv,t:'E',cli});S.amrDt=Date.now()}}});
+ const sl=PG.map(r=>({id:r.id,tel:r.tel,st:r.st,cts:r.cts||0,ts:r.ts,nome:r.nome||'',v:r.v||50,tot:r.tot||0,ad:r.ad||'',bc:r.bc||'',plano:r.plano||''}));if(JSON.stringify(sl)!==JSON.stringify(g.cache)){g.cache=sl;ch=1}
+ if(pgTot())ch=1;
  if(ch)save()}
+/* v134: pagou o total → o resto entra no caixa na hora; quando o cliente aparece na planilha sai a NF inteira (adicional conta como renovação) */
+function pgTot(){const L=pgL();if(!L.length||!S||!S.mes)return 0;const g=pgS();g.tot=g.tot||{};g.tnf=g.tnf||{};let ch=0;
+ L.forEach(r=>{if(!r.tot&&!r.ad)return;if(r.reemb||r.st==='desist'||r.st==='exp'||!g.lan[r.id])return;
+  const E=()=>(S.ent||[]).filter(e=>e.pid===r.id&&!e.dev);
+  if(r.tot&&!r.ad&&!g.tot[r.id]){const e=E(),n=e.find(x=>x.k==='N'),rest=r2((+r.v||0)-r2(e.reduce((t,x)=>t+x.v,0)));
+   if(rest>0.009){window.__bulk=1;credita(n?n.cli:pgNome(r),rest,'P',calcV('P',rest,+r.v,r.plano||'GOLD',n?(n.cu||0):0));window.__bulk=0;const x=S.ent[S.ent.length-1];x.pid=r.id;x.n=1;if(!g.vinc[r.id])x.pg=1}
+   g.tot[r.id]=Date.now();ch=1}
+  if(!g.vinc[r.id]||g.tnf[r.id]||(!r.ad&&!g.tot[r.id]))return;
+  const c=(typeof C!=='undefined'&&Array.isArray(C)?C:[]).find(x=>nmEq(x.cliente,g.vinc[r.id]));if(!c)return;
+  const n=E().find(x=>x.k==='N');let v=+r.v||0;if(n){if(n.exp&&!n.cmp){v=r2(v-n.v);n.cmp=1}n.done=true}
+  const h=fm(new Date()),nm=c.cliente,pl=c.plano||r.plano||'GOLD';
+  if(v>0&&!S.nf.some(q=>nmEq(q.cliente,nm)&&q.data===h&&q.valor===brl(v))){const nf={data:h,cliente:nm,valor:brl(v),plano:pl,dias:dias(pl)};S.nf.push(nf);(S.nfMes=S.nfMes||[]).push(nf);S.totmes=r2((S.totmes||0)+v);hd().ent=r2(hd().ent+v);if(!(S.pagos=S.pagos||[]).includes(nm))S.pagos.push(nm)}
+  if(r.ad){const hh=hd();hh.ren=(hh.ren||0)+1;if(!S.renovados.includes(nm))S.renovados.push(nm);addU(S.renmes=S.renmes||[],nm);S.cont=S.cont||{};S.cont[nm]=(S.cont[nm]||0)+1}
+  g.tnf[r.id]=Date.now();ch=1;setTimeout(()=>{try{const p=nfPedeDados(c);if(p&&p.catch)p.catch(()=>{})}catch(e){}},300)});
+ return ch}
+/* v134: linha nova da planilha que é anúncio adicional (cadastro da consultora ou código 1xxxxx de quem já é cliente) */
+function pgAdC(c){try{if(pgL().some(x=>x.ad&&nmEq(x.nome,c.cliente)))return true;const m=/(\d{6})\s*$/.exec(String(c.cliente||''));if(!m||m[1][0]==='0')return false;
+ return (C||[]).some(o=>o!==c&&!nmEq(o.cliente,c.cliente)&&pgCod5(o)===m[1].slice(1))}catch(e){return false}}
 const pgT5=t=>String(t||'').replace(/\D/g,'').slice(-5),pgCod5=c=>{const m=String((c&&c.cliente)||'').match(/(\d{4,6})\s*$/);return m?m[1].slice(-5):''};
 function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter(x=>x.length==8),pr=id=>(S.ent||[]).find(e=>e.pid===id&&!e.done);
- let r=L.find(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&ph.includes(pg8(x.tel)));
- if(!r){const k5=pgCod5(c);if(k5)r=L.filter(x=>g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&pgT5(x.tel)===k5).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]}
- if(!r)return false;const x=pr(r.id);g.vinc[r.id]=c.cliente;x.cli=c.cliente;delete x.pg;
+ let r=L.find(x=>x.ad&&g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&nmEq(x.nome,c.cliente))||L.find(x=>!x.ad&&g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&ph.includes(pg8(x.tel))&&(!x.bc||nmEq(x.nome,c.cliente)));
+ if(!r){const k5=pgCod5(c);if(k5)r=L.filter(x=>!x.ad&&!x.bc&&g.lan[x.id]&&!g.vinc[x.id]&&x.st!=='desist'&&pr(x.id)&&pgT5(x.tel)===k5).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]}
+ if(!r)return false;g.vinc[r.id]=c.cliente;(S.ent||[]).forEach(e=>{if(e.pid===r.id){e.cli=c.cliente;delete e.pg}});try{pgTot()}catch(e){}
  const pf=r.perf||{},cheio=!!(pf.g&&pf.i);if(r.st!=='conc'&&cheio)tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
- toast('Vinculado ao cadastro '+pgFone(r.tel)+' (R$ 50 já contado) ✔'+(r.st!=='conc'&&!cheio?' — aguardando perfil para concluir':''));return true}catch(e){return false}}
+ toast('Vinculado ao cadastro '+pgFone(r.tel)+(r.ad?' (anúncio adicional, '+brl(+r.v||0)+' já contado) ✔':r.tot?' (pagou o total, '+brl(+r.v||0)+' já contado) ✔':' (R$ 50 já contado) ✔')+(r.st!=='conc'&&!cheio?' — aguardando perfil para concluir':''));return true}catch(e){return false}}
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
 const rbCentral=()=>rbDue()?'<div class="lb" style="margin-top:14px">💸 Reembolso da Meta</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A" onclick="rbReemb()"><b>Exportar a Meta e fazer o reembolso</b><div style="color:#777;font-size:13px">estimativa do app '+brl(S.reembEst||0)+' · toque para registrar o valor real</div></div>':'';
 const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length,es=L.filter(r=>r.st==='espera').length;if(!a&&!g&&!es)return'';const p=pgParados().length;
@@ -1201,16 +1226,20 @@ function pgRel(ref){try{const L=pgL();if(!L.length)return'';const d0=ref?fm(from
  return '*👤 CLIENTES PAGOS (AINDA SEM PLANILHA):*\nCadastrados hoje: '+en.length+'\nConcluídos hoje: '+cn.length+'\nEm andamento: '+an.length+an.map(r=>'\n⏳ '+pgFone(r.tel)).join('')+'\nAguardando o cliente: '+ag.length+ag.map(r=>'\n💤 '+pgFone(r.tel)+(r.mot?' — '+r.mot:'')).join('')+'\nEm espera (fora da tela da consultora): '+es.length+'\n\n'}catch(e){return''}}
 const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;const d={id,st};
  if(st==='aguard'){const m=await pm('Motivo (ex.: sem WhatsApp comercial):','','text');if(m===null||!String(m).trim())return;d.mot=String(m).trim();const d3=new Date();d3.setDate(d3.getDate()+3);const q=await pm('Voltar a falar com o cliente em (dd/mm/aaaa):',fm(d3),'text');if(q===null)return;const mm=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(q).trim());if(!mm)return alert('Data inválida. Use dd/mm/aaaa.');d.ret=mm[3]+'-'+mm[2].padStart(2,'0')+'-'+mm[1].padStart(2,'0');if(d.ret<=iso(new Date()))return alert('A data tem que ser depois de hoje.')}
- if(st==='desist'){if(!confirm('Registrar DESISTÊNCIA de '+pgFone(r.tel)+'?'))return;d.mot='desistência';d.reemb=confirm('Os R$ 50 foram devolvidos ao cliente?\n\nOK = SIM, devolvido (o valor sai do caixa).\nCancelar = NÃO devolvido.')}
+ if(st==='desist'){if(!confirm('Registrar DESISTÊNCIA de '+pgFone(r.tel)+'?'))return;d.mot='desistência';d.reemb=confirm('Os '+brl(+r.v||50)+' foram devolvidos ao cliente?\n\nOK = SIM, devolvido (o valor sai do caixa).\nCancelar = NÃO devolvido.')}
  if(st==='conc'&&!confirm('Marcar como concluído?'))return;
  try{pgSet(await tfx('pago_set',d));toast('Atualizado ✔')}catch(e){alert(e.message)}window.pgBack?tfTela():pgTela()});
-const pgNovo=run(async()=>{const t=await pm('Telefone do cliente que pagou (com DDD):','','numeric');if(t===null||!String(t).trim())return;const n=await pm('Nome do negócio (opcional):','','text');
- try{pgSet(await tfx('pago_add',{tel:String(t),nome:n===null?'':String(n)}));toast('Cadastrado ✔ (R$ 50 lançados)')}catch(e){alert(e.message)}pgTela()});
+const pgNovo=run(async()=>{const t=await pm('Telefone do cliente que pagou (com DDD):','','numeric');if(t===null||!String(t).trim())return;const n=await pm('Nome do negócio (opcional). Anúncio adicional de quem já é cliente: código começando com 1, ex.: Pizzaria 115679','','text');
+ const nn=n===null?'':String(n).trim(),ad=/(^|\s)[1-9]\d{5}$/.test(nn);let tot=ad,pl='GOLD';
+ if(!ad)tot=confirm('O cliente pagou o TOTAL do plano?\n\nOK = pagou o total (sem a dívida dos R$ 100)\nCancelar = pagou só a entrada de R$ 50');
+ if(tot){const p=await pm('Plano pago (GOLD, MEGA ou PLUS):','GOLD','text');if(p===null)return;pl=String(p).trim().toUpperCase();if(!['GOLD','MEGA','PLUS'].includes(pl))return alert('Plano inválido. Use GOLD, MEGA ou PLUS.')}
+ const go=async f=>{pgSet(await tfx('pago_add',{tel:String(t),nome:nn,tot:tot?1:0,plano:pl,forca:f?1:0}));toast('Cadastrado ✔ ('+brl(tot?{GOLD:150,MEGA:300,PLUS:600}[pl]:50)+' lançados)')};
+ try{await go(0)}catch(e){if(e.j&&e.j.conf&&confirm(e.message)){try{await go(1)}catch(e2){alert(e2.message)}}else alert(e.message)}pgTela()});
 function pgLista(){const L=pgL(),q=pgQ.replace(/\D/g,''),qt=pgQ.trim().toLowerCase();let V;
  if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt)||String(r.id)===qt);else V=L.filter(r=>pgF==='all'||r.st===pgF);
  V=V.slice().sort((a,b)=>b.ts-a.ts);const hojeS=Date.now()/1000;
  $('#pgl').innerHTML=V.map(r=>{const fim=r.ts+365*86400,dl=Math.ceil((fim-hojeS)/86400),dt=fm(new Date(r.ts*1000));
-  const info=[r.st==='aguard'||r.st==='and'?'':'' ,r.mot?esc(r.mot):'',r.st==='aguard'?(r.ret?'retorno em '+fm(fromIso(r.ret)):'sem data (aparece para a consultora)'):'',r.st==='aguard'||r.st==='espera'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
+  const info=[r.ad?'➕ anúncio adicional de '+esc(r.ad):'',r.tot&&!r.ad?'💰 pagou o total '+brl(+r.v||0):'',r.mot?esc(r.mot):'',r.st==='aguard'?(r.ret?'retorno em '+fm(fromIso(r.ret)):'sem data (aparece para a consultora)'):'',r.st==='aguard'||r.st==='espera'?(dl>0?'guardado até '+fm(new Date(fim*1000))+' (faltam '+dl+' dias)':''):'',r.reemb?'💸 reembolsado':'',r.obs?esc(r.obs):''].filter(Boolean).join(' · ');
   const bt=(t,c,f)=>`<button class="bg" style="background:${c};font-size:13px;padding:8px 6px" onclick="${f}">${t}</button>`;
   const ab=(r.st==='and'||r.st==='aguard'||r.st==='espera')?bt('📲 WHATSAPP','#25D366',`go('https://wa.me/55${String(r.tel).replace(/\D/g,'')}')`)+bt('✅ CONCLUÍDO','#2E7D32',`pgAct('${r.id}','conc')`)+(r.st==='and'?bt('⏳ AGUARDANDO','#F57C00',`pgAct('${r.id}','aguard')`):'')+(r.st==='espera'?bt('▶ REATIVAR','#1565C0',`pgAct('${r.id}','and')`):'')+(r.st==='aguard'?bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`):'')+bt('🚫 DESISTIU','#C62828',`pgAct('${r.id}','desist')`):bt('↩️ REABRIR','#1565C0',`pgAct('${r.id}','and')`);
   return `<div class="card" style="margin:8px 0;border-left:5px solid ${PGC[r.st]}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(pgFone(r.tel))}${r.nome?' · '+esc(r.nome):''}</b><span style="color:${PGC[r.st]};font-weight:700;font-size:13px">${PGST[r.st]}</span></div><div style="color:#777;font-size:13px">pagou em ${dt} · cadastrado por ${r.por==='dono'?'você':'consultora'}${info?' · '+info:''}</div><div class="g2" style="margin-top:8px">${ab}</div></div>`}).join('')||'<p style="text-align:center;color:#777">Nenhum cliente nesta lista.</p>'}
@@ -1438,11 +1467,12 @@ let campH='';async function campPush(){try{if(typeof S==='undefined'||!S||!S.mes
 function pfSync(j){if(typeof S==='undefined'||!S||!S.mes)return;let ch=0;S.perfil=S.perfil||{};(j&&j.t||[]).forEach(t=>{if(t.tipo==='ativacao'&&t.dtc&&t.cli&&chSet(t.cli,t.dtc))ch=1;if(t.tipo==='ativacao'&&t.orc&&t.cli&&orcSet(t.cli,t.orc))ch=1;if(t.tipo==='ativacao'&&t.camp&&t.cli&&campSet(t.cli,t.camp))ch=1});(j&&j.t||[]).forEach(t=>{if(t.tipo!=='ativacao'||!t.perf||!t.cli)return;const k=mtKey(t.cli),o=S.perfil[k],q=t.perf;if(o&&(o.ts||0)>=(q.ts||0))return;if(o&&o.g===q.g&&o.i===q.i)return;S.perfil[k]={g:q.g||(o&&o.g)||'',i:q.i||(o&&o.i)||'',ts:q.ts||0,por:q.por||'consultora'};ch=1});if(ch)save()}
 function pgRep(){try{if(typeof S==='undefined'||!S||!S.mes||!PG||!Array.isArray(C)||!C.length)return;const g=pgS(),av=[],sem=[];let ch=0;
  (S.ent||[]).forEach(x=>{if(!x.pid||!x.pg||x.done)return;const r=PG.find(q=>q.id===x.pid);if(!r||r.st==='desist'||r.reemb)return;
-  const t8=pg8(r.tel),t5=pgT5(r.tel),c=C.find(c=>[c.cel,c.celcon].some(p=>pg8(p)===t8))||C.find(c=>pgCod5(c)===t5);
+  const t8=pg8(r.tel),t5=pgT5(r.tel),c=(r.ad||r.bc)?C.find(c=>nmEq(c.cliente,r.nome)):(C.find(c=>[c.cel,c.celcon].some(p=>pg8(p)===t8))||C.find(c=>pgCod5(c)===t5));
   if(!c){if(r.st==='conc'&&r.cts&&Date.now()/1000-r.cts>86400)sem.push(String(x.cli).trim()+' ('+pgFone(r.tel)+')');return}
   const dup=(S.ent||[]).find(e=>e!==x&&e.k==='N'&&!e.done&&!e.pid&&rcN(e.cli)===rcN(c.cliente));
   if(dup){av.push('"'+String(x.cli).trim()+'" e "'+String(dup.cli).trim()+'"');return}
-  g.vinc[r.id]=c.cliente;x.cli=c.cliente;delete x.pg;ch=1});
+  g.vinc[r.id]=c.cliente;(S.ent||[]).forEach(e=>{if(e.pid===r.id){e.cli=c.cliente;delete e.pg}});ch=1});
+ if(ch)try{pgTot()}catch(e){}
  const key=av.concat(sem).join('|');
  if(key&&S.pgAv!==key){S.pgAv=key;ch=1;setTimeout(()=>{try{alert((av.length?'⚠ R$ 50 contado DUAS vezes no caixa (mesmo cliente):\n'+av.join('\n')+'\nApague a entrada com o nome sem código em Lançamentos.\n\n':'')+(sem.length?'⚠ Entrada de R$ 50 sem cliente na planilha (conferir o cadastro/telefone):\n'+sem.join('\n'):''))}catch(e){}},700)}
  if(ch)save()}catch(e){}}
@@ -2058,7 +2088,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=133;
+const VERSAO=134;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
@@ -2605,13 +2635,13 @@ function acRenovar(t,c,rt,ex){const VB=rt?'Reativar':'Renovar',vb=rt?'reativar':
 async function renovaDireto(c,exec,tail,rt){const snap=snapUndo(c);window.TFSKIP=1;let m;try{m=await exec()}catch(e){window.TFSKIP=0;return{msg:'Deu erro: '+(e&&e.message||e)}}window.TFSKIP=0;
  if(!m.some(x=>/registrad/i.test(x)))return{msg:m.join(' ')||'Não consegui concluir.'};
  snap.n1=undoFp();UND=snap;const ex=extrasVoz(tail);let fez=false;
- for(const e of ex){await tfAdd({tipo:'extra',cli:c.cliente.trim(),txt:e.txt+' — '+c.cliente.trim(),passos:[],urg:e.urg?1:0,ref:'x:'+Date.now()+Math.random()});fez=true}
+ for(const e of ex){await tfAdd({tipo:'extra',cli:c.cliente.trim(),txt:e.txt+' — '+c.cliente.trim(),passo:e.txt,junta:tfJ(c.cliente),passos:[],urg:e.urg?1:0,ref:'x:'+Date.now()+Math.random()});fez=true}
  UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice();confTela(UND);
  return{msg:'Feito',after:fez?undefined:()=>askCons(c)}}
 function extrasVoz(tail){tail=String(tail||'').replace(/^[\s,.;:!?-]+/,'');if(!tail)return[];let t=tail.replace(/^(?:colocar|coloca|pedir|pede|adicionar|adiciona|botar|bota)\s+(?:isso\s+)?(?:(?:para|pra)\s+)?(?:a\s+)?(?:consultora\s+)?/i,'');const urg=/urg[eê]n/i.test(t)||tfUrgRx.test(t);t=t.replace(/\b(?:com\s+)?urg[eê]ncia\b|\burgente\b/gi,' ').replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').replace(/\s{2,}/g,' ').trim();if(t.length<3)return[];
  return t.split(/\s+e\s+(?=(?:refazer|trocar|criar|fazer|mudar|alterar|ajustar|verificar|conferir|ativar|enviar|pedir)\b)/i).map(x=>x.replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g,'').trim()).filter(Boolean).map(x=>({txt:cap(x),urg:urg||tfUrgRx.test(x)}))}
 function askCons(c){const nome=c.cliente.trim(),fim=()=>{ans=null;btns=[]};
- const grava=async(L,urg)=>{fim();for(const x of L){await tfAdd({tipo:'extra',cli:nome,txt:cap(x)+' — '+nome,passos:[],urg:urg?1:0,ref:'x:'+Date.now()+Math.random()})}if(UND){UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice()}say('Ok.');return true};
+ const grava=async(L,urg)=>{fim();for(const x of L){await tfAdd({tipo:'extra',cli:nome,txt:cap(x)+' — '+nome,passo:cap(x),junta:tfJ(nome),passos:[],urg:urg?1:0,ref:'x:'+Date.now()+Math.random()})}if(UND){UND.refs=(window.tfRefs||[]).slice();UND.tx=(window.tfTx||[]).slice()}say('Ok.');return true};
  btns=[['Nada',()=>{fim();say('Ok.')}],['🚨 Trocar criativo',()=>grava(['trocar criativo'],1)]];
  ans=async T=>{const raw=((RAWA&&RAWA[0])||T[0]||'').replace(/^[\s,.:;-]+|[\s,.:;!?-]+$/g,'').trim(),z=nz(raw);if(!raw)return false;
   if(/^(nao|nada|nenhum|nenhuma|so isso|so)\b/.test(z)){fim();say('Ok.');return true}
