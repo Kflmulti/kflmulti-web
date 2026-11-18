@@ -195,7 +195,7 @@ function refrescar(skipS){if(rf0)return rf0;soft(1);cl=true;const t0=Date.now();
  rf0=(async()=>{try{const q0=fila().length;if(!q0)flush();const lp=(async()=>{if(q0){await flush();cp=null}const x=cp?await cp:null;cp=null;return aplicaFila(x||await buscaC())})();
   const [g,L]=await Promise.all([skipS?null:getE().catch(e=>{if(e.message=='login')throw e;return null}),lp]);
   if(g&&sd<=t0&&!dirty){S=Array.isArray(g)?{}:g;SO=true;revSet(REVOF.get(g));if(norm())save()}
-  cl=false;lastRf=Date.now();aplicaC(L,t0);pfSyncPg();pgRep();try{if(mig125())save()}catch(e2){}try{if(meuMig()|meuSync())save()}catch(e3){}}catch(e){cl=false;if(e.message!='login'&&isNet(e))setOff(true);if(e.message!='login')toast('Não foi possível atualizar os clientes: '+String(e.message).slice(0,90));lista()}finally{soft(-1);rf0=0}})();return rf0}
+  cl=false;lastRf=Date.now();aplicaC(L,t0);pfSyncPg();pgRep();try{if(mig125())save()}catch(e2){}try{fix136()}catch(e3){}try{if(meuMig()|meuSync())save()}catch(e3){}}catch(e){cl=false;if(e.message!='login'&&isNet(e))setOff(true);if(e.message!='login')toast('Não foi possível atualizar os clientes: '+String(e.message).slice(0,90));lista()}finally{soft(-1);rf0=0}})();return rf0}
 /* ===== v129: contas de anúncios (coluna R da planilha): SIM = Conta Rotativa, ESPECIAL = Conta Fidelidade, NÃO = fora ===== */
 const CTN={SIM:'Conta Rotativa',ESPECIAL:'Conta Fidelidade'};let CTA=null,CTAt=0;
 async function ctGet(f){if(!f&&CTA&&Date.now()-CTAt<120000)return CTA;const j=await tfx('contas',f?{forca:1}:{});const m={};j.L.forEach(x=>{const k=rcN(x.c);if(!m[k]||CTN[x.r]||!CTN[m[k].r])m[k]=x});CTA={...j,m};CTAt=Date.now();return CTA}
@@ -420,7 +420,7 @@ function rbMark(){try{const h=hoje();if(S.metaP&&!S.rbAv&&diasFimMes()==0&&(S.re
 function rbEstMes(){const ym=S.mes.split('/').reverse().join('-');return r2(Object.keys(S.hist||{}).filter(k=>k.startsWith(ym)).reduce((t,k)=>{const x=S.hist[k];return t+(x.atv||0)*(x.cd||9)+(x.ma||0)},0))}
 const FD=()=>{const v=S.fundoDia;return v==null||!(v>=0)?100:v};
 const diasDesde=(u,h)=>{if(!u)return 1;const n=Math.round((fromIso(h)-fromIso(u))/864e5);return isNaN(n)?1:Math.max(1,Math.min(62,n))};
-function diario(){const h=iso(new Date());let c=0;try{if(meuMig())c=1;if(meuSync())c=1}catch(e){}if(S.meuUltimo!==h){const n=diasDesde(S.meuUltimo,h);if(S.meuAtivo&&!S.mtMeu){S.meuTotal=r2((S.meuTotal||0)+n*MD());metaCusta(n*MD());S.meuCh=h}S.meuUltimo=h;c=1}if(rbMark())c=1;if(S.fundoUlt!==h){const n=diasDesde(S.fundoUlt,h);S.fundo=r2((S.fundo||0)+n*FD());if(S.fundoMes!=null)S.fundoMes=r2(S.fundoMes+n*FD());S.fundoUlt=h;c=1}return c}
+function diario(){const h=iso(new Date());let c=0;try{fix136()}catch(e){}try{if(meuMig())c=1;if(meuSync())c=1}catch(e){}if(S.meuUltimo!==h){const n=diasDesde(S.meuUltimo,h);if(S.meuAtivo&&!S.mtMeu){S.meuTotal=r2((S.meuTotal||0)+n*MD());metaCusta(n*MD());S.meuCh=h}S.meuUltimo=h;c=1}if(rbMark())c=1;if(S.fundoUlt!==h){const n=diasDesde(S.fundoUlt,h);S.fundo=r2((S.fundo||0)+n*FD());if(S.fundoMes!=null)S.fundoMes=r2(S.fundoMes+n*FD());S.fundoUlt=h;c=1}return c}
 const sm=(a,k)=>a.reduce((t,x)=>t+x[k],0),cardP=(ic,t,v,cor,f)=>cardF(ic,t,v,cor,f,'+');
 const SCI={E:'🏢',P:'👤'},SCN={E:'Empresa',P:'Pessoal'};
 const addVarEntry=(nome,v,fx,sc)=>{const f=(S.fixos||[]).find(x=>(x.nome||'').trim().toLowerCase()===nome.toLowerCase());if(f&&fx)sc=f.sc||'P';sc=sc||'P';S.lastSc=sc;
@@ -585,10 +585,20 @@ const invC=run(async()=>{const I=S.inv=S.inv||[];let n=await pm('Nome do investi
  const rq=await pm('Quantidade (ex: 1,5):','1,00');if(rq===null)return;const q=num(rq);if(q<=0)return alert('Quantidade inválida.');const rp=await pm('Valor por cota (ex: 100,00):','0,00');if(rp===null)return;const p=num(rp);if(p<=0)return alert('Preço inválido.');
  const t=r2(q*p);if((S.fundo||0)<t)return alert('Saldo insuficiente no fundo ('+brl(S.fundo||0)+').');S.fundo=r2(S.fundo-t);S.saldoP=r2((S.saldoP||0)-t);const dt=fm(new Date()),e=I.find(x=>x.n.trim().toLowerCase()===n.toLowerCase());
  if(!e)I.push({n,q,p,t:tp||undefined,h:[{dt,q,t}]});else{const nq=e.q+q;e.p=r2((e.q*e.p+q*p)/nq);e.q=nq;e.h.push({dt,q,t})}await save();inv(1)});
-const invV=run(async i=>{const x=S.inv[i];if(!x||x.q<=0)return;const rq=await pm('Quantidade a vender (max '+FQ(x.q)+'):',FQ(x.q));if(rq===null)return;const q=num(rq);if(q<=0||q>x.q)return alert('Quantidade inválida.');
+const invV=run(async i=>{const x=S.inv[i];if(!x||x.q<=0)return;if(x.t==='R'||isCdb(x.n))return invRes(i);const rq=await pm('Quantidade a vender (max '+FQ(x.q)+'):',FQ(x.q));if(rq===null)return;const q=num(rq);if(q<=0||q>x.q)return alert('Quantidade inválida.');
  const rp=await pm('Informe o valor por cota recebido (ex: 100,00):',x.p.toLocaleString('pt-BR',{minimumFractionDigits:2}));if(rp===null)return;const p=num(rp);if(p<=0)return alert('Valor por cota inválido.');
  S.fundo=r2((S.fundo||0)+q*p);S.saldoP=r2((S.saldoP||0)+q*p);x.q=Math.round((x.q-q)*1e8)/1e8;if(x.q<=0)S.inv.splice(i,1);await save();inv(1)});
-const invH=i=>{const x=S.inv[i];if(!x||!x.h.length)return alert('Nenhuma compra registrada para este investimento.');alert([...x.h].reverse().map(h=>`${h.dt} — ${FQ(h.q)} cotas — ${brl(h.t)}`).join('\n'))};
+/* v136: resgate de renda fixa (CDB etc.) por valor em R$; pergunta a conta e se vai ser reinvestido */
+const invRes=run(async i=>{const x=S.inv[i];if(!x)return;const N=x.n.toUpperCase(),jk=isCdb(x.n)?(N.includes('PESSOAL')?'jurosP':N.includes('EMPRESA')?'jurosE':''):'',V=r2(x.q*x.p+(jk?(S[jk]||0):0));
+ const rv=await pm('Valor resgatado em R$ (o que caiu na conta). Hoje o '+x.n+' vale '+brl(V)+':','');if(rv===null)return;const r=num(rv);if(!(r>0))return alert('Valor inválido.');
+ if(r>V+0.009&&!confirm('O valor ('+brl(r)+') é maior do que o app tem para '+x.n+' ('+brl(V)+'). O investimento vai ficar zerado. Continuar?'))return;
+ const ct=await pm('O dinheiro caiu em qual conta? 1 = Pessoal, 2 = Empresa','1');if(ct===null)return;const emp=String(ct).trim()==='2';
+ const re=confirm('Esse dinheiro vai ser REINVESTIDO?\n\nOK = sim (vai para o Saldo para investimento)\nCancelar = não (fica na conta para gastos/pagamentos)');
+ const rest=r2(Math.max(0,V-r)),dt=fm(new Date());if(jk)S[jk]=0;(x.h=x.h||[]).push({dt,q:0,t:-r,rs:1});
+ if(rest<=0.009)S.inv.splice(i,1);else{x.q=1;x.p=rest}
+ if(emp)S.saldoE=r2((S.saldoE||0)+r);else S.saldoP=r2((S.saldoP||0)+r);if(re)S.fundo=r2((S.fundo||0)+r);
+ await save();alert('Resgate de '+brl(r)+' registrado.\n'+x.n+': '+(rest>0.009?'fica com '+brl(rest):'zerado')+'\nEntrou no saldo '+(emp?'da Empresa':'Pessoal')+(re?' e no Saldo para investimento.':'.'));inv(1)});
+const invH=i=>{const x=S.inv[i];if(!x||!x.h.length)return alert('Nenhuma compra registrada para este investimento.');alert([...x.h].reverse().map(h=>h.rs?`${h.dt} — resgate de ${brl(-h.t)}`:`${h.dt} — ${FQ(h.q)} cotas — ${brl(h.t)}`).join('\n'))};
 function edit(i){const c=C[i],F=[['cliente','Nome'],['plano','Plano'],['situacao','Situação'],['inicio','Início'],['fim','Fim'],['ativo','Ativo (OK/NÃO)'],['cel','Celular'],['celcon','Comercial'],['datapg','Data PG'],['pg','Valor PG (R$)']];
  $('#v6').innerHTML=`<h2>EDITAR CADASTRO</h2>${F.map(([k,l])=>`<div class="lb">${l}</div><input class="in" id="e-${k}" ${['inicio','fim','datapg'].includes(k)?'type="date"':['cel','celcon'].includes(k)?'inputmode="tel"':k=='pg'?'inputmode="decimal"':''} value="${esc(['inicio','fim','datapg'].includes(k)?(pd(c[k])?iso(pd(c[k])):''):k=='plano'?c.plano.split('-')[0].replace('Plano','').replace('Combo','').trim():c[k])}">`).join('')}${btn('SALVAR','#2E7D32',`salvaEd(${i})`)}${btn('CANCELAR','#9E9E9E',`ficha(${i})`)}`;tela('v6');scrollTo(0,0)}
 const salvaEd=run(async i=>{const c=C[i],b={cliente_original:c.cliente};['cliente','plano','inicio','fim','situacao','ativo','datapg','pg','cel','celcon'].forEach(k=>{let v=$('#e-'+k).value.trim();if(['inicio','fim','datapg'].includes(k))v=!v?'':(pd(c[k])&&iso(pd(c[k]))===v?c[k]:fm(fromIso(v)));b[k]=v});
@@ -1195,6 +1205,13 @@ function pgSync(){if(!S||!S.mes||!PG)return;const g=pgS();let ch=0;
  if(ch)save()}
 /* v134: pagou o total → o resto entra no caixa na hora; quando o cliente aparece na planilha sai a NF inteira (adicional conta como renovação) */
 /* v135: anúncio adicional que uma versão antiga do app tratou como cliente novo (R$ 50 de entrada, ligado ao cliente da base pelo telefone) → corrige uma vez */
+/* v136: desfaz a venda/compra errada do CDB EMPRESA de 17/11 e tira do livre o resgate de R$ 4.480 */
+function fix136(){if(!S||!S.mes||S.v136)return;const I=S.inv||[],x=I.find(q=>/CDB EMPRESA/i.test(q.n));
+ const sig=x&&x.q===1&&x.p===2000&&x.h&&x.h.length===1&&x.h[0].dt==='17/11/2026'&&x.h[0].t===2000;S.v136=1;
+ if(!sig){try{elog('v136: correção do CDB EMPRESA não aplicada (dados diferentes do esperado)','aviso')}catch(e){}save();return}
+ S.saldoP=r2((S.saldoP||0)-2000);S.fundo=r2((S.fundo||0)-2000);x.p=2320;x.h=[{dt:'16/10/2026',q:1,t:6800},{dt:'17/11/2026',q:0,t:-4480,rs:1}];S.jurosE=0;S.lvAj=r2((S.lvAj||0)-4480);
+ try{elog('v136: CDB EMPRESA corrigido para R$ 2.320 (resgate de R$ 4.480 em 17/11); saldo pessoal e saldo para investimento −R$ 2.000; livre −R$ 4.480','aviso')}catch(e){}
+ save();setTimeout(()=>{try{alert('Correção feita:\n• CDB EMPRESA: R$ 2.320 (resgate de R$ 4.480 em 17/11)\n• Saldo pessoal: −R$ 2.000 (desfaz a venda e a compra de teste)\n• Saldo para investimento: −R$ 2.000\n• Livre: −R$ 4.480 (o dinheiro veio do investimento, não das vendas)')}catch(e){}},500)}
 function pgAdFix(){const L=pgL();if(!L.length||!S||!S.mes)return 0;const g=pgS();g.tnf=g.tnf||{};let ch=0;
  L.forEach(r=>{if(!r.ad||r.reemb||r.st==='desist'||r.st==='exp'||!g.lan[r.id])return;const nm=String(r.nome||'').trim();if(!nm)return;
   const c=(typeof C!=='undefined'&&Array.isArray(C)?C:[]).find(x=>nmEq(x.cliente,nm)),old=g.vinc[r.id],v=+r.v||150,erro=old&&!nmEq(old,nm);
@@ -2103,7 +2120,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=135;
+const VERSAO=136;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
