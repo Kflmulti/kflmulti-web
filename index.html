@@ -1306,6 +1306,12 @@ function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter
  if(!r)return false;g.vinc[r.id]=c.cliente;(S.ent||[]).forEach(e=>{if(e.pid===r.id){e.cli=c.cliente;delete e.pg}});try{pgTot()}catch(e){}
  const pf=r.perf||{},cheio=!!(pf.g&&pf.i);if(r.st!=='conc'&&cheio)tfx('pago_set',{id:r.id,st:'conc'}).then(j=>pgSet(j)).catch(()=>{});
  toast('Vinculado ao cadastro '+pgFone(r.tel)+(r.ad?' (anúncio adicional, '+brl(+r.v||0)+' já contado) ✔':r.tot?' (pagou o total, '+brl(+r.v||0)+' já contado) ✔':' (R$ 50 já contado) ✔')+(r.st!=='conc'&&!cheio?' — aguardando perfil para concluir':''));return true}catch(e){return false}}
+/* v141: comprovantes lidos no WhatsApp pelo espectador (programa no computador) */
+const esL=()=>{try{return (TF&&TF.eav)||[]}catch(e){return[]}};
+function esCentral(){const L=esL();if(!L.length)return '';const sb={novo:'cliente novo cadastrado na tela da consultora',pago:'cliente pago (ainda sem planilha)',base:'cliente da base',desconhecido:'não achei o cliente: confira no WhatsApp'};
+ return '<div class="lb" style="margin-top:14px">💳 Comprovantes lidos no WhatsApp (confira e dê a baixa)</div>'+L.map(x=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.cli||x.nome||pgFone(x.tel))}</b><b>${brl(x.v)}</b></div><div style="color:#777;font-size:13px">${esc(sb[x.st]||'')} · ${x.tp==='pdf'?'PDF':'imagem'} · ${new Date(x.ts*1000).toLocaleString('pt-BR').slice(0,17)}</div><div style="display:flex;gap:8px;margin-top:8px">${x.st==='base'?`<button class="bg" style="flex:1;margin:0;background:#1565C0" onclick="esAbre('${x.id}')">ABRIR CLIENTE</button>`:''}<button class="bg" style="flex:1;margin:0;background:#607D8B" onclick="esOk('${x.id}')">✔ VISTO</button></div></div>`).join('')}
+const esAbre=run(async id=>{const x=esL().find(q=>q.id===id);if(!x)return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return alert('Não achei '+x.cli+' na lista de clientes.');ficha(i)});
+const esOk=run(async id=>{try{TF=await tfx('esp_av_ok',{id});pgSet(TF)}catch(e){return alert('Não consegui: '+e.message)}nt()});
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
 const rbCentral=()=>rbDue()?'<div class="lb" style="margin-top:14px">💸 Reembolso da Meta</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A" onclick="rbReemb()"><b>Exportar a Meta e fazer o reembolso</b><div style="color:#777;font-size:13px">estimativa do app '+brl(S.reembEst||0)+' · toque para registrar o valor real</div></div>':'';
 const pgCentral=()=>{const L=pgL(),a=L.filter(r=>r.st==='and').length,g=L.filter(r=>r.st==='aguard').length,es=L.filter(r=>r.st==='espera').length;if(!a&&!g&&!es)return'';const p=pgParados().length;
@@ -2036,7 +2042,7 @@ function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh
  if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4,f:5};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const fxVenc=()=>{try{const d=new Date().getDate();return (S.fixos||[]).map((f,i)=>({f,i})).filter(({f})=>f.dia&&f.valor>0&&f.dia<=d&&!f.incluso&&!f.var&&!fxAtivo(f))/* v138: gasto variável com limite não é conta a pagar */}catch(e){return[]}};
-const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length+tfAlertas().length+pgParados().length+agPend().length+(rbDue()?1:0)}catch(e){return 0}};
+const ntCnt=()=>{try{return ntItens().filter(x=>x.due&&!x.sent).length+rcPend()+fxVenc().length+tfAlertas().length+pgParados().length+agPend().length+esL().length+(rbDue()?1:0)}catch(e){return 0}};
 function ntGo(key){key=decodeURIComponent(key);const it=ntItens().find(x=>x.key===key);if(!it)return;if(!it.due)return toast('Disponível às '+it.h+'h');if(!it.ph)return alert('Este cliente está sem celular cadastrado.');
  go('https://wa.me/'+it.ph+'?text='+encodeURIComponent(ntTx(it.t,it.dia)));S.ntSent=S.ntSent||{};S.ntSent[key]=Date.now();const lim=iso(new Date(Date.now()-10*864e5));Object.keys(S.ntSent).forEach(k=>{if(k.split('|')[2]<lim)delete S.ntSent[k]});save();setTimeout(nt,300)}
 const ntNext=()=>{const it=ntItens().find(x=>x.due&&!x.sent&&x.ph);if(!it)return toast('Nenhuma mensagem pendente');ntGo(it.key)};
@@ -2140,7 +2146,7 @@ const nt=()=>{const L=ntItens(),pe=L.filter(x=>x.due&&!x.sent),ag=L.filter(x=>!x
  $('#v6').innerHTML=`<div id="ntroot"></div><h2>🔔 CENTRAL DE NOTIFICAÇÕES</h2><div class="lb" style="text-align:center;line-height:1.5">Toque no cliente: o WhatsApp abre com a mensagem do sistema pronta. É só enviar e voltar.</div>
  ${pe.length?btn('▶ ENVIAR PRÓXIMA ('+pe.length+' restante'+(pe.length>1?'s':'')+')','#2E7D32','ntNext()'):'<p style="text-align:center;color:#2E7D32;font-weight:600">✅ Nada pendente agora.</p>'}
  ${pe.length?'<div class="lb" style="margin-top:10px">Para enviar agora</div>'+pe.map(x=>card(x)).join(''):''}
- ${rbCentral()}${pgCentral()}${agCentral()}
+ ${rbCentral()}${pgCentral()}${agCentral()}${esCentral()}
  ${tfAlertas().length?'<div class="lb" style="margin-top:14px">📋 Avisos da consultora (toque para ver e marcar como visto)</div>'+tfAlertas().map(a=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #00897B" onclick="tfOk('${encodeURIComponent(a.k)}')"><b>${esc(a.tx)}</b><div style="color:#777;font-size:13px">${esc(a.sub)}</div></div>`).join(''):''}
  ${fxVenc().length?'<div class="lb" style="margin-top:14px">💳 Gastos fixos para pagar (somem ao marcar como pago)</div>'+fxVenc().map(({f})=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #C62828" onclick="fin()"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(f.nome)}</b><span>${f.dia===new Date().getDate()?'vence hoje':'venceu dia '+f.dia}</span></div><div style="color:#777;font-size:13px">${f.valor?brl(f.valor):'valor variável'} · toque para abrir e marcar como pago</div></div>`).join(''):''}
  ${rcHtml()}
@@ -2178,7 +2184,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=140;
+const VERSAO=141;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
