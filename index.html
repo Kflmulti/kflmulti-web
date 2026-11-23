@@ -933,7 +933,7 @@ const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catc
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok){const e=new Error(j.erro||('erro '+r.status));e.j=j;throw e}return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
-async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();ntPush();return j}catch(e){return null}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();try{let ch=0;(j.ecob||[]).forEach(k=>{S.ntSent=S.ntSent||{};if(!S.ntSent[k]){S.ntSent[k]=Date.now();ch=1}});if(ch)save()}catch(e){}ntPush();setTimeout(()=>{try{esAuto()}catch(e){}},400);return j}catch(e){return null}}
 /* v142: manda para o servidor as cobranças do dia (o espectador no computador envia na hora certa) */
 let NTPH='';async function ntPush(){try{const L=ntItens(23).filter(x=>x.ph).map(x=>({key:x.key,t:x.t,cli:x.cli,ph:x.ph,h:x.h,sent:x.sent?1:0,txt:ntTx(x.t,x.dia)}));const hs=JSON.stringify(L);if(hs===NTPH)return;await tfx('esp_cob_set',{L});NTPH=hs}catch(e){}}
 const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&(!r.ret||r.ret<=hj)))}catch(e){return[]}};
@@ -1310,9 +1310,28 @@ function pgLink(c){try{const L=pgL(),g=pgS(),ph=[c.cel,c.celcon].map(pg8).filter
  toast('Vinculado ao cadastro '+pgFone(r.tel)+(r.ad?' (anúncio adicional, '+brl(+r.v||0)+' já contado) ✔':r.tot?' (pagou o total, '+brl(+r.v||0)+' já contado) ✔':' (R$ 50 já contado) ✔')+(r.st!=='conc'&&!cheio?' — aguardando perfil para concluir':''));return true}catch(e){return false}}
 /* v141: comprovantes lidos no WhatsApp pelo espectador (programa no computador) */
 const esL=()=>{try{return (TF&&TF.eav)||[]}catch(e){return[]}};
-function esCentral(){const L=esL();if(!L.length)return '';const sb={novo:'cliente novo cadastrado na tela da consultora',pago:'cliente pago (ainda sem planilha)',base:'cliente da base',desconhecido:'não achei o cliente: confira no WhatsApp',cob_ok:'🤖 cobrança enviada (TESTE: foi para a conversa da consultora)',cob_falha:'⚠ cobrança NÃO confirmada na tela (vai tentar de novo)',info:''};
- return '<div class="lb" style="margin-top:14px">🤖 Espectador do WhatsApp (comprovantes, cobranças, artes)</div>'+L.map(x=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.cli||x.nome||pgFone(x.tel)||'Espectador')}</b><b>${x.v?brl(x.v):''}</b></div><div style="color:#777;font-size:13px">${esc(sb[x.st]||'')}${x.tx?' '+esc(x.tx):''} · ${x.tp==='pdf'?'PDF':x.tp==='img'?'imagem':x.tp==='cob'?'cobrança':x.tp==='arte'?'arte':'aviso'} · ${new Date(x.ts*1000).toLocaleString('pt-BR').slice(0,17)}</div><div style="display:flex;gap:8px;margin-top:8px">${x.st==='base'?`<button class="bg" style="flex:1;margin:0;background:#1565C0" onclick="esAbre('${x.id}')">ABRIR CLIENTE</button>`:''}<button class="bg" style="flex:1;margin:0;background:#607D8B" onclick="esOk('${x.id}')">✔ VISTO</button></div></div>`).join('')}
+function esCentral(){const L=esL();if(!L.length)return '';const sb={novo:'cliente novo cadastrado na tela da consultora',pago:'cliente pago (ainda sem planilha)',base:'cliente da base',desconhecido:'não achei o cliente: confira no WhatsApp',cob_ok:'🤖 cobrança enviada na conversa do cliente (já marcada como enviada)',cob_falha:'⚠ cobrança NÃO confirmada na tela (vai tentar de novo)',info:''};
+ return '<div class="lb" style="margin-top:14px">🤖 Espectador do WhatsApp (comprovantes, cobranças, artes)</div>'+L.map(x=>`<div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.cli||x.nome||pgFone(x.tel)||'Espectador')}</b><b>${x.v?brl(x.v):''}</b></div><div style="color:#777;font-size:13px">${esc(sb[x.st]||'')}${x.tx?' '+esc(x.tx):''}${x.res?'<div style="color:'+(/^✔/.test(x.res)?'#2E7D32':'#C62828')+';font-weight:bold;margin-top:4px">'+esc(x.res)+'</div>':''} · ${x.tp==='pdf'?'PDF':x.tp==='img'?'imagem':x.tp==='cob'?'cobrança':x.tp==='arte'?'arte':'aviso'} · ${new Date(x.ts*1000).toLocaleString('pt-BR').slice(0,17)}</div><div style="display:flex;gap:8px;margin-top:8px">${x.st==='base'?`<button class="bg" style="flex:1;margin:0;background:#1565C0" onclick="esAbre('${x.id}')">ABRIR CLIENTE</button>`:''}<button class="bg" style="flex:1;margin:0;background:#607D8B" onclick="esOk('${x.id}')">✔ VISTO</button></div></div>`).join('')}
 const esAbre=run(async id=>{const x=esL().find(q=>q.id===id);if(!x)return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return alert('Não achei '+x.cli+' na lista de clientes.');ficha(i)});
+/* v143: comprovante lido pelo espectador → o app aplica sozinho: R$ 100 com dívida de R$ 100 aberta (vence hoje ou já venceu) = baixa; R$ 150 de cliente Gold sem dívida = renovação Gold. O resto só avisa. Cada comprovante uma vez só (marca no servidor). */
+let ESRUN=0;
+async function esAuto(){if(ESRUN||!C.length||!['v1','v4','v6'].includes(cur))return;const lim=Date.now()/1000-2*86400,A=S.esA||{};
+ const L=esL().filter(x=>x.st==='base'&&!x.auto&&!A[x.id]&&x.ts>lim&&(+x.v===100||+x.v===150));if(!L.length)return;
+ ESRUN=1;const vt=cur,eraNt=!!$('#ntroot'),feitos=[];
+ try{for(const x of L){const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)continue;const c=C[i],v=+x.v,h=hoje();let tipo='';
+  if(v===100&&pend(c)&&Math.abs(num(c.pg)-100)<.01){const dp=pd(c.datapg);if(dp&&dp<=h)tipo='baixa'}
+  else if(v===150&&vp(c.plano)===150&&!pend(c)){const f=pd(c.fim),am=new Date(h);am.setDate(am.getDate()+1);if(!f||f<=am)tipo='ren'}
+  if(!tipo)continue;
+  let cl=null;try{cl=await tfx('esp_av_auto',{id:x.id,res:'aplicando…'})}catch(e){}if(!cl||!cl.ok)continue;
+  (S.esA=S.esA||{})[x.id]=Date.now();Object.keys(S.esA).forEach(k=>{if(S.esA[k]<Date.now()-20*864e5)delete S.esA[k]});
+  let res='';const cf=window.confirm,af=window.alert,MS=[];window.confirm=()=>false;window.alert=m=>{MS.push(String(m))};
+  try{if(tipo==='baixa'){ficha(i);if($('#pe'))$('#pe').checked=false;await voltarF(i);res=pend(c)?'⚠ não consegui dar a baixa: confira':'✔ baixa automática feita ('+brl(100)+')'}
+   else{const f=pd(c.fim),ini=f&&f>h?f:h,fim0=c.fim;ficha(i);$('#pl').value='Plano GOLD - R$ 150,00';if($('#ds'))$('#ds').value='';if($('#ik'))$('#ik').checked=false;$('#pe').checked=false;if($('#dvw'))$('#dvw').hidden=true;$('#di').value=iso(ini);
+    window.TFSKIP=1;try{await renovar(i)}finally{window.TFSKIP=0}res=c.fim!==fim0?'✔ renovação Gold automática feita ('+brl(150)+') · '+c.inicio+' até '+c.fim:'⚠ não consegui renovar: confira'}}
+  catch(e){res='⚠ erro: '+(e&&e.message||e)}finally{window.confirm=cf;window.alert=af;if(cur==='v3'){tela('v1');lista()}}if(/^⚠/.test(res)&&MS.length)res+=' ('+MS.join(' ').slice(0,120)+')';
+  x.auto=Date.now()/1000;x.res=res;feitos.push(c.cliente.trim()+': '+res);try{await tfx('esp_av_auto',{id:x.id,res,fim:1})}catch(e){}}}
+ finally{ESRUN=0}
+ if(!feitos.length)return;await save();if(eraNt)nt();else if(vt!=='v1')tela(vt);toast('🤖 '+feitos.join(' · '));try{bellUp()}catch(e){}}
 const esOk=run(async id=>{try{TF=await tfx('esp_av_ok',{id});pgSet(TF)}catch(e){return alert('Não consegui: '+e.message)}nt()});
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
 const rbCentral=()=>rbDue()?'<div class="lb" style="margin-top:14px">💸 Reembolso da Meta</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A" onclick="rbReemb()"><b>Exportar a Meta e fazer o reembolso</b><div style="color:#777;font-size:13px">estimativa do app '+brl(S.reembEst||0)+' · toque para registrar o valor real</div></div>':'';
@@ -2186,7 +2205,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=142;
+const VERSAO=143;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
