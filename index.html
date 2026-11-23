@@ -923,17 +923,18 @@ const nfCons=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await nfx(
 const nfNum=run(async i=>{const x=NFP.linhas[i];if(!x)return;const r=await pm('Número da NF emitida para '+x.cliente+' ('+x.data+'):');if(r===null)return;const n=r.trim();if(!/^[0-9A-Za-z./-]{1,20}$/.test(n))return alert('Número inválido.');
  if(!confirm('GRAVAR na planilha de controle o número '+n+' na coluna E, linha '+x.linha+' ('+x.data+' — '+x.cliente+')?'))return;await nfx('num',{linha:x.linha,data:x.data,cliente:x.cliente,numero:n});toast('Número gravado na planilha ✔');await nfLoad();nfv()});
 const nfReset=run(async()=>{if(!confirm('Apagar todas as simulações e testes? (notas reais não são afetadas)'))return;await nfx('simreset');if(NFP.modo=='homologacao')await nfx('emireset');await nfLoad();nfv()});
+const nfTxC=f=>'Olá! Para emitirmos a nota fiscal do seu plano precisamos destes dados: '+(f||'CPF ou CNPJ, nome/razão social, CEP, endereço, cidade, estado e e-mail')+'. Pode nos enviar por aqui? Obrigado! 🙏';
 const nfWaC=(c,f)=>{const d=String(c&&(c.cel||c.celcon)||'').replace(/\D/g,'');if(!d)return alert('Sem número cadastrado'+(c?' para '+c.cliente:''));
- go('https://wa.me/55'+d+'?text='+encodeURIComponent('Olá! Para emitirmos a nota fiscal do seu plano precisamos destes dados: '+(f||'CPF ou CNPJ, nome/razão social, CEP, endereço, cidade, estado e e-mail')+'. Pode nos enviar por aqui? Obrigado! 🙏'))};
+ go('https://wa.me/55'+d+'?text='+encodeURIComponent(nfTxC(f)))};
 function nfWa(i){const x=NFP.linhas[i];if(!x)return;nfWaC(cliBy(x.cliente),x.faltam&&x.faltam.length?x.faltam.join(', '):'')}
-const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cliente.trim()]}),x=(j.itens||[])[0];if(x&&x.status==='ok')return;f=x&&x.faltam&&x.faltam.length?x.faltam.join(', '):''}catch(e){}tfCria('dados_nf',c.cliente,f);nfWaC(c,f)};
+const nfPedeDados=async c=>{let f='';try{const j=await nfx('dados',{nomes:[c.cliente.trim()]}),x=(j.itens||[])[0];if(x&&x.status==='ok')return;f=x&&x.faltam&&x.faltam.length?x.faltam.join(', '):''}catch(e){}tfCria('dados_nf',c.cliente,f);if(window.ESAUTO){window.ESNF={c,f};return}nfWaC(c,f)};
 /* ===== tarefas da consultora (lista externa: tarefas.php + consultora.html) ===== */
 let TF=null;
 const tfQ=()=>{try{return JSON.parse(localStorage.getItem('kfl_tfq')||'[]')}catch(e){return[]}},tfQs=q=>{try{localStorage.setItem('kfl_tfq',JSON.stringify(q))}catch(e){}};
 async function tfx(a,d){const r=await fetch('tarefas.php?a='+a,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})});let j={};try{j=await r.json()}catch(e){}if(!r.ok){const e=new Error(j.erro||('erro '+r.status));e.j=j;throw e}return j}
 async function tfFlush(){const q=tfQ();if(!q.length)return true;try{TF=await tfx('add',{lista:q});tfQs([]);window.tfErr='';return true}catch(e){window.tfErr=e.message;return false}}
 async function tfAdd(x){try{if(x.ref)(window.tfRefs=window.tfRefs||[]).push(x.ref);(window.tfTx=window.tfTx||[]).push(x.txt+(x.urg?' 🚨':''));const q=tfQ();q.push(x);tfQs(q);return await tfFlush()}catch(e){return false}}
-async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();try{let ch=0;(j.ecob||[]).forEach(k=>{S.ntSent=S.ntSent||{};if(!S.ntSent[k]){S.ntSent[k]=Date.now();ch=1}});if(ch)save()}catch(e){}ntPush();setTimeout(()=>{try{esAuto()}catch(e){}},400);return j}catch(e){return null}}
+async function tfLoad(){try{await tfFlush();const j=await tfx('list');TF=j;pgSet(j);try{pfSync(j);pfSyncPg();pgRep()}catch(e){}campPush();try{let ch=0;(j.ecob||[]).forEach(k=>{S.ntSent=S.ntSent||{};if(!S.ntSent[k]){S.ntSent[k]=Date.now();ch=1}});if(ch)save()}catch(e){}ntPush();setTimeout(()=>{try{esVivoUp();esAuto()}catch(e){}},400);return j}catch(e){return null}}
 /* v142: manda para o servidor as cobranças do dia (o espectador no computador envia na hora certa) */
 let NTPH='';async function ntPush(){try{const L=ntItens(23).filter(x=>x.ph).map(x=>({key:x.key,t:x.t,cli:x.cli,ph:x.ph,h:x.h,sent:x.sent?1:0,txt:ntTx(x.t,x.dia)}));const hs=JSON.stringify(L);if(hs===NTPH)return;await tfx('esp_cob_set',{L});NTPH=hs}catch(e){}}
 const tfPg=()=>{try{const hj=TF&&TF.hoje||iso(new Date());return pgL().filter(r=>r.st==='and'||(r.st==='aguard'&&(!r.ret||r.ret<=hj)))}catch(e){return[]}};
@@ -1339,16 +1340,27 @@ async function esAuto(){if(ESRUN||ESJ||!C.length||!['v1','v4','v6'].includes(cur
   if(!cl||!cl.ok){r.st='err';r.tx=cl&&cl.dup?'já tinha sido feito em outro aparelho':'sem conexão com o servidor: não fiz nada';if(cl&&cl.dup)r.st='ok';esJan(R,0);continue}
   (S.esA=S.esA||{})[x.id]=Date.now();Object.keys(S.esA).forEach(q=>{if(S.esA[q]<Date.now()-20*864e5)delete S.esA[q]});
   let res='',bom=false;const reat=!ok(c),cf=window.confirm,af=window.alert,MS=[];window.confirm=()=>false;window.alert=m=>{MS.push(String(m))};
-  try{if(tipo==='baixa'){ficha(i);if($('#pe'))$('#pe').checked=false;await voltarF(i);bom=!pend(c);res=bom?'✔ baixa automática feita ('+brl(100)+')':'⚠ não consegui dar a baixa: confira'}
+  try{if(tipo==='baixa'){ficha(i);if($('#pe'))$('#pe').checked=false;window.ESNF=null;window.ESAUTO=1;try{await voltarF(i)}finally{window.ESAUTO=0}bom=!pend(c);res=bom?'✔ baixa automática feita ('+brl(100)+')':'⚠ não consegui dar a baixa: confira'}
    else{const f=pd(c.fim),ini=f&&f>h?f:h,fim0=c.fim;ficha(i);$('#pl').value='Plano GOLD - R$ 150,00';if($('#ds'))$('#ds').value='';if($('#ik'))$('#ik').checked=false;$('#pe').checked=false;if($('#dvw'))$('#dvw').hidden=true;$('#di').value=iso(ini);
     window.TFSKIP=1;try{await renovar(i)}finally{window.TFSKIP=0}bom=c.fim!==fim0;res=bom?'✔ '+(reat?'reativação':'renovação')+' Gold automática feita ('+brl(150)+') · '+c.inicio+' até '+c.fim:'⚠ não consegui renovar: confira'}}
   catch(e){res='⚠ erro: '+(e&&e.message||e)}finally{window.confirm=cf;window.alert=af;if(cur==='v3'){tela('v1');lista()}}
   if(!bom&&MS.length)res+=' ('+MS.join(' ').slice(0,120)+')';
-  if(bom){fez=1;try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}}
+  if(bom){fez=1;try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}
+   if(tipo==='baixa'&&window.ESNF){try{await tfx('esp_conf_add',{id:x.id+'nf',cli:c.cliente.trim(),ph:ntFone(c),txt:nfTxC(window.ESNF.f)});res+=' · pedido dos dados da nota na fila'}catch(e){res+=' · ⚠ não pus o pedido dos dados da nota na fila'}window.ESNF=null}}
   x.auto=Date.now()/1000;x.res=res;try{await tfx('esp_av_auto',{id:x.id,res,fim:1})}catch(e){}
   r.st=bom?'ok':'err';r.tx=res.replace(/^[✔⚠] /,'');esJan(R,0)}}
  finally{ESRUN=0}
  if(fez)await save();ESJ.volta=()=>{if(eraNt)nt();else if(vt!=='v1')tela(vt)};esJan(R,1);try{bellUp()}catch(e){}}
+/* v146: o espectador manda sinal de vida; se parar, faixa no topo do app */
+function esVivoUp(){try{let el=document.getElementById('esviv');const v=TF&&TF.evivo;if(!v||!v.ts||cur==='login'){if(el)el.hidden=true;return}
+ const ag=Date.now()/1000-v.ts,hm=new Date(v.ts*1000).toLocaleTimeString('pt-BR').slice(0,5),dd=new Date(v.ts*1000).toLocaleDateString('pt-BR').slice(0,5);let t='',cor='#C62828';
+ if(ag>600)t='🤖 Atendente parado: sem sinal do computador desde '+(new Date(v.ts*1000).toDateString()===new Date().toDateString()?hm:dd+' '+hm);
+ else if(v.st==='sem_whatsapp')t='🤖 Atendente: o WhatsApp Web não está aberto no Chrome do computador';
+ else if(v.st==='erro')t='🤖 Atendente com erro: '+(v.tx||'veja o log no computador');
+ else if(v.st==='esperando'&&v.desde&&Date.now()/1000-v.desde>600){t='🤖 Atendente esperando: alguém está usando o computador desde '+new Date(v.desde*1000).toLocaleTimeString('pt-BR').slice(0,5);cor='#E65100'}
+ if(!t){if(el)el.hidden=true;return}
+ if(!el){el=document.createElement('div');el.id='esviv';el.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9000;color:#fff;font-size:14px;font-weight:bold;padding:8px 12px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.3)';el.onclick=()=>{el.hidden=true};document.body.appendChild(el)}
+ el.style.background=cor;el.textContent=t+'  ✕';el.hidden=false}catch(e){}}
 const esOk=run(async id=>{try{TF=await tfx('esp_av_ok',{id});pgSet(TF)}catch(e){return alert('Não consegui: '+e.message)}nt()});
 const pgParados=()=>{try{const lim=Date.now()/1000-86400;return pgL().filter(r=>r.st==='and'&&r.ts<=lim)}catch(e){return[]}};
 const rbCentral=()=>rbDue()?'<div class="lb" style="margin-top:14px">💸 Reembolso da Meta</div><div class="card" style="margin:6px 0;padding:12px;border-left:5px solid #6A1B9A" onclick="rbReemb()"><b>Exportar a Meta e fazer o reembolso</b><div style="color:#777;font-size:13px">estimativa do app '+brl(S.reembEst||0)+' · toque para registrar o valor real</div></div>':'';
@@ -2222,7 +2234,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=145;
+const VERSAO=146;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
