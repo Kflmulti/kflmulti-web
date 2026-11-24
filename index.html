@@ -1325,27 +1325,30 @@ let ESJ=null;
 function esJanFecha(){const el=document.getElementById('esjan');if(el){el.hidden=true;el.style.display='none'}const f=ESJ&&ESJ.volta;ESJ=null;try{if(f)f()}catch(e){}}
 function esJanFicha(k){const r=ESJ&&ESJ.L[k];ESJ.volta=null;esJanFecha();if(r){const i=C.findIndex(c=>nmEq(c.cliente,r.cli));if(i>=0)ficha(i)}}
 const dm5=s=>String(s||'').slice(0,5);
-function esConfTx(tipo,c,reat){const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\n';
- if(tipo==='baixa')return H+'Recebemos seu pagamento de R$ 100,00 ✅\nBaixa efetuada. Seu anúncio segue normalmente até '+dm5(c.fim)+'. Obrigado!';
- return H+'Recebemos seu pagamento de R$ 150,00 ✅\n'+(reat?'Seu plano Gold foi reativado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Nossa equipe já está religando seu anúncio, é só aguardar.':'Seu plano Gold foi renovado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Obrigado pela confiança!')}
+/* v147: baixa = qualquer valor igual à dívida; renovação/reativação na linha Gold (150 Gold · 300 Gold Smart · 600 Gold Advanced) */
+const ES_GL={150:['Plano GOLD - R$ 150,00','Gold'],300:['Combo GOLD SMART - R$ 300,00','Gold Smart'],600:['Combo GOLD ADVANCED - R$ 600,00','Gold Advanced']};
+function esConfTx(tipo,c,reat,v){const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\n',vv=brl(v||(tipo==='baixa'?100:150)),nm=(ES_GL[Math.round(v||150)]||ES_GL[150])[1];
+ if(tipo==='baixa')return H+'Recebemos seu pagamento de '+vv+' ✅\nBaixa efetuada. Seu anúncio segue normalmente até '+dm5(c.fim)+'. Obrigado!';
+ return H+'Recebemos seu pagamento de '+vv+' ✅\n'+(reat?'Seu plano '+nm+' foi reativado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Nossa equipe já está religando seu anúncio, é só aguardar.':'Seu plano '+nm+' foi renovado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Obrigado pela confiança!')}
 async function esAuto(){if(ESRUN||ESJ||!C.length||!['v1','v4','v6'].includes(cur))return;const lim=Date.now()/1000-2*86400,A=S.esA||{},h=hoje();
- const J=[];esL().forEach(x=>{if(x.st!=='base'||x.auto||A[x.id]||!(x.ts>lim)||!(+x.v===100||+x.v===150))return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return;const c=C[i],v=+x.v;let tipo='';
-  if(v===100&&pend(c)&&Math.abs(num(c.pg)-100)<.01){const dp=pd(c.datapg);if(dp&&dp<=h)tipo='baixa'}
-  else if(v===150&&vp(c.plano)===150&&!pend(c)){const f=pd(c.fim),am=new Date(h);am.setDate(am.getDate()+1);if(!f||f<=am)tipo='ren'}
-  if(tipo)J.push({x,i,c,tipo})});
+ const J=[];esL().forEach(x=>{if(x.st!=='base'||x.auto||A[x.id]||!(x.ts>lim)||!(+x.v>0))return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return;const c=C[i],v=+x.v;let tipo='',pl='',reat=false;
+  if(pend(c)){if(Math.abs(num(c.pg)-v)<.01)tipo='baixa'}                                   /* v147: o valor bate com a dívida = baixa (qualquer vencimento) */
+  else if(!(num(c.pg)>0)&&ES_GL[Math.round(v)]&&/GOLD/i.test(c.plano||'')&&!/MEGA|PLUS/i.test(c.plano||'')){const f=pd(c.fim);
+   if(f&&f<=h){tipo='ren';pl=ES_GL[Math.round(v)][0];reat=f<h}}                          /* termina hoje = renovação; já terminou = reativação; amanhã ou depois = nada (segundo plano) */
+  if(tipo)J.push({x,i,c,tipo,pl,reat,v})});
  if(!J.length)return;
- ESRUN=1;const vt=cur,eraNt=!!$('#ntroot'),R=J.map(j=>({cli:j.c.cliente.trim(),tx:j.tipo==='baixa'?'baixa de R$ 100…':'renovação Gold R$ 150…',st:'run',i:j.i}));ESJ={L:R,volta:null};esJan(R,0);let fez=0;
- try{for(let k=0;k<J.length;k++){const {x,i,c,tipo}=J[k],r=R[k];
+ ESRUN=1;const vt=cur,eraNt=!!$('#ntroot'),R=J.map(j=>({cli:j.c.cliente.trim(),tx:j.tipo==='baixa'?'baixa de '+brl(j.v)+'…':(j.reat?'reativação ':'renovação ')+ES_GL[Math.round(j.v)][1]+' '+brl(j.v)+'…',st:'run',i:j.i}));ESJ={L:R,volta:null};esJan(R,0);let fez=0;
+ try{for(let k=0;k<J.length;k++){const {x,i,c,tipo,pl,reat,v}=J[k],r=R[k];
   let cl=null;try{cl=await tfx('esp_av_auto',{id:x.id,res:'aplicando…'})}catch(e){}
   if(!cl||!cl.ok){r.st='err';r.tx=cl&&cl.dup?'já tinha sido feito em outro aparelho':'sem conexão com o servidor: não fiz nada';if(cl&&cl.dup)r.st='ok';esJan(R,0);continue}
   (S.esA=S.esA||{})[x.id]=Date.now();Object.keys(S.esA).forEach(q=>{if(S.esA[q]<Date.now()-20*864e5)delete S.esA[q]});
-  let res='',bom=false;const reat=!ok(c),cf=window.confirm,af=window.alert,MS=[];window.confirm=()=>false;window.alert=m=>{MS.push(String(m))};
-  try{if(tipo==='baixa'){ficha(i);if($('#pe'))$('#pe').checked=false;window.ESNF=null;window.ESAUTO=1;try{await voltarF(i)}finally{window.ESAUTO=0}bom=!pend(c);res=bom?'✔ baixa automática feita ('+brl(100)+')':'⚠ não consegui dar a baixa: confira'}
-   else{const f=pd(c.fim),ini=f&&f>h?f:h,fim0=c.fim;ficha(i);$('#pl').value='Plano GOLD - R$ 150,00';if($('#ds'))$('#ds').value='';if($('#ik'))$('#ik').checked=false;$('#pe').checked=false;if($('#dvw'))$('#dvw').hidden=true;$('#di').value=iso(ini);
-    window.TFSKIP=1;try{await renovar(i)}finally{window.TFSKIP=0}bom=c.fim!==fim0;res=bom?'✔ '+(reat?'reativação':'renovação')+' Gold automática feita ('+brl(150)+') · '+c.inicio+' até '+c.fim:'⚠ não consegui renovar: confira'}}
+  let res='',bom=false;const cf=window.confirm,af=window.alert,MS=[];window.confirm=()=>false;window.alert=m=>{MS.push(String(m))};
+  try{if(tipo==='baixa'){ficha(i);if($('#pe'))$('#pe').checked=false;window.ESNF=null;window.ESAUTO=1;try{await voltarF(i)}finally{window.ESAUTO=0}bom=!pend(c);res=bom?'✔ baixa automática feita ('+brl(v)+')':'⚠ não consegui dar a baixa: confira'}
+   else{const f=pd(c.fim),ini=f&&f>h?f:h,fim0=c.fim;ficha(i);$('#pl').value=pl;if($('#ds'))$('#ds').value='';if($('#ik'))$('#ik').checked=false;$('#pe').checked=false;if($('#dvw'))$('#dvw').hidden=true;$('#di').value=iso(ini);
+    window.TFSKIP=1;try{await renovar(i)}finally{window.TFSKIP=0}bom=c.fim!==fim0;res=bom?'✔ '+(reat?'reativação':'renovação')+' '+ES_GL[Math.round(v)][1]+' automática feita ('+brl(v)+') · '+c.inicio+' até '+c.fim:'⚠ não consegui renovar: confira'}}
   catch(e){res='⚠ erro: '+(e&&e.message||e)}finally{window.confirm=cf;window.alert=af;if(cur==='v3'){tela('v1');lista()}}
   if(!bom&&MS.length)res+=' ('+MS.join(' ').slice(0,120)+')';
-  if(bom){fez=1;try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}
+  if(bom){fez=1;try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat,v)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}
    if(tipo==='baixa'&&window.ESNF){try{await tfx('esp_conf_add',{id:x.id+'nf',cli:c.cliente.trim(),ph:ntFone(c),txt:nfTxC(window.ESNF.f)});res+=' · pedido dos dados da nota na fila'}catch(e){res+=' · ⚠ não pus o pedido dos dados da nota na fila'}window.ESNF=null}}
   x.auto=Date.now()/1000;x.res=res;try{await tfx('esp_av_auto',{id:x.id,res,fim:1})}catch(e){}
   r.st=bom?'ok':'err';r.tx=res.replace(/^[✔⚠] /,'');esJan(R,0)}}
@@ -1376,8 +1379,8 @@ const pgAct=run(async(id,st)=>{const r=pgL().find(x=>x.id===id);if(!r)return;con
 const pgNovo=run(async()=>{const t=await pm('Telefone do cliente que pagou (com DDD):','','numeric');if(t===null||!String(t).trim())return;const n=await pm('Nome do negócio (opcional). Anúncio adicional de quem já é cliente: código começando com 1, ex.: Pizzaria 115679','','text');
  const nn=n===null?'':String(n).trim(),ad=/(^|\s)[1-9]\d{5}$/.test(nn);let tot=ad,pl='GOLD';
  if(!ad)tot=confirm('O cliente pagou o TOTAL do plano?\n\nOK = pagou o total (sem a dívida dos R$ 100)\nCancelar = pagou só a entrada de R$ 50');
- if(tot){const p=await pm('Plano pago (GOLD, MEGA ou PLUS):','GOLD','text');if(p===null)return;pl=String(p).trim().toUpperCase();if(!['GOLD','MEGA','PLUS'].includes(pl))return alert('Plano inválido. Use GOLD, MEGA ou PLUS.')}
- const go=async f=>{pgSet(await tfx('pago_add',{tel:String(t),nome:nn,tot:tot?1:0,plano:pl,forca:f?1:0}));toast('Cadastrado ✔ ('+brl(tot?{GOLD:150,MEGA:300,PLUS:600}[pl]:50)+' lançados)')};
+ if(tot){const p=await pm('Plano pago (GOLD, SMART, ADVANCED, MEGA ou PLUS):','GOLD','text');if(p===null)return;pl=String(p).trim().toUpperCase().replace(/^GOLD\s+/,'');pl={SMART:'GOLD SMART',ADVANCED:'GOLD ADVANCED'}[pl]||pl;if(!['GOLD','GOLD SMART','GOLD ADVANCED','MEGA','PLUS'].includes(pl))return alert('Plano inválido. Use GOLD, SMART, ADVANCED, MEGA ou PLUS.')}
+ const go=async f=>{pgSet(await tfx('pago_add',{tel:String(t),nome:nn,tot:tot?1:0,plano:pl,forca:f?1:0}));toast('Cadastrado ✔ ('+brl(tot?{GOLD:150,'GOLD SMART':300,'GOLD ADVANCED':600,MEGA:300,PLUS:600}[pl]:50)+' lançados)')};
  try{await go(0)}catch(e){if(e.j&&e.j.conf&&confirm(e.message)){try{await go(1)}catch(e2){alert(e2.message)}}else alert(e.message)}pgTela()});
 function pgLista(){const L=pgL(),q=pgQ.replace(/\D/g,''),qt=pgQ.trim().toLowerCase();let V;
  if(pgQ.trim())V=L.filter(r=>(q.length>=4&&String(r.tel).includes(q))||(r.nome||'').toLowerCase().includes(qt)||String(r.id)===qt);else V=L.filter(r=>pgF==='all'||r.st===pgF);
@@ -2234,7 +2237,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=146;
+const VERSAO=147;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
