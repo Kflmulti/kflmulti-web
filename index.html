@@ -2121,7 +2121,7 @@ function ntItens(hh){const h=hoje(),K=iso(h),H=hh==null?new Date().getHours():hh
   if(dd===0){add('b',x.cli,c,'');add('f',x.cli,c,'')}});
  ativos().forEach(c=>{const d=pd(c.fim);if(d&&d.getTime()===h.getTime()){add('c',c.cliente,c,'');add('d',c.cliente,c,'')}});
  /* v151: cliente da base com PAGAMENTO EM CONFIANÇA (valor em aberto na planilha que não é o R$ 100 do cliente novo): 10h e 20h, só no dia do vencimento */
- C.forEach(c=>{if(!pend(c))return;const dp=pd(c.datapg);if(!dp||isNaN(dp)||dp.getTime()!==h.getTime())return;if((S.ent||[]).some(x=>x.k==='N'&&!x.done&&nmEq(x.cli,c.cliente)))return;const v=num(c.pg);if(!(v>0))return;add('g',c.cliente,c,brl(v));add('h',c.cliente,c,brl(v))});
+ C.forEach(c=>{if(!pend(c))return;const dp=pd(c.datapg);if(!dp||isNaN(dp)||dp.getTime()!==h.getTime())return;if(/^NOVO/i.test(String(c.situacao||'').trim()))return;const cd6=n=>(String(n||'').match(/(\d{4,6})\s*$/)||[])[1]||'',cc6=cd6(c.cliente);if((S.ent||[]).some(x=>x.k==='N'&&!x.done&&(nmEq(x.cli,c.cliente)||(cc6&&cd6(x.cli)===cc6))))return;/* v152: cliente novo (situação NOVO ou entrada N aberta com o mesmo código) fica só com a cobrança dos R$ 100 */const v=num(c.pg);if(!(v>0))return;add('g',c.cliente,c,brl(v));add('h',c.cliente,c,brl(v))});
  if(diasFimMes()==0&&NFP&&NFP.linhas){const vi=new Set();NFP.linhas.forEach(x=>{if(nfF(x)||!mesAtual(x)||!['incompleto','nao_identificada'].includes(x.status))return;const k=String(x.cliente).trim().toLowerCase();if(vi.has(k))return;if((S.ent||[]).some(e=>e.k==='N'&&(!e.done||e.exp)&&String(e.cli).trim().toLowerCase()===k))return;vi.add(k);add('e',x.cliente,cliBy(x.cliente),(x.faltam||[]).join(', '))})}
  const o={a:1,b:0,c:2,d:3,e:4,f:5,g:6,h:7};return L.sort((x,y)=>x.h-y.h||o[x.t]-o[y.t])}
 const fxVenc=()=>{try{const d=new Date().getDate();return (S.fixos||[]).map((f,i)=>({f,i})).filter(({f})=>f.dia&&f.valor>0&&f.dia<=d&&!f.incluso&&!f.var&&!fxAtivo(f))/* v138: gasto variável com limite não é conta a pagar */}catch(e){return[]}};
@@ -2267,7 +2267,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=151;
+const VERSAO=152;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
