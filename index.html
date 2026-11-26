@@ -691,9 +691,9 @@ function relDia(){if(!S.nf.length&&!S.renovados.length&&!S.pausados.length){cons
 /* ===== fechar o dia: pausar quem não pagou + enviar NFs + relatório no WhatsApp ===== */
 /* ===== v33: finalização obrigatória do dia anterior ===== */
 const fdIsoNf=n=>{const m=String(n.data||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:''};
-function pendDia(){if(!S||!S.hist&&!S.nf)return'';const h=iso(new Date()),nfd=(S.nf||[]).map(fdIsoNf).filter(d=>d&&d<h).sort();
+function pendDia(){if(!S||!S.hist&&!S.nf)return'';const h=iso(new Date()),nfd=(S.nf||[]).filter(n=>!n.e50).map(fdIsoNf).filter(d=>d&&d<h).sort();/* v153: NF de R$ 50 vencida leva a data do depósito de propósito e não indica dia sem fechar */
  if(S.fechado===undefined){if(nfd.length){const d=fromIso(nfd[0]);d.setDate(d.getDate()-1);S.fechado=iso(d)}else{const d=new Date();d.setDate(d.getDate()-1);S.fechado=iso(d)}}
- const c=nfd.slice();Object.keys(S.hist||{}).forEach(k=>{const x=S.hist[k];if(k<h&&k>S.fechado&&x&&(x.cx>0||x.ent>0||x.nov>0||x.ren>0||x.ret>0||x.pau>0))c.push(k)});
+ const c=nfd.filter(d=>d>S.fechado);/* v153: NF com data de dia já fechado não reabre o dia */Object.keys(S.hist||{}).forEach(k=>{const x=S.hist[k];if(k<h&&k>S.fechado&&x&&(x.cx>0||x.ent>0||x.nov>0||x.ren>0||x.ret>0||x.pau>0))c.push(k)});
  return c.length?c.sort()[0]:''}
 function fdb(n){const el=document.getElementById('fdb');if(!el)return;n=n||cur;const d=(n==='login'||!window.S_OK)?'':pendDia();
  if(!d||(window.FDM&&n==='v6')){el.hidden=true;return}
@@ -2267,7 +2267,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=152;
+const VERSAO=153;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
