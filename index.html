@@ -1372,7 +1372,9 @@ setInterval(async()=>{try{if(cur==='login'||document.hidden||ESRUN||ESJ)return;c
  if(cur==='v6'&&$('#ntroot')){nt();esFaixa(0)}else if(mais&&j.n>0)esFaixa(j.n)}catch(e){}},20000);
 const esAbre=run(async id=>{const x=esL().find(q=>q.id===id);if(!x)return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return alert('Não achei '+x.cli+' na lista de clientes.');ficha(i)});
 /* v143: comprovante lido pelo espectador → o app aplica sozinho: R$ 100 com dívida de R$ 100 aberta (vence hoje ou já venceu) = baixa; R$ 150 de cliente Gold sem dívida = renovação Gold. O resto só avisa. Cada comprovante uma vez só (marca no servidor). */
-let ESRUN=0;
+let ESRUN=0,ESTRY=0,ESTM=0;/* v155: ocupado (janela conferindo, salvamento em andamento, versão mudou) = tenta de novo em 3 s (até 10 vezes), em vez de desistir */
+function esRetry(){if(ESTM||ESTRY>=10)return;ESTRY++;ESTM=setTimeout(()=>{ESTM=0;try{esAuto()}catch(e){}},3000)}
+setInterval(()=>{try{if(!document.hidden)esAuto()}catch(e){}},30000);
 /* v144: janela que bloqueia o app enquanto a ação automática roda + confirmação ao cliente na fila do espectador */
 function esJan(L,fim){let el=document.getElementById('esjan');if(!el){el=document.createElement('div');el.id='esjan';el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99990;display:flex;align-items:center;justify-content:center;padding:16px';document.body.appendChild(el)}
  el.hidden=false;el.style.display='flex';el.innerHTML='<div style="background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%;max-height:85vh;overflow:auto"><h3 style="margin:0 0 6px">🤖 Ações automáticas</h3><div style="color:#777;font-size:13px;margin-bottom:10px">'+(fim?'Tarefas concluídas.':'Executando… aguarde, não feche o app.')+'</div>'+
@@ -1387,15 +1389,18 @@ const ES_GL={150:['Plano GOLD - R$ 150,00','Gold'],300:['Combo GOLD SMART - R$ 3
 function esConfTx(tipo,c,reat,v){const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\n',vv=brl(v||(tipo==='baixa'?100:150)),nm=(ES_GL[Math.round(v||150)]||ES_GL[150])[1];
  if(tipo==='baixa')return H+'Recebemos seu pagamento de '+vv+' ✅\nBaixa efetuada. Seu anúncio segue normalmente até '+dm5(c.fim)+'. Obrigado!';
  return H+'Recebemos seu pagamento de '+vv+' ✅\n'+(reat?'Seu plano '+nm+' foi reativado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Nossa equipe já está religando seu anúncio, é só aguardar.':'Seu plano '+nm+' foi renovado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Obrigado pela confiança!')}
-async function esAuto(){if(ESRUN||ESJ||INST.pas||!INST.ok||document.hidden||!C.length||!['v1','v4','v6'].includes(cur))return;const lim=Date.now()/1000-2*86400,A=S.esA||{},h=hoje();
+async function esAuto(){if(ESRUN||ESJ||INST.pas||document.hidden||!C.length||!['v1','v4','v6'].includes(cur))return;if(!INST.ok){esRetry();return}const lim=Date.now()/1000-2*86400,A=S.esA||{},h=hoje();
  const J=[];esL().forEach(x=>{if(x.st!=='base'||x.auto||A[x.id]||!(x.ts>lim)||!(+x.v>0))return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return;const c=C[i],v=+x.v;let tipo='',pl='',reat=false;
   if(pend(c)){if(Math.abs(num(c.pg)-v)<.01)tipo='baixa'}                                   /* v147: o valor bate com a dívida = baixa (qualquer vencimento) */
   else if(!(num(c.pg)>0)&&ES_GL[Math.round(v)]&&/GOLD/i.test(c.plano||'')&&!/MEGA|PLUS/i.test(c.plano||'')){const f=pd(c.fim);
    if(f&&f<=h){tipo='ren';pl=ES_GL[Math.round(v)][0];reat=f<h}}                          /* termina hoje = renovação; já terminou = reativação; amanhã ou depois = nada (segundo plano) */
   if(tipo)J.push({x,i,c,tipo,pl,reat,v})});
- if(!J.length)return;
- ESRUN=1;try{const rv_=await est('rev');if(rv_.rev!=null&&+rv_.rev!==REV){ESRUN=0;if(!dirty){toast('🔄 Atualizando antes da ação automática…');if(cur==='v1')await refrescar();else location.reload()}return}}catch(e){ESRUN=0;return}
+ if(!J.length){ESTRY=0;return}
+ ESRUN=1;try{try{await sq}catch(e){}/* v155: espera o salvamento em andamento terminar antes de conferir a versão */
+  if(dirty){ESRUN=0;esRetry();return}
+  const rv_=await est('rev');if(rv_.rev!=null&&+rv_.rev!==REV){ESRUN=0;if(!dirty){toast('🔄 Atualizando antes da ação automática…');if(cur==='v1')await refrescar();else{location.reload();return}}esRetry();return}}catch(e){ESRUN=0;esRetry();return}
  if(INST.pas||document.hidden){ESRUN=0;return}
+ ESTRY=0;
 const vt=cur,eraNt=!!$('#ntroot'),R=J.map(j=>({cli:j.c.cliente.trim(),tx:j.tipo==='baixa'?'baixa de '+brl(j.v)+'…':(j.reat?'reativação ':'renovação ')+ES_GL[Math.round(j.v)][1]+' '+brl(j.v)+'…',st:'run',i:j.i}));ESJ={L:R,volta:null};esJan(R,0);let fez=0;
  try{for(let k=0;k<J.length;k++){const {x,i,c,tipo,pl,reat,v}=J[k],r=R[k];
   let cl=null;try{cl=await tfx('esp_av_auto',{id:x.id,res:'aplicando…'})}catch(e){}
@@ -2301,7 +2306,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=154;
+const VERSAO=155;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
