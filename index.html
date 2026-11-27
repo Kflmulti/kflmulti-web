@@ -154,9 +154,41 @@ const unb64=t=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(t),c=>c.
 let REV=null;const REVOF=new WeakMap(),LR='kfl_lr';
 const revSet=r=>{REV=(r==null||isNaN(+r))?null:+r;try{localStorage.setItem(LR,REV==null?'':String(REV))}catch(e){}};
 const getE=async()=>{const r=await est('get');const rv=r.rev==null?null:+r.rev;let o;if(r.b){o=unb64(r.b);if(!o||typeof o!=='object'||Array.isArray(o)||!('mes' in o))throw Error('os dados do servidor vieram incompletos');}else if(r.estado&&typeof r.estado==='object'&&Object.keys(r.estado).length)o=r.estado;else if(r.novo)o={};else throw Error('o servidor devolveu dados vazios');try{REVOF.set(o,rv)}catch(e){}return o};
-async function conflito(){SO=false;dirty=false;try{localStorage.setItem(LD,'0')}catch(e){}bd();let g=false;try{await Promise.race([est('lost',{b:b64(JSON.stringify(S))}),new Promise((_,r)=>setTimeout(r,8000))]);g=true}catch(e){}alert('⚠ OUTRO APARELHO (OU ABA) ALTEROU OS DADOS\n\nPara não apagar o trabalho do outro, este salvamento foi recusado e nada foi sobrescrito. O app vai recarregar com a versão do servidor.'+(g?'\n\nGuardei uma cópia do que este aparelho tinha: no menu BACKUP, procure "Conflito…" caso falte algo.':'')+'\n\nConfira o que você fez há pouco e refaça o que faltar.');location.reload()}
+async function conflito(){SO=false;dirty=false;try{localStorage.setItem(LD,'0')}catch(e){}bd();let g=false;try{await Promise.race([est('lost',{b:b64(JSON.stringify(S))}),new Promise((_,r)=>setTimeout(r,8000))]);g=true}catch(e){}const pd_=espPend();if(pd_.length)try{localStorage.setItem('kfl_perdido',JSON.stringify(pd_))}catch(e){}
+ alert((pd_.length?'❌ ESTAS AÇÕES AUTOMÁTICAS NÃO FICARAM SALVAS NO APP (refaça à mão; a planilha e a mensagem ao cliente já foram feitas):\n• '+pd_.map(x=>x.t).join('\n• ')+'\n\n':'')+'⚠ OUTRO APARELHO (OU ABA) ALTEROU OS DADOS\n\nPara não apagar o trabalho do outro, este salvamento foi recusado e nada foi sobrescrito. O app vai recarregar com a versão do servidor.'+(g?'\n\nGuardei uma cópia do que este aparelho tinha: no menu BACKUP, procure "Conflito…" caso falte algo.':'')+'\n\nConfira o que você fez há pouco e refaça o que faltar.');location.reload()}
 let revChk=0;async function revConf(){try{if(document.hidden||dirty||!SO||REV==null||cur==='login'||Date.now()-revChk<15000)return;revChk=Date.now();const r=await est('rev');if(r.rev!=null&&+r.rev!==REV&&!dirty){if(cur==='v1')refrescar();else location.reload()}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)revConf()});setInterval(revConf,120000);
+/* v154: UMA JANELA SÓ — o app instalado e uma aba do Chrome no mesmo celular são duas cópias; as duas trabalhavam sozinhas (esAuto, cobranças)
+   e uma atropelava a outra (Escola 018046 26/11: a renovação automática gravou a planilha e o salvamento foi recusado). Agora só a janela
+   que você está vendo trabalha; a outra fica parada (não salva, não roda nada automático) com o botão USAR AQUI. */
+const INST={id:Math.random().toString(36).slice(2,10),pas:false,ok:true,bc:null};
+const instLe=()=>{try{return JSON.parse(localStorage.getItem('kfl_lider')||'null')}catch(e){return null}};
+const instGrava=()=>{try{localStorage.setItem('kfl_lider',JSON.stringify({id:INST.id,ts:Date.now()}))}catch(e){}};
+function instMsg(m){try{INST.bc&&INST.bc.postMessage(m)}catch(e){}try{localStorage.setItem('kfl_inst_msg',JSON.stringify(Object.assign({r:Math.random()},m)))}catch(e){}}
+function instTela(){let el=document.getElementById('instov');if(!INST.pas){if(el)el.hidden=true;return}
+ if(!el){el=document.createElement('div');el.id='instov';el.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(20,20,20,.94);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:17px;line-height:1.5';
+  el.innerHTML='<div style="font-size:42px">📱</div><b style="font-size:20px;margin:8px 0">O app está aberto em outra janela</b><div style="color:#ccc;max-width:420px">Para uma não apagar o trabalho da outra, só uma janela trabalha de cada vez. Esta está parada (não salva e não faz nada sozinha).</div><button id="instbt" style="margin-top:22px;background:#2E7D32;color:#fff;border:0;border-radius:10px;padding:14px 28px;font-size:18px;font-weight:bold">USAR AQUI</button>';
+  document.body.appendChild(el);el.querySelector('#instbt').onclick=()=>instAssume(true)}
+ el.hidden=false}
+async function instSolta(){/* outra janela pediu: salva o que tiver pendente e para */if(INST.pas)return;try{if(dirty&&SO){save();await sq}}catch(e){}INST.pas=true;instTela();instMsg({t:'liberei',de:INST.id})}
+let instEsp=null;
+async function instAssume(forca){if(!INST.pas&&instLe()&&instLe().id===INST.id){instGrava();return}
+ const L=instLe();INST.ok=false;
+ if(L&&L.id!==INST.id&&Date.now()-L.ts<12000){instMsg({t:'quero',de:INST.id});await new Promise(r=>{instEsp=r;setTimeout(r,3000)});instEsp=null}
+ INST.pas=false;instGrava();instTela();
+ try{revChk=0;const r=await est('rev');if(r.rev!=null&&+r.rev!==REV){if(!dirty){toast('🔄 Atualizando com o que a outra janela salvou…');if(cur==='v1')await refrescar();else{location.reload();return}}}}catch(e){}
+ INST.ok=true}
+function instRecebe(m){if(!m||m.de===INST.id)return;if(m.t==='quero')instSolta();else if(m.t==='liberei'&&instEsp)instEsp();else if(m.t==='assumi'&&!INST.pas)instSolta()}
+try{INST.bc=new BroadcastChannel('kfl_inst');INST.bc.onmessage=e=>instRecebe(e.data)}catch(e){}
+addEventListener('storage',e=>{if(e.key==='kfl_inst_msg')try{instRecebe(JSON.parse(e.newValue))}catch(x){}});
+setInterval(()=>{if(!INST.pas&&!document.hidden){const L=instLe();if(!L||L.id===INST.id||Date.now()-L.ts>12000)instGrava();else instSolta()}},4000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)instAssume(false)});
+setTimeout(()=>instAssume(false),300);
+/* v154: ações automáticas ainda não salvas no servidor (se o salvamento for recusado, o app diz exatamente o que refazer) */
+const espPend=()=>{try{return JSON.parse(localStorage.getItem('kfl_espend')||'[]')}catch(e){return[]}};
+function espAdd(t){try{const L=espPend();L.push({t,ts:Date.now()});localStorage.setItem('kfl_espend',JSON.stringify(L.slice(-20)))}catch(e){}}
+function espLimpa(t0){try{const L=espPend().filter(x=>x.ts>t0);localStorage.setItem('kfl_espend',JSON.stringify(L))}catch(e){}}
+setTimeout(()=>{try{const p=JSON.parse(localStorage.getItem('kfl_perdido')||'null');if(p&&p.length){localStorage.removeItem('kfl_perdido');alert('❌ ATENÇÃO: estas ações automáticas NÃO ficaram salvas no app (outra janela salvou na frente). Refaça à mão:\n\n• '+p.map(x=>x.t).join('\n• '))}}catch(e){}},2500);
 async function cot(d){const r=await fetch('cotacoes.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status==401){tela('login');throw Error('login')}const t=await r.text();try{return JSON.parse(t)}catch(e){throw Error('cotações: resposta inválida ('+r.status+')')}}
 function elog(m,k){try{if(typeof S!=='object'||!S||Array.isArray(S))return;const L=S.elog=S.elog||[],t=String(m).replace(/\s+/g,' ').slice(0,500),l=L[L.length-1];if(l&&l.m===t&&Date.now()-l.ts<60000){l.n=(l.n||1)+1;return}L.push({ts:Date.now(),v:typeof VERSAO!='undefined'?VERSAO:0,m:t,k:k||'aviso'});if(L.length>60)L.splice(0,L.length-60)}catch(e){}}
 {const A=window.alert;window.alert=function(x){if(!/^Renovação registrada e enviada/.test(String(x)))elog(x,'alerta');return A.apply(this,arguments)};
@@ -166,8 +198,8 @@ let SO=true,av=0,sq=Promise.resolve(),sd=0,FORCE=false;const LS='kfl_st',LD='kfl
 const LS2='kfl_st2',lsGet=()=>{try{return localStorage.getItem(LD)==='1'?JSON.parse(localStorage.getItem(LS)):null}catch(e){return null}};
 const lsOk=x=>x&&typeof x==='object'&&!Array.isArray(x)&&('mes' in x),lsAny=()=>{for(const k of [LS,LS2]){try{const x=JSON.parse(localStorage.getItem(k));if(lsOk(x))return x}catch(e){}}return null};
 const lsPut=j=>{try{const prev=localStorage.getItem(LS);if(prev&&prev!==j&&Date.now()-(+localStorage.getItem('kfl_st2t')||0)>6e5){try{localStorage.setItem(LS2,prev);localStorage.setItem('kfl_st2t',String(Date.now()))}catch(e){}}localStorage.setItem(LS,j)}catch(e){}};
-const doSave=async()=>{if(!SO)return;const t=sd;try{const rs=await est('set',{b:b64(JSON.stringify(S)),force:FORCE?1:0,base:FORCE?null:REV});if(rs&&rs.rev!=null)revSet(rs.rev);av=0;setOff(false);if(t===sd){dirty=false;try{localStorage.setItem(LD,'0')}catch(e){}}bd()}catch(e){if(/^CONFLITO/.test(e.message)){await conflito();return}if(/^PROTEÇÃO/.test(e.message)){SO=false;dirty=false;try{localStorage.setItem(LD,'0')}catch(x){}bd();alert('🛡 SALVAMENTO RECUSADO PARA PROTEGER SEUS DADOS\n\n'+e.message+'\n\nOs dados do servidor continuam intactos. Feche e abra o app. Se foi de propósito (restaurar um backup menor), use a tela Backup.');return}if(e.message!='login'){dirty=true;if(isNet(e)){setOff(true);bd();if(!av++)toast('⚠ Servidor fora do ar — alterações guardadas neste aparelho');return}bd();if(!av++)alert('⚠ Não foi possível salvar no servidor: '+e.message+'\nSuas alterações ficam guardadas neste aparelho e o sistema tenta enviar de novo sozinho. Não limpe os dados do navegador.');else toast('⚠ Ainda sem salvar no servidor (nova tentativa em instantes)')}}};
-const save=()=>{if(!SO)return sq;clearTimeout(ccTm);ccTm=setTimeout(()=>{try{if(C&&C.length)localStorage.setItem(CK,JSON.stringify(C))}catch(e){}},1000);sd=Date.now();dirty=true;try{if(S&&S.mes&&(!S.pr||Date.now()-S.pr.ts>60000))S.pr={ts:Date.now(),n:ntCnt()}}catch(e){}lsPut(JSON.stringify(S));try{localStorage.setItem(LD,'1')}catch(e){}bd();return sq=sq.then(doSave,doSave)};
+const doSave=async()=>{if(!SO||INST.pas)return;const t=sd;try{const rs=await est('set',{b:b64(JSON.stringify(S)),force:FORCE?1:0,base:FORCE?null:REV});if(rs&&rs.rev!=null)revSet(rs.rev);av=0;setOff(false);if(t===sd){dirty=false;try{localStorage.setItem(LD,'0')}catch(e){}}espLimpa(t);bd()}catch(e){if(/^CONFLITO/.test(e.message)){await conflito();return}if(/^PROTEÇÃO/.test(e.message)){SO=false;dirty=false;try{localStorage.setItem(LD,'0')}catch(x){}bd();alert('🛡 SALVAMENTO RECUSADO PARA PROTEGER SEUS DADOS\n\n'+e.message+'\n\nOs dados do servidor continuam intactos. Feche e abra o app. Se foi de propósito (restaurar um backup menor), use a tela Backup.');return}if(e.message!='login'){dirty=true;if(isNet(e)){setOff(true);bd();if(!av++)toast('⚠ Servidor fora do ar — alterações guardadas neste aparelho');return}bd();if(!av++)alert('⚠ Não foi possível salvar no servidor: '+e.message+'\nSuas alterações ficam guardadas neste aparelho e o sistema tenta enviar de novo sozinho. Não limpe os dados do navegador.');else toast('⚠ Ainda sem salvar no servidor (nova tentativa em instantes)')}}};
+const save=()=>{if(!SO||INST.pas)return sq;clearTimeout(ccTm);ccTm=setTimeout(()=>{try{if(C&&C.length)localStorage.setItem(CK,JSON.stringify(C))}catch(e){}},1000);sd=Date.now();dirty=true;try{if(S&&S.mes&&(!S.pr||Date.now()-S.pr.ts>60000))S.pr={ts:Date.now(),n:ntCnt()}}catch(e){}lsPut(JSON.stringify(S));try{localStorage.setItem(LD,'1')}catch(e){}bd();return sq=sq.then(doSave,doSave)};
 setInterval(()=>{if(dirty&&SO&&1)save()},20000);addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 function norm(){window.S_OK=1;const h=fm(hoje()),m=h.slice(3);S=Object.assign({novmes:[],primmes:[],pausados:[],renovados:[],novos:[],retornados:[],primeira:[],nf:[],renmes:[],cont:{},totmes:0,custo:0,cache:[]},S);let ch=0;if(!S.vistos||S.vistos.d!==h){S.vistos={d:h,n:[]};ch=1}['cont','rel'].forEach(k=>{if(Array.isArray(S[k]))S[k]={}});
  if((S.varsRed||[]).length){const R=[...S.varsRed];(S.vars||[]).forEach(x=>{const k=R.findIndex(r=>r.d===x.d&&r.v===x.v&&r.dt===x.dt);if(k>=0){x.fx=true;R.splice(k,1);const f=(S.fixos||[]).find(f=>(f.nome||'').trim().toLowerCase()===x.d.toLowerCase());if(f)f.var=true}});S.varsRed=[];ch=1}
@@ -1355,14 +1387,16 @@ const ES_GL={150:['Plano GOLD - R$ 150,00','Gold'],300:['Combo GOLD SMART - R$ 3
 function esConfTx(tipo,c,reat,v){const H='🔔 *Mensagem automática do sistema KFLMULTI*\n\n',vv=brl(v||(tipo==='baixa'?100:150)),nm=(ES_GL[Math.round(v||150)]||ES_GL[150])[1];
  if(tipo==='baixa')return H+'Recebemos seu pagamento de '+vv+' ✅\nBaixa efetuada. Seu anúncio segue normalmente até '+dm5(c.fim)+'. Obrigado!';
  return H+'Recebemos seu pagamento de '+vv+' ✅\n'+(reat?'Seu plano '+nm+' foi reativado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Nossa equipe já está religando seu anúncio, é só aguardar.':'Seu plano '+nm+' foi renovado: de '+dm5(c.inicio)+' até '+dm5(c.fim)+'. Obrigado pela confiança!')}
-async function esAuto(){if(ESRUN||ESJ||!C.length||!['v1','v4','v6'].includes(cur))return;const lim=Date.now()/1000-2*86400,A=S.esA||{},h=hoje();
+async function esAuto(){if(ESRUN||ESJ||INST.pas||!INST.ok||document.hidden||!C.length||!['v1','v4','v6'].includes(cur))return;const lim=Date.now()/1000-2*86400,A=S.esA||{},h=hoje();
  const J=[];esL().forEach(x=>{if(x.st!=='base'||x.auto||A[x.id]||!(x.ts>lim)||!(+x.v>0))return;const i=C.findIndex(c=>nmEq(c.cliente,x.cli));if(i<0)return;const c=C[i],v=+x.v;let tipo='',pl='',reat=false;
   if(pend(c)){if(Math.abs(num(c.pg)-v)<.01)tipo='baixa'}                                   /* v147: o valor bate com a dívida = baixa (qualquer vencimento) */
   else if(!(num(c.pg)>0)&&ES_GL[Math.round(v)]&&/GOLD/i.test(c.plano||'')&&!/MEGA|PLUS/i.test(c.plano||'')){const f=pd(c.fim);
    if(f&&f<=h){tipo='ren';pl=ES_GL[Math.round(v)][0];reat=f<h}}                          /* termina hoje = renovação; já terminou = reativação; amanhã ou depois = nada (segundo plano) */
   if(tipo)J.push({x,i,c,tipo,pl,reat,v})});
  if(!J.length)return;
- ESRUN=1;const vt=cur,eraNt=!!$('#ntroot'),R=J.map(j=>({cli:j.c.cliente.trim(),tx:j.tipo==='baixa'?'baixa de '+brl(j.v)+'…':(j.reat?'reativação ':'renovação ')+ES_GL[Math.round(j.v)][1]+' '+brl(j.v)+'…',st:'run',i:j.i}));ESJ={L:R,volta:null};esJan(R,0);let fez=0;
+ ESRUN=1;try{const rv_=await est('rev');if(rv_.rev!=null&&+rv_.rev!==REV){ESRUN=0;if(!dirty){toast('🔄 Atualizando antes da ação automática…');if(cur==='v1')await refrescar();else location.reload()}return}}catch(e){ESRUN=0;return}
+ if(INST.pas||document.hidden){ESRUN=0;return}
+const vt=cur,eraNt=!!$('#ntroot'),R=J.map(j=>({cli:j.c.cliente.trim(),tx:j.tipo==='baixa'?'baixa de '+brl(j.v)+'…':(j.reat?'reativação ':'renovação ')+ES_GL[Math.round(j.v)][1]+' '+brl(j.v)+'…',st:'run',i:j.i}));ESJ={L:R,volta:null};esJan(R,0);let fez=0;
  try{for(let k=0;k<J.length;k++){const {x,i,c,tipo,pl,reat,v}=J[k],r=R[k];
   let cl=null;try{cl=await tfx('esp_av_auto',{id:x.id,res:'aplicando…'})}catch(e){}
   if(!cl||!cl.ok){r.st='err';r.tx=cl&&cl.dup?'já tinha sido feito em outro aparelho':'sem conexão com o servidor: não fiz nada';if(cl&&cl.dup)r.st='ok';esJan(R,0);continue}
@@ -1373,7 +1407,7 @@ async function esAuto(){if(ESRUN||ESJ||!C.length||!['v1','v4','v6'].includes(cur
     window.TFSKIP=1;try{await renovar(i)}finally{window.TFSKIP=0}bom=c.fim!==fim0;res=bom?'✔ '+(reat?'reativação':'renovação')+' '+ES_GL[Math.round(v)][1]+' automática feita ('+brl(v)+') · '+c.inicio+' até '+c.fim:'⚠ não consegui renovar: confira'}}
   catch(e){res='⚠ erro: '+(e&&e.message||e)}finally{window.confirm=cf;window.alert=af;if(cur==='v3'){tela('v1');lista()}}
   if(!bom&&MS.length)res+=' ('+MS.join(' ').slice(0,120)+')';
-  if(bom){fez=1;try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat,v)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}
+  if(bom){fez=1;espAdd(c.cliente.trim()+' — '+res);try{await tfx('esp_conf_add',{id:x.id,cli:c.cliente.trim(),ph:ntFone(c),txt:esConfTx(tipo,c,reat,v)});res+=' · confirmação ao cliente na fila'}catch(e){res+=' · ⚠ não pus a confirmação ao cliente na fila'}
    if(tipo==='baixa'&&window.ESNF){try{await tfx('esp_conf_add',{id:x.id+'nf',cli:c.cliente.trim(),ph:ntFone(c),txt:nfTxC(window.ESNF.f)});res+=' · pedido dos dados da nota na fila'}catch(e){res+=' · ⚠ não pus o pedido dos dados da nota na fila'}window.ESNF=null}}
   x.auto=Date.now()/1000;x.res=res;try{await tfx('esp_av_auto',{id:x.id,res,fim:1})}catch(e){}
   r.st=bom?'ok':'err';r.tx=res.replace(/^[✔⚠] /,'');esJan(R,0)}}
@@ -2267,7 +2301,7 @@ $('#bA').onclick=()=>{modo='ATIVOS';$('#q').value='';lista();refrescar()};$('#bP
 (function(){const d=document.getElementById('dn');if(!d)return;const u=()=>{try{const e=document.documentElement,r=e.scrollHeight-window.innerHeight-window.scrollY;d.style.display=(cur!=='login'&&r>150)?'block':'none'}catch(x){}};window.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);setInterval(u,600)})();
 </script>
 <script id="ver">
-const VERSAO=153;
+const VERSAO=154;
 (()=>{const K='kfl_ver',$=s=>document.querySelector(s),isV1=()=>{try{return cur==='v1'}catch(e){return false}};
  const mk=(id,css)=>{let d=document.getElementById(id);if(!d){d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d)}return d};
  const lb=mk('verlb','position:fixed;left:8px;bottom:3px;font-size:10px;color:#888;opacity:.7;z-index:5;pointer-events:none');lb.textContent='v'+VERSAO;lb.hidden=true;
